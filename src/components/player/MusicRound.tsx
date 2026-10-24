@@ -4,6 +4,10 @@ import { hashStr } from "@/lib/game/engine";
 import { MUSIC_VIBES } from "@/lib/game/music-scenes";
 import type { MusicReaction, MusicRound, Track } from "@/lib/game/types";
 import { externalSearchLinks } from "@/lib/music/provider";
+import { getAiExperience } from "@/lib/ai/experience.functions";
+import { musicClueResultSchema } from "@/lib/ai/experience-schema";
+import { ClueLadder } from "@/components/ai/AiSurfaces";
+import { useAuth } from "@/lib/auth";
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import { Footer, HandOver, Prompt, type SceneProps } from "./SceneView";
@@ -19,6 +23,7 @@ const empty = (n: number): MusicRound => ({ sceneNumber: n, stage: "pick", picks
  */
 export function MusicRoundBody(p: SceneProps & { text: string; helper?: string | undefined }) {
   const { scene, me, you, onDone, onSkip, text } = p;
+  const { user } = useAuth();
   const mode = scene.music?.mode ?? "solo";
   const sceneNumber = p.music?.sceneNumber ?? 0;
   const [localRound, setLocalRound] = useState<MusicRound>(() => empty(sceneNumber));
@@ -26,6 +31,58 @@ export function MusicRoundBody(p: SceneProps & { text: string; helper?: string |
   const set = (r: MusicRound) => { setLocalRound(r); p.music?.setRound(r); };
   // Remounted mid-round on the partner's step: gate it again behind the handoff.
   const [gate, setGate] = useState(round.stage === "second");
+  const [clues, setClues] = useState<string[]>([]);
+  const [clueIndex, setClueIndex] = useState(0);
+  const [clueBusy, setClueBusy] = useState(false);
+  const [clueTried, setClueTried] = useState(false);
+  const [clueUnavailable, setClueUnavailable] = useState(false);
+
+  useEffect(() => {
+    setClues([]);
+    setClueIndex(0);
+    setClueBusy(false);
+    setClueTried(false);
+    setClueUnavailable(false);
+  }, [sceneNumber]);
+
+  const loadClues = async () => {
+    const track = round.picks[0];
+    if (!user || !track || clueBusy || clueTried) return;
+    setClueBusy(true);
+    setClueTried(true);
+    setClueUnavailable(false);
+    try {
+      const res = await getAiExperience({
+        data: {
+          kind: "music-clue",
+          aiConsent: true,
+          sessionKey: `aux-${sceneNumber}-${hashStr(track.title + (track.artist ?? ""))}`,
+          locale: "de",
+          track: {
+            title: track.title,
+            ...(track.artist ? { artist: track.artist } : {}),
+          },
+          difficulty: Math.max(1, Math.min(5, scene.phase + 2)),
+          count: 4,
+        },
+      });
+      if (!res.ok) {
+        setClueUnavailable(true);
+        return;
+      }
+      const parsed = musicClueResultSchema.safeParse(JSON.parse(res.json));
+      if (!parsed.success) {
+        setClueUnavailable(true);
+        return;
+      }
+      setClues(parsed.data.clues);
+      setClueIndex(0);
+    } catch {
+      setClueUnavailable(true);
+    } finally {
+      setClueBusy(false);
+    }
+  };
 
   const rail = (
     <div className="mt-5 flex items-center gap-2" aria-hidden>
@@ -94,6 +151,37 @@ export function MusicRoundBody(p: SceneProps & { text: string; helper?: string |
               </button>
             ))}
           </div>
+          {user && round.picks[0] && (
+            <div className="mt-5">
+              {!clueTried && (
+                <>
+                  <Btn variant="outline" className="w-full" onClick={() => void loadClues()}>
+                    KI-Hinweis holen
+                  </Btn>
+                  <p className="mt-2 text-xs leading-snug text-muted-foreground">
+                    Optional · Songtitel und Artist werden nur für diesen Hinweis verwendet.
+                  </p>
+                </>
+              )}
+              {clueBusy && (
+                <p role="status" className="font-mono text-[0.7rem] tracking-[0.18em] text-muted-foreground">
+                  HINWEIS WIRD FORMULIERT · DU KANNST SCHON TIPPEN
+                </p>
+              )}
+              {clues.length > 0 && (
+                <ClueLadder
+                  clues={clues}
+                  revealed={clueIndex}
+                  onReveal={() => setClueIndex((i) => Math.min(i + 1, clues.length - 1))}
+                />
+              )}
+              {clueUnavailable && (
+                <p className="text-sm italic text-muted-foreground">
+                  Heute ohne Zusatzhinweis · dein Tipp zählt.
+                </p>
+              )}
+            </div>
+          )}
           <Footer primary={round.prediction ? "Entsiegeln" : "Erst tippen"} disabled={!round.prediction} onPrimary={() => { haptic(14); set({ ...round, stage: "reveal" }); }} onSkip={onSkip} />
         </div>
       </div>
