@@ -121,7 +121,7 @@ export function musicClueLeaksAnswer(request: ExperienceRequest, raw: unknown) {
   if (!parsed.success) return true;
 
   const title = normalized(request.track.title);
-  const artist = normalized(request.track.artist);
+  const artist = normalized(request.track.artist ?? "");
 
   return parsed.data.clues.some((clue) => {
     const candidate = normalized(clue);
