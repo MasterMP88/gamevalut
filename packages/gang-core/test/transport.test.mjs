@@ -10,7 +10,6 @@ test("secure room transport exposes the complete RPC surface", () => {
     "gang_join_display",
     "gang_join_room",
     "gang_leave_room",
-    "gang_prepare_private_round",
     "gang_reveal_round_data",
     "gang_room_snapshot",
     "gang_save_runtime",
