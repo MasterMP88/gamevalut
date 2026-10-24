@@ -409,3 +409,7 @@ html:has(.snap-home) { scroll-snap-type: y proximity; }
   html:has(.snap-home) { scroll-snap-type: none; }
   .stage * { transition-duration: 0ms !important; animation: none !important; }
 }
+
+@keyframes ember { 0% { transform: translateY(0); opacity: 0; } 30% { opacity: .9; } 100% { transform: translateY(-18px); opacity: 0; } }
+@utility animate-ember { animation: ember 3.2s var(--ease-out-expo) infinite; transform-box: fill-box; }
+@media (prefers-reduced-motion: reduce) { .animate-ember { animation: none; opacity: .5; } }
