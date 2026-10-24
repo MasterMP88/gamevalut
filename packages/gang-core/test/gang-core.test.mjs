@@ -84,6 +84,39 @@ test("manual mixes reject unknown, duplicate and incompatible games", () => {
   );
 });
 
+test("two players with two phones prefer EVERYONE IN over pass mode", () => {
+  const majority = getGangGame("the-majority");
+  assert.ok(majority);
+  const mode = preferredInteractionMode(
+    majority,
+    { ...base, playerCount: 3 },
+    { connectedDevices: 3, hasBigScreen: false },
+  );
+  assert.equal(mode, "everyone-in");
+});
+
+test("one phone remains a fallback when there is only one input device", () => {
+  const majority = getGangGame("the-majority");
+  assert.ok(majority);
+  const mode = preferredInteractionMode(
+    majority,
+    { ...base, playerCount: 3 },
+    { connectedDevices: 1, hasBigScreen: false },
+  );
+  assert.equal(mode, "one-phone");
+});
+
+test("big screen upgrades multi-device play even outside crowd scale", () => {
+  const majority = getGangGame("the-majority");
+  assert.ok(majority);
+  const mode = preferredInteractionMode(
+    majority,
+    { ...base, playerCount: 6 },
+    { connectedDevices: 6, hasBigScreen: true },
+  );
+  assert.equal(mode, "big-screen");
+});
+
 test("big crowds prefer a big screen when a title supports it", () => {
   const majority = getGangGame("the-majority");
   assert.ok(majority);
