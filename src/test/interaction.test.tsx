@@ -82,6 +82,43 @@ describe("scene UI", () => {
     expect(onDone).toHaveBeenCalledWith({ syncMatch: true });
   });
 
+  it("alternating rush is a real microgame, not a passive timer", () => {
+    const scene = SCENES.find((s) => s.title === "Wortkette")!;
+    renderScene(scene);
+    expect(screen.getByTestId("scene-cue").textContent).toMatch(/App hält den Puls/);
+    expect(screen.getByRole("button", { name: "3 · 2 · 1" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Fertig" })).toBeNull();
+  });
+
+  it("tap rush exposes a live hit counter start instead of a generic timer", () => {
+    const scene = SCENES.find((s) => s.title === "Zehn Dinge")!;
+    renderScene(scene);
+    expect(screen.getByTestId("scene-cue").textContent).toMatch(/Treffer/);
+    expect(screen.getByRole("button", { name: /Start · 20s/ })).toBeEnabled();
+  });
+
+  it("Heatcheck missions are judged by the opponent before Sparks are awarded", () => {
+    const scene = SCENES.find((s) => s.title === "Berufswunsch")!;
+    const onDone = vi.fn();
+    const onSkip = vi.fn();
+    render(
+      <SceneView
+        scene={scene}
+        me="Ari"
+        you="Nova"
+        memory={false}
+        onDone={onDone}
+        onSkip={onSkip}
+        battle={{ players: P, missionOwner: null, onWin: vi.fn() }}
+      />,
+    );
+    expect(screen.getByText(/Nova entscheidet/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Bewertung/ }));
+    expect(screen.getByText(/Nova ist Referee/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Treffer/ }));
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
   it("prediction mismatch reads as plot twist", () => {
     renderScene(base({ type: "PREDICTION", prompt: "Kaffee oder Tee.", helper: "Was trinkst du?", choices: ["Kaffee", "Tee"] }));
     fireEvent.click(screen.getByRole("radio", { name: /Kaffee/ }));
