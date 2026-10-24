@@ -15,6 +15,12 @@ export type SceneType =
 /** funny = Lustig, deep = Tief, cheeky = Frech, sensual = Sinnlich, game = Spiel */
 export type Flavor = "funny" | "deep" | "cheeky" | "sensual" | "game";
 
+/**
+ * Optional high-touch interaction grammar for scenes that should behave like
+ * real digital mini-games instead of a static prompt + timer.
+ */
+export type SceneMechanic = "alternating-rush" | "tap-rush" | "standoff";
+
 export type GameId =
   | "roxy-after-dark"
   | "after-dark-2"
@@ -45,6 +51,12 @@ export interface Scene {
   emoji?: string | undefined;
   duration?: number | undefined;
   choices?: string[] | undefined;
+  /** Premium interaction primitive rendered by SceneView when present. */
+  mechanic?: SceneMechanic | undefined;
+  /** Optional target for tap-rush scenes (for example: reach 10 answers). */
+  goal?: number | undefined;
+  /** Per-turn response window for alternating-rush scenes, in seconds. */
+  beatSeconds?: number | undefined;
   flags?: SceneFlags | undefined;
   capture?: { label: string; tags: string[] } | undefined;
   /** Optional: restrict to games. Default: all non-battle games that accept the type. */
