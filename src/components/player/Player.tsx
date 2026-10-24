@@ -96,11 +96,11 @@ export function Player({ game }: { game: GameConfig }) {
           })()}
 
           {game.coop && (
-            <ol className="mt-5 flex gap-4" aria-label="Gemeinsame Meilensteine">
+            <ol className="mt-5 grid grid-cols-3 gap-2 border-y border-line py-3" aria-label="Gemeinsame Meilensteine">
               {MILESTONES.map((m) => {
                 const on = state.milestones.includes(m.id);
                 return (
-                  <li key={m.id} className={cn("flex items-center gap-1.5 text-xs transition-colors", on ? "text-foreground" : "text-muted-foreground/60")}>
+                  <li key={m.id} className={cn("flex min-w-0 items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors", on ? "text-foreground" : "text-muted-foreground/50")}>
                     <span className={cn("inline-block size-2 rotate-45 border", on ? "border-champagne bg-champagne" : "border-line")} />
                     {m.label}
                   </li>
@@ -127,14 +127,34 @@ export function Player({ game }: { game: GameConfig }) {
           )}
 
           {game.memory && state.anchors.some((a) => !a.used) && (
-            <p className="mt-4 flex items-center gap-2 text-xs text-violet" aria-live="polite">
+            <p className="mt-4 flex items-center gap-2 border-l border-violet/40 pl-3 font-mono text-[10px] uppercase tracking-[0.16em] text-violet" aria-live="polite">
               <span className="relative inline-flex size-3"><span className="absolute inset-0 rounded-full border border-violet animate-ripple" /><span className="m-auto size-1 rounded-full bg-violet" /></span>
               Ein Echo formt sich · {state.anchors.filter((a) => !a.used).length}
             </p>
           )}
 
-          {(game.ai || game.id === "roxy-night") && (
-            <GameArt art={game.art} steer={state.steer} status={status} className="mt-5 h-24 rounded-xl opacity-90" />
+          {game.id !== "one-two" && (
+            <div className={cn(
+              "mt-5 overflow-hidden border-y border-line",
+              game.id === "roxy-after-dark" && "h-16 opacity-80",
+              game.id === "after-dark-2" && "h-20",
+              game.id === "roxy-night" && "h-24",
+              game.id === "battle" && "h-20",
+              game.id === "coop" && "h-24",
+              game.id === "night-echo" && "h-16 opacity-85",
+              game.id === "ai-director" && "h-24"
+            )}>
+              <GameArt
+                art={game.art}
+                steer={state.steer}
+                status={status}
+                scoreA={state.sparks[0]}
+                scoreB={state.sparks[1]}
+                energies={state.energies}
+                sceneType={scene?.type}
+                className="h-full w-full"
+              />
+            </div>
           )}
 
           <div className="mt-8 flex flex-1 flex-col">
