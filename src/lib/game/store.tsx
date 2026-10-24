@@ -5,6 +5,7 @@ import type { ConsentSettings, GameId, SessionState } from "./types";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { clearPendingGuest, readPendingGuest } from "@/lib/pending-guest";
+import { guardSessionUpdate, planRevision, revisionConfirmed } from "./revision";
 
 /**
  * Sessions live in React memory. Signed-in users additionally get a debounced
@@ -77,19 +78,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         previousRevision = 0;
       }
 
-      const nextRevision = previousRevision + 1;
-      const row = toRow(state, uid, nextRevision);
+      const plan = planRevision(previousRevision);
+      const row = toRow(state, uid, plan.next);
 
       if (rowId) {
-        const { data, error } = await supabase
-          .from("game_sessions")
-          .update(row as never)
-          .eq("id", rowId)
-          .eq("revision", previousRevision)
-          .select("id, revision")
-          .maybeSingle();
+        const guarded = guardSessionUpdate(
+          supabase.from("game_sessions").update(row as never),
+          rowId,
+          plan,
+        );
+        const { data, error } = await guarded.select("id, revision").maybeSingle();
         if (error) throw error;
-        if (!data || data.revision !== nextRevision) {
+        if (!data || !revisionConfirmed(plan, data.revision)) {
           setSaveStatus((x) => ({ ...x, [id]: "conflict" }));
           return;
         }
@@ -198,14 +198,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const row = dbId.current[id];
     clearTimeout(timers.current[id]);
     if (row && user) {
-      const previousRevision = rev.current[id] ?? 0;
-      const nextRevision = previousRevision + 1;
-      void supabase
-        .from("game_sessions")
-        .update({ status: "abandoned", revision: nextRevision })
-        .eq("id", row)
+      const plan = planRevision(rev.current[id] ?? 0);
+      const guarded = guardSessionUpdate(
+        supabase.from("game_sessions").update({ status: "abandoned", revision: plan.next }),
+        row,
+        plan,
+      );
+      void guarded
         .eq("status", "active")
-        .eq("revision", previousRevision)
         .select("id, revision")
         .maybeSingle()
         .then(({ data }) => {
