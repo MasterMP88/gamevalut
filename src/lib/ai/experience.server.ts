@@ -139,7 +139,11 @@ export async function runExperience(input: unknown): Promise<ExperienceResult> {
   const capability = capabilityFor(request);
   const policy = AI_POLICIES[capability];
   const items = itemCount(request);
-  const cacheKey = aiCacheKey(capability, request);
+  const cachePayload =
+    request.kind === "music-clue"
+      ? { ...request, sessionKey: undefined }
+      : request;
+  const cacheKey = await aiCacheKey(capability, cachePayload);
 
   const generated = await withAiCache(
     cacheKey,
