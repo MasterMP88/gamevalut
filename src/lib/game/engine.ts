@@ -341,6 +341,7 @@ export function createSession(gameId: GameId, players: [string, string], setting
     powerUps: [0, 0],
     doubleNext: false,
     secretMission: null,
+    covert: null,
     aiQueue: [],
     finished: false,
     afterHours: false,
@@ -531,6 +532,7 @@ export type Action =
   | { type: "DELETE_ANCHOR"; id: string }
   | { type: "CLEAR_ANCHORS" }
   | { type: "SHOWDOWN_WIN"; winner: 0 | 1 | null; missionDone?: boolean }
+  | { type: "COVERT_RESULT"; success: boolean }
   | { type: "USE_POWERUP"; kind?: PowerUp }
   | { type: "AI_SCENES"; scenes: Scene[] }
   | { type: "FINISH" }
@@ -572,6 +574,11 @@ export function reducer(state: SessionState, action: Action): SessionState {
             kind: echoKind(scene.capture?.tags ?? [], scene.flavor),
           },
         ];
+      }
+
+      // After Dark / Director: SECRET scenes become real multi-scene covert challenges.
+      if (!game.battle && scene.type === "SECRET") {
+        next.covert = { owner: state.turn, text: scene.prompt, dueAt: state.sceneNumber + 2 };
       }
 
       // ONE//TWO: schedule a delayed return of this question to the other player
@@ -661,6 +668,14 @@ export function reducer(state: SessionState, action: Action): SessionState {
       const next = { ...state, sparks, secretMission, raise: false, log: logCurrent(state, "done") };
       if (state.sceneNumber >= BATTLE_FINAL_SCENE) return { ...next, finished: true };
       return advance(next);
+    }
+    case "COVERT_RESULT": {
+      if (!state.covert) return state;
+      return {
+        ...state,
+        covert: null,
+        heat: action.success ? clamp(state.heat + 0.4, 0, 4.99) : state.heat,
+      };
     }
     case "USE_POWERUP": {
       const p = state.turn;
