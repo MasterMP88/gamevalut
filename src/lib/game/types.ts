@@ -133,6 +133,8 @@ export interface SessionState {
   powerUps: [number, number];
   doubleNext: boolean;
   secretMission: { player: 0 | 1; text: string } | null;
+  /** After Dark / Director: a sealed multi-scene covert challenge that comes back for resolution. */
+  covert: { owner: 0 | 1; text: string; dueAt: number } | null;
   aiQueue: Scene[];
   finished: boolean;
   afterHours: boolean;
