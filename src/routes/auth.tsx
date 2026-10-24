@@ -10,7 +10,7 @@ type Mode = "signin" | "signup" | "forgot";
 
 /** Only same-origin paths are allowed as post-login destinations. */
 export function safeRedirect(r: unknown): string {
-  return typeof r === "string" && r.startsWith("/") && !r.startsWith("//") ? r : "/tonight";
+  return typeof r === "string" && r.startsWith("/") && !r.startsWith("//") && !r.includes("\\") && !/[\u0000-\u001f]/.test(r) ? r : "/tonight";
 }
 
 export const Route = createFileRoute("/auth")({
@@ -54,7 +54,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/tonight` } });
+        const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}${to}` } });
         if (error) throw error;
         if (!data.session) setMsg({ kind: "ok", text: "Fast geschafft: Wir haben dir einen Bestätigungslink geschickt. Danach bist du angemeldet." });
       } else {
