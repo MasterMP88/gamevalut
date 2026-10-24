@@ -295,6 +295,19 @@ describe("AI experience contracts", () => {
     ).toBe(false);
   });
 
+  it("accepts a title-only clue request after explicit opt-in", () => {
+    const result = experienceRequestSchema.safeParse({
+      kind: "music-clue",
+      aiConsent: true,
+      sessionKey: "aux-title-only",
+      locale: "de",
+      track: { title: "Song ohne Artist" },
+      difficulty: 3,
+      count: 4,
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("requires progressive music clue batches to stay small", () => {
     expect(
       musicClueResultSchema.safeParse({
