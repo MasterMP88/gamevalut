@@ -28,9 +28,21 @@ export function useDirector(
 
   const sceneNumber = state?.sceneNumber ?? 0;
   const queueLen = state?.aiQueue.length ?? 0;
-  const sessionKey = state
-    ? "s_" + state.gameId + "_" + Math.abs(state.seed).toString(36)
-    : "";
+  const sessionKeyRef = useRef("");
+  const sessionGameRef = useRef("");
+  const previousSceneRef = useRef(0);
+
+  if (state) {
+    const restarted = state.sceneNumber <= 1 && previousSceneRef.current > 1;
+    if (!sessionKeyRef.current || sessionGameRef.current !== state.gameId || restarted) {
+      sessionKeyRef.current =
+        "s_" + state.gameId + "_" + Math.abs(state.seed).toString(36);
+      sessionGameRef.current = state.gameId;
+    }
+    previousSceneRef.current = state.sceneNumber;
+  }
+
+  const sessionKey = state ? sessionKeyRef.current : "";
 
   useEffect(() => {
     calls.current = 0;
