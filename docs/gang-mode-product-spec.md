@@ -21,13 +21,21 @@ The Party Director is not allowed to hide or replace manual game choice.
 
 ## Hybrid play
 The runtime supports:
-- **ONE PHONE / PASS MODE**
-- **EVERYONE IN** via QR/room code
-- **BIG SCREEN / CROWD MODE**
+- **EVERYONE IN** via QR/room code — the default product path when each active player has a phone
+- **BIG SCREEN / CROWD MODE** — an enhancement of Everyone In: TV/iPad/laptop is the shared stage, phones remain controllers
 - **TEAM DEVICE**
 - **MIXED MODE**
+- **ONE PHONE / PASS MODE** — fallback for groups that truly only have one usable input device
 
-The product should choose the best interaction mode for a game automatically from player count and available devices. Technical setup must stay out of the critical path.
+The product chooses the best interaction mode automatically from player count and available devices. Technical setup must stay out of the critical path. Do not make users understand networking modes before they can play.
+
+### Premium interaction contract (2026)
+- **Zero handoff by default:** when more than one personal input device is available, private input stays on the owner's device. Never ask people to pass a phone merely to protect a secret.
+- **Zero typing by default:** use tap, cards, swipe, ranking, slider, hold-to-reveal, reactions or spoken answers whenever the mechanic does not intrinsically depend on authored text.
+- **Creative typing is a mechanic, not admin work:** free text is allowed for games such as bluffing or intentionally funny authored answers, but must be short, local to the player's own device and never required for ordinary questions.
+- **Private input, shared drama:** secrets and predictions are owner-only before reveal; countdown, reveal, score and reactions are synchronized publicly.
+- **Big Screen is additive:** enabling a shared display must not remove a player's controller or turn one person into a permanent host.
+- **One Phone stays playable:** privacy curtain + quick taps remain available as a graceful fallback, but the UI must not present pass mode as the recommended experience when Everyone In is available.
 
 ## Party Director
 The Director orchestrates a night as:
@@ -104,6 +112,9 @@ New games must be addable through the registry without changing GANG MODE archit
 
 ## Product quality gates
 - room-to-game target < 30 seconds
+- Everyone In is the recommended setup whenever the room can give each active player a controller
+- ordinary questions never require typed answers; typing is reserved for mechanics where authored text is the fun
+- no phone handoff is required when multiple input devices are connected
 - guests can join without creating an account
 - no regular long idle periods for inactive players
 - no static-question-only game counts as a premium mechanic
