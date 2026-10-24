@@ -8,6 +8,13 @@
       "when": 1792870668428,
       "tag": "0000_nocturne_accounts_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792875941757,
+      "tag": "0001_nocturne_security_hardening",
+      "breakpoints": true
     }
   ]
 }
