@@ -261,6 +261,7 @@ export function Player({ game }: { game: GameConfig }) {
                         players: state.players,
                         missionOwner: state.secretMission ? state.players[state.secretMission.player] : null,
                         onWin: (w, missionDone) => dispatch({ type: "SHOWDOWN_WIN", winner: w, missionDone }),
+                        onMissionResult: (success) => dispatch({ type: "BATTLE_RESULT", success }),
                       }
                     : undefined
                 }
