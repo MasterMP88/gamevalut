@@ -189,7 +189,7 @@ function privatePayloads(
       privateByPlayer[player.id] = {
         role: "AGENT",
         mission: mission.prompt,
-        prompt: mission.altPrompt,
+        ...(mission.altPrompt ? { prompt: mission.altPrompt } : {}),
       };
     }
   } else if (gameId === "bluff") {
@@ -641,14 +641,15 @@ export function publicGangView(state: GangRuntimeState): GangPublicRoundView {
     (state.gameId === "draw-this" && stage !== "reveal" && stage !== "score");
 
   const submissions = currentSubmissions(state);
+  const options = dynamicVoteOptions(state);
   return {
     id: state.round.id,
     number: state.round.number,
     prompt: promptHidden ? "PRIVATE ROUND" : state.round.prompt.prompt,
-    subline: state.round.prompt.subline,
-    options: dynamicVoteOptions(state),
-    seconds: state.round.prompt.seconds,
-    category: state.round.prompt.category,
+    ...(state.round.prompt.subline ? { subline: state.round.prompt.subline } : {}),
+    ...(options ? { options } : {}),
+    ...(state.round.prompt.seconds !== undefined ? { seconds: state.round.prompt.seconds } : {}),
+    ...(state.round.prompt.category ? { category: state.round.prompt.category } : {}),
     stage,
     stageIndex: state.round.stageIndex,
     totalStages: state.round.stages.length,
