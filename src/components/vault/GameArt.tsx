@@ -138,6 +138,32 @@ export function GameArt({ art, className = "", steer = null, status = "idle", sc
           <text x="330" y="76" fontFamily="Geist Mono, monospace" fontSize="9" fill="var(--art-07-b)" opacity=".75" letterSpacing="1.5">SZ. 07 → 15</text>
         </svg>
       )}
+      {art === "signal" && (
+        /* 09 PASS//THE AUX — two frequency fields move toward one shared signal */
+        <svg className={c} viewBox={VB} preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="aux-fade" x1="0" x2="1">
+              <stop offset="0" stopColor="var(--art-09-a)" stopOpacity="0" />
+              <stop offset=".35" stopColor="var(--art-09-a)" stopOpacity=".8" />
+              <stop offset=".65" stopColor="var(--art-09-b)" stopOpacity=".8" />
+              <stop offset="1" stopColor="var(--art-09-b)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <line x1="18" x2="382" y1="150" y2="150" stroke="url(#aux-fade)" strokeOpacity=".35" />
+          {[0,1,2,3,4,5,6,7,8].map((n) => (
+            <line key={n} x1={40 + n * 40} x2={40 + n * 40} y1={143 - (n % 3) * 5} y2={157 + (n % 3) * 5} stroke="var(--art-09-a)" strokeOpacity={n === 4 ? .9 : .28} />
+          ))}
+          <path d="M-20 150 C15 150 18 118 38 150 S68 186 88 150 S118 128 138 150 S166 168 190 150" fill="none" stroke="var(--art-09-a)" strokeWidth="1.6" pathLength={1} className="animate-draw" />
+          <path d="M420 150 C385 150 382 178 362 150 S332 114 312 150 S282 172 262 150 S234 132 210 150" fill="none" stroke="var(--art-09-b)" strokeWidth="1.6" pathLength={1} className="animate-draw" style={{ animationDelay: "180ms" }} />
+          <g className="animate-slow-pulse" style={{ transformOrigin: "200px 150px" }}>
+            <circle cx="200" cy="150" r="22" fill="none" stroke="var(--art-09-a)" strokeOpacity=".35" />
+            <circle cx="200" cy="150" r="4" fill="var(--art-09-b)" />
+          </g>
+          <line x1="200" x2="200" y1="65" y2="235" stroke="var(--art-09-a)" strokeOpacity=".3" strokeDasharray="2 7" />
+          <text x="28" y="278" fontFamily="Geist Mono, monospace" fontSize="9" letterSpacing="2.7" fill="var(--art-09-a)" opacity=".58">PASS // AUX</text>
+          <text x="372" y="278" textAnchor="end" fontFamily="Geist Mono, monospace" fontSize="9" letterSpacing="2" fill="var(--art-09-b)" opacity=".58">L // R</text>
+        </svg>
+      )}
       {art === "living" && (
         /* 08 DIRECTOR — a living orbital system: controlled pulse, editorial cue marks */
         <svg className={c} viewBox={VB} preserveAspectRatio="xMidYMid slice">
