@@ -49,7 +49,8 @@ const toTrack = (s: any): Track => ({
   title: s.attributes?.name ?? "",
   artist: s.attributes?.artistName,
   providerId: s.id,
-  artworkUrl: s.attributes?.artwork?.url?.replace("{w}", "200").replace("{h}", "200"),
+  artworkUrl: s.attributes?.artwork?.url?.replace("{w}", "300").replace("{h}", "300"),
+  externalUrl: typeof s.attributes?.url === "string" && s.attributes.url.startsWith("https://music.apple.com/") ? s.attributes.url : undefined,
 });
 
 function appleProvider(m: MKInstance): MusicProvider {
