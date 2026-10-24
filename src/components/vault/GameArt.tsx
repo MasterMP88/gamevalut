@@ -14,7 +14,7 @@ type Props = {
   /** US//AFTER DARK: optional live energy values deepen the shared third form. */
   energies?: { chaos: number; connection: number; heat: number };
   /** Director: current interaction type changes the editorial cue glyph. */
-  sceneType?: string;
+  sceneType?: string | undefined;
 };
 
 const VB = "0 0 400 300";
