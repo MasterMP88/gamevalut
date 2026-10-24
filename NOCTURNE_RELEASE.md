@@ -6,7 +6,7 @@ This branch is the premium staging line for **NOCTURNE — Games for Two**.
 - Branch: `nocturne-premium-2026`
 - Production currently remains on Lovable: https://nocturne-games-for-two.lovable.app
 - The Lovable production app remains the last stable published release.
-- The newest visual refinements in this branch are **not yet synced back to Lovable** because the Lovable workspace exhausted build credits during the final art-direction pass.
+- The staging/gameplay changes in this branch are **not production-deployed yet**; production remains the last stable Lovable release until the staging line is deliberately synced/deployed.
 
 ## Quality gates
 GitHub Actions workflow: `.github/workflows/nocturne-ci.yml`
@@ -26,7 +26,7 @@ Current required gates:
 
 Latest full green audit:
 - 7 test files
-- **66/66 tests passed**
+- **71/71 tests passed**
 - Vite client build passed
 - SSR build passed
 - Nitro build passed
