@@ -1,6 +1,7 @@
 import { ECHO_TEMPLATES, SCENES } from "./scenes";
 import { DETOURS, DIRECTOR_CUTS, MILESTONES, TEMPO_CUES, TEMPO_ORDER } from "./specials";
 import { GAMES_BY_ID, poolFor } from "./games";
+import { createMusicState, isMusicAction, musicActor, musicReducer, type MusicAction } from "@/lib/music/engine";
 import type {
   ConsentSettings,
   EchoKind,
@@ -358,7 +359,9 @@ export function createSession(gameId: GameId, players: [string, string], setting
     read: null,
     lastDetourAt: 0,
     themes: [],
+    music: gameId === "pass-the-aux" ? createMusicState(seed) : null,
   };
+  if (base.music) return { ...base, sceneNumber: base.music.roundNumber, turn: musicActor(base.music) };
   return advance(base);
 }
 
@@ -524,7 +527,8 @@ export type Action =
   | { type: "AI_SCENES"; scenes: Scene[] }
   | { type: "FINISH" }
   | { type: "ENDING"; ending: SessionState["ending"] }
-  | { type: "AFTER_HOURS" };
+  | { type: "AFTER_HOURS" }
+  | MusicAction;
 
 /** Replace the current scene without flipping turn or counting a scene. */
 function reroll(state: SessionState): SessionState {
@@ -535,6 +539,19 @@ const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n
 
 export function reducer(state: SessionState, action: Action): SessionState {
   const game = GAMES_BY_ID[state.gameId];
+
+  if (isMusicAction(action)) {
+    if (!state.music) return state;
+    const music = musicReducer(state.music, action);
+    return {
+      ...state,
+      music,
+      sceneNumber: music.roundNumber,
+      turn: musicActor(music),
+      finished: action.type === "MUSIC_CONTINUE" ? false : state.finished,
+    };
+  }
+
   switch (action.type) {
     case "DONE": {
       const scene = state.current;
@@ -679,6 +696,10 @@ export function reducer(state: SessionState, action: Action): SessionState {
     case "ENDING":
       return { ...state, ending: action.ending };
     case "AFTER_HOURS":
+      if (game.music && state.music) {
+        const music = musicReducer(state.music, { type: "MUSIC_CONTINUE" });
+        return { ...state, music, sceneNumber: music.roundNumber, turn: musicActor(music), finished: false, ending: null, afterHours: true };
+      }
       return advance({ ...state, finished: false, ending: null, afterHours: true, heat: Math.max(state.heat, 3) });
   }
 }
