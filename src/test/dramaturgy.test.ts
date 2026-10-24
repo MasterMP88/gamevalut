@@ -197,6 +197,18 @@ describe("Game identities", () => {
       expect(inTempo.filter((t) => t === "QUESTION").length).toBe(0);
     }
   });
+  it("04 Heatcheck: a failed judged attempt is not a voluntary skip", () => {
+    let s = createSession("battle", P, DEFAULT_SETTINGS, 5);
+    const beforeSkips = s.skipCount;
+    const beforeHeat = s.heat;
+    const player = s.turn;
+    s = reducer(s, { type: "BATTLE_RESULT", success: false });
+    expect(s.log.at(-1)?.outcome).toBe("failed");
+    expect(s.skipCount).toBe(beforeSkips);
+    expect(s.heat).toBe(beforeHeat);
+    expect(s.streaks[player]).toBe(0);
+  });
+
   it("04 Heatcheck: REBOUND hands the scene over; skipping it pays the sender", () => {
     let s = createSession("battle", P, DEFAULT_SETTINGS, 5);
     s = { ...s, powerUps: [1, 0], turn: 0 };
