@@ -6,6 +6,7 @@ import {
   buildAuxDeck,
   createAuxSession,
   makeAuxRound,
+  sameSong,
   sanitizeSongPick,
   toDurableAuxSnapshot,
   visibleAuxRound,
@@ -77,6 +78,47 @@ test("speed expiry never fails or blocks picking", () => {
   assert.equal(s.current?.speedExpired, true);
   s = auxReducer(s, { type: "SUBMIT_PICK", player: 0, pick: pickA });
   assert.equal(s.current?.stage, "HANDOFF_A");
+});
+
+test("exact same song is detected automatically without a reaction choice", () => {
+  assert.equal(sameSong(
+    { title: "Summer Love", artist: "Nova", providerId: "apple-1" },
+    { title: "Different label", artist: "Different", providerId: "apple-1" },
+  ), true);
+  assert.equal(sameSong(
+    { title: "  Summer Love ", artist: "Artist" },
+    { title: "summer   love", artist: "artist" },
+  ), true);
+  assert.equal(sameSong(
+    { title: "Summer Love", artist: "Artist" },
+    { title: "Give It To Me", artist: "Artist" },
+  ), false);
+
+  let s = createAuxSession(["A", "B"]);
+  const same = { title: "Same Song", artist: "Same Artist" };
+  s = auxReducer(s, { type: "LOAD_ROUND", round: duet });
+  s = auxReducer(s, { type: "START_PICK" });
+  s = auxReducer(s, { type: "SUBMIT_PICK", player: 0, pick: same });
+  s = auxReducer(s, { type: "CONFIRM_HANDOFF" });
+  s = auxReducer(s, { type: "SUBMIT_PICK", player: 1, pick: same });
+  s = auxReducer(s, { type: "CONFIRM_HANDOFF" });
+  s = auxReducer(s, { type: "COMPLETE_ROUND" });
+  assert.equal(s.current?.reaction, "MATCH");
+  assert.deepEqual(s.reactions, ["MATCH"]);
+});
+
+test("different duet songs complete without requiring any reaction", () => {
+  let s = createAuxSession(["A", "B"]);
+  s = auxReducer(s, { type: "LOAD_ROUND", round: duet });
+  s = auxReducer(s, { type: "START_PICK" });
+  s = auxReducer(s, { type: "SUBMIT_PICK", player: 0, pick: pickA });
+  s = auxReducer(s, { type: "CONFIRM_HANDOFF" });
+  s = auxReducer(s, { type: "SUBMIT_PICK", player: 1, pick: pickB });
+  s = auxReducer(s, { type: "CONFIRM_HANDOFF" });
+  s = auxReducer(s, { type: "COMPLETE_ROUND" });
+  assert.equal(s.current?.reaction, null);
+  assert.deepEqual(s.reactions, []);
+  assert.equal(s.current?.stage, "COMPLETE");
 });
 
 test("completed rounds build Tonight's Tracklist in player order", () => {
