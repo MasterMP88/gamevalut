@@ -4,7 +4,7 @@ import { GAMES, GAMES_BY_ID, NIGHT_PICKS, poolFor } from "@/lib/game/games";
 import { SCENES } from "@/lib/game/scenes";
 import { PREVIEWS } from "@/lib/game/previews";
 import { sanitizeForSave, toRow } from "@/lib/game/persist";
-import { externalSearchLinks } from "@/lib/music/provider";
+import { canPlay, manualProvider, sameSong, type MusicProvider } from "@/lib/music/provider";
 import type { MusicRound, SessionState } from "@/lib/game/types";
 
 const P: [string, string] = ["Ari", "Nova"];
@@ -92,10 +92,19 @@ describe("music round state", () => {
     expect(start().tracklist).toEqual([]);
   });
 
-  it("only builds external search links from user text", () => {
-    expect(externalSearchLinks({ title: "" })).toEqual([]);
-    const l = externalSearchLinks({ title: "A & B", artist: "C" });
-    expect(l.map((x) => x.label)).toEqual(["Apple Music", "Spotify"]);
-    expect(l[1]!.href).toBe("https://open.spotify.com/search/A%20%26%20B%20C");
+  it("auto-detects the exact same song by catalog id or normalized title+artist", () => {
+    expect(sameSong({ title: "x", providerId: "1" }, { title: "y", providerId: "1" })).toBe(true);
+    expect(sameSong({ title: "x", providerId: "1" }, { title: "x", providerId: "2" })).toBe(false);
+    expect(sameSong({ title: "Dancing Queen", artist: "ABBA" }, { title: "dancing  queen!", artist: "abba" })).toBe(true);
+    expect(sameSong({ title: "Dancing Queen" }, { title: "Dancing Queen" })).toBe(false);
+    expect(sameSong({ title: "A", artist: "B" }, { title: "C", artist: "B" })).toBe(false);
+  });
+
+  it("only offers playback for catalog tracks when already authorized", () => {
+    const p = (auth: boolean): MusicProvider => ({ id: "apple-music", label: "A", capabilities: { search: true, library: true, playback: true, createPlaylist: true }, isAuthorized: () => auth, play: async () => {} });
+    expect(canPlay(p(false), { title: "t", providerId: "1" })).toBe(false);
+    expect(canPlay(p(true), { title: "t" })).toBe(false);
+    expect(canPlay(p(true), { title: "t", providerId: "1" })).toBe(true);
+    expect(canPlay(manualProvider, { title: "t", providerId: "1" })).toBe(false);
   });
 });
