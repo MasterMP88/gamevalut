@@ -8,8 +8,7 @@ import type { Track } from "@/lib/game/types";
  * catalog search, playback and playlist creation — but only when genuinely configured
  * and after an explicit user action. The UI must only render a capability when it is true.
  *
- * Spotify is intentionally NOT a provider: its developer policy disallows games. Spotify
- * may only appear as an external search link built from user-entered text.
+ * Spotify is intentionally NOT a provider and never appears in gameplay.
  */
 export interface MusicCapabilities {
   search: boolean;
@@ -39,15 +38,18 @@ export const manualProvider: MusicProvider = {
   isAuthorized: () => true,
 };
 
-/** External "search in app" links from user-entered text only. No API, no OAuth, no metadata fetch. */
-export function externalSearchLinks(t: Pick<Track, "title" | "artist">): { label: string; href: string }[] {
-  const q = [t.title, t.artist].filter(Boolean).join(" ").trim();
-  if (!q) return [];
-  const e = encodeURIComponent(q);
-  return [
-    { label: "Apple Music", href: `https://music.apple.com/search?term=${e}` },
-    { label: "Spotify", href: `https://open.spotify.com/search/${e}` },
-  ];
+const norm = (x?: string) => (x ?? "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/\(.*?\)|\[.*?\]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+
+/** Exact same song: same catalog id, or same normalized title + artist (artist required on both for manual). */
+export function sameSong(a: Track | null | undefined, b: Track | null | undefined): boolean {
+  if (!a || !b) return false;
+  if (a.providerId && b.providerId) return a.providerId === b.providerId;
+  return !!norm(a.title) && norm(a.title) === norm(b.title) && !!norm(a.artist) && norm(a.artist) === norm(b.artist);
+}
+
+/** Playback is shown only when real, already authorized and the track came from the catalog. Never prompts login. */
+export function canPlay(p: MusicProvider | null | undefined, t: Track): boolean {
+  return !!(p && p.capabilities.playback && p.play && t.providerId && p.isAuthorized());
 }
 
 /** Build-time opt-in: the client only asks the server for MusicKit config when this is set. */
