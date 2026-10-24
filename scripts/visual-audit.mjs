@@ -45,6 +45,20 @@ for (const size of sizes) {
   await page.screenshot({ path: path.join(out, `${size.label}-home.png`), fullPage: true });
   if (homeOverflow > 1) failed = true;
 
+  errors.length = 0;
+  await page.goto(`${base}/gang`, { waitUntil: "networkidle" });
+  const gangOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  await page.screenshot({ path: path.join(out, `${size.label}-gang.png`), fullPage: true });
+  report.push({
+    viewport: size.label,
+    slug: "gang",
+    detailOverflow: gangOverflow,
+    playOverflow: 0,
+    cuePresent: true,
+    errors: [...errors],
+  });
+  if (gangOverflow > 1 || errors.length) failed = true;
+
   for (const slug of slugs) {
     errors.length = 0;
     await page.goto(`${base}/game/${slug}`, { waitUntil: "networkidle" });
