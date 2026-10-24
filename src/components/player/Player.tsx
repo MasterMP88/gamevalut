@@ -14,7 +14,7 @@ import { useDirector } from "@/lib/game/use-director";
 import { BATTLE_CHAPTER, COMEBACK_GAP, fill, targetPhase, type Action } from "@/lib/game/engine";
 import { EnergyField } from "./EnergyField";
 import { GameArt } from "@/components/vault/GameArt";
-import { DirectorStatus } from "@/components/ai/AiSurfaces";
+import { DirectorStatus, NightSetup, type NightSetupValue } from "@/components/ai/AiSurfaces";
 import { PHASE_NAMES } from "@/lib/game/scenes";
 import type { GameConfig } from "@/lib/game/games";
 import type { Steer } from "@/lib/game/types";
@@ -33,11 +33,24 @@ export function Player({ game }: { game: GameConfig }) {
   const dispatch = (a: Action) => d(game.id, a);
   const [menu, setMenu] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
-  const status = useDirector(state, !!game.ai, dispatch);
   const { user } = useAuth();
+  const [aiSetupResolved, setAiSetupResolved] = useState(false);
+  const [aiSetup, setAiSetup] = useState<NightSetupValue | null>(null);
+  const status = useDirector(
+    state,
+    !!game.ai && !!user && aiSetupResolved,
+    dispatch,
+    aiSetup,
+  );
   const { saveStatus } = useSessions();
   const [saveOpen, setSaveOpen] = useState(false);
   const [prompted, setPrompted] = useState(false);
+
+  useEffect(() => {
+    setAiSetupResolved(false);
+    setAiSetup(null);
+  }, [game.id, state?.seed]);
+
   // Contextual, once: after a few scenes a guest is offered to keep this night.
   useEffect(() => {
     if (!user && !prompted && state && state.sceneNumber >= 4 && !state.finished) { setPrompted(true); setSaveOpen(true); }
@@ -50,6 +63,22 @@ export function Player({ game }: { game: GameConfig }) {
 
   return (
     <div className="flex min-h-dvh flex-col bg-background safe-x safe-top safe-bottom">
+      {game.ai && user && !aiSetupResolved && (
+        <div className="fixed inset-0 z-[80] overflow-y-auto bg-background safe-x safe-top safe-bottom">
+          <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center py-8">
+            <NightSetup
+              onSubmit={(value) => {
+                setAiSetup(value);
+                setAiSetupResolved(true);
+              }}
+              onSkip={() => {
+                setAiSetup(null);
+                setAiSetupResolved(true);
+              }}
+            />
+          </main>
+        </div>
+      )}
       <header className="flex items-center justify-between gap-3">
         <Link to="/" className="tap -ml-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm text-muted-foreground" aria-label="Zurück zur Übersicht (Spiel bleibt offen)">
           <ArrowLeft className="size-5" /> <span className="font-display tracking-[0.18em]">N//</span>
@@ -78,7 +107,7 @@ export function Player({ game }: { game: GameConfig }) {
                 <span className="shrink-0 text-sm text-muted-foreground">ist dran</span>
               </p>
             </div>
-            {game.ai && <DirectorStatus status={status} />}
+            {game.ai && <DirectorStatus status={user ? status : "offline"} />}
           </div>
 
           {game.id === "one-two" && (
