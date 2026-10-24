@@ -160,3 +160,17 @@ test("anonymous creative votes expose player ids as vote tokens only after answe
   assert.equal(view.stage, "vote");
   assert.deepEqual(new Set(view.options), new Set(["p1", "p2", "p3"]));
 });
+
+
+test("SECRET MISSIONS stays unique at its declared 30-player maximum", () => {
+  const roster = players(30);
+  const state = createGangRuntime({
+    id: "missions-max",
+    gameId: "secret-missions",
+    players: roster,
+    seed: 2026,
+  });
+  const missions = roster.map((player) => privateGangView(state, player.id)?.mission);
+  assert.equal(missions.every(Boolean), true);
+  assert.equal(new Set(missions).size, 30);
+});
