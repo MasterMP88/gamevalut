@@ -126,6 +126,16 @@ export function Player({ game }: { game: GameConfig }) {
             </div>
           )}
 
+          {game.id === "after-dark-2" && state.tempo && (
+            <div className="mt-4 flex items-center gap-3 border-y border-line py-2" aria-live="polite">
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-champagne">Tempo Shift</span>
+              <span className="font-display text-lg italic">
+                {state.tempo === "speed" ? "Schneller." : state.tempo === "silent" ? "Ohne Worte." : state.tempo === "swap" ? "Rollenwechsel." : "Neue Regel."}
+              </span>
+              <span className="ml-auto font-mono text-[9px] text-muted-foreground">{state.tempoLeft} Beats</span>
+            </div>
+          )}
+
           {game.memory && state.anchors.some((a) => !a.used) && (
             <p className="mt-4 flex items-center gap-2 border-l border-violet/40 pl-3 font-mono text-[10px] uppercase tracking-[0.16em] text-violet" aria-live="polite">
               <span className="relative inline-flex size-3"><span className="absolute inset-0 rounded-full border border-violet animate-ripple" /><span className="m-auto size-1 rounded-full bg-violet" /></span>
@@ -152,6 +162,7 @@ export function Player({ game }: { game: GameConfig }) {
                 scoreB={state.sparks[1]}
                 energies={state.energies}
                 sceneType={scene?.type}
+                tempo={state.tempo ?? undefined}
                 className="h-full w-full"
               />
             </div>
@@ -204,19 +215,26 @@ export function Player({ game }: { game: GameConfig }) {
           )}
 
           {game.battle && state.powerUps[state.turn] > 0 && scene?.type !== "SHOWDOWN" && (
-            <Btn variant="outline" className="mt-4" disabled={state.doubleNext} onClick={() => dispatch({ type: "USE_POWERUP", kind: "double" })}>
-              <Zap className="size-4" /> {state.doubleNext ? "Doppelt aktiv" : `„Doppelt“ · diese Szene ×2 (${state.powerUps[state.turn]})`}
-            </Btn>
-          )}
-          {game.battle && state.powerUps[state.turn] > 0 && scene && scene.type !== "SHOWDOWN" && (
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <Btn variant="outline" size="sm" disabled={state.rebound !== null} onClick={() => dispatch({ type: "USE_POWERUP", kind: "rebound" })}>
-                „Zurück“ · an {you}
-              </Btn>
-              <Btn variant="outline" size="sm" disabled={state.read !== null} onClick={() => dispatch({ type: "USE_POWERUP", kind: "read" })}>
-                {state.read !== null ? "Wette läuft" : `„Lesen“ · ${you} macht's`}
-              </Btn>
-            </div>
+            <section className="mt-5 border-y border-line py-3" aria-label="Heatcheck Edge">
+              <div className="flex items-center justify-between gap-3">
+                <span className="eyebrow text-champagne">Edge · {state.powerUps[state.turn]} {state.powerUps[state.turn] === 1 ? "Charge" : "Charges"}</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Einsetzen oder sparen</span>
+              </div>
+              <div className="mt-3 grid grid-cols-3 divide-x divide-line border-y border-line">
+                <button type="button" disabled={state.doubleNext} onClick={() => dispatch({ type: "USE_POWERUP", kind: "double" })} className="tap min-h-16 px-2 py-3 text-left disabled:opacity-35">
+                  <span className="font-display block text-xl">{state.doubleNext ? "×2 aktiv" : "×2"}</span>
+                  <span className="mt-1 block text-[10px] leading-tight text-muted-foreground">Diese Szene</span>
+                </button>
+                <button type="button" disabled={state.rebound !== null} onClick={() => dispatch({ type: "USE_POWERUP", kind: "rebound" })} className="tap min-h-16 px-3 py-3 text-left disabled:opacity-35">
+                  <span className="font-display block text-xl">↩</span>
+                  <span className="mt-1 block text-[10px] leading-tight text-muted-foreground">Zurück an {you}</span>
+                </button>
+                <button type="button" disabled={state.read !== null} onClick={() => dispatch({ type: "USE_POWERUP", kind: "read" })} className="tap min-h-16 px-3 py-3 text-left disabled:opacity-35">
+                  <span className="font-display block text-xl">Read</span>
+                  <span className="mt-1 block text-[10px] leading-tight text-muted-foreground">{state.read !== null ? "Wette läuft" : `${you} macht's`}</span>
+                </button>
+              </div>
+            </section>
           )}
           {game.battle && state.rebound !== null && state.rebound !== state.turn && (
             <p className="mt-2 text-sm italic text-champagne">Zurückgespielt von {state.players[state.rebound]} · Skip bringt {state.players[state.rebound]} +2</p>
