@@ -11,6 +11,7 @@ export const GANG_ROOM_RPC = {
   collectStageActions: "gang_collect_stage_actions",
   stageProgress: "gang_stage_progress",
   getPrivate: "gang_get_private",
+  setPrivatePayloads: "gang_set_private_payloads",
   preparePrivateRound: "gang_prepare_private_round",
   revealRoundData: "gang_reveal_round_data",
 } as const;
@@ -124,6 +125,12 @@ export interface GangRoomTransport {
 
   stageProgress(playerToken: string): Promise<GangStageProgress>;
   getPrivate(playerToken: string, roundKey: string): Promise<Record<string, unknown> | null>;
+
+  setPrivatePayloads(input: {
+    playerToken: string;
+    roundKey: string;
+    payloads: Array<{ playerId: string; payload: Record<string, unknown> }>;
+  }): Promise<{ stored: number; roundKey: string }>;
 
   preparePrivateRound(input: {
     playerToken: string;
