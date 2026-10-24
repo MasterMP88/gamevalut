@@ -24,13 +24,13 @@ function actionFor(state, playerId, index) {
   const first = options[0];
 
   if (view.stage === "vote") {
-    let target = first;
-    if (!target && ["whos-that", "undercover", "one-of-you"].includes(state.gameId)) {
-      target = state.players.find((p) => p.id !== playerId)?.id;
-    }
+    const target =
+      options.find((option) => option === "__truth__" || option !== playerId) ??
+      state.players.find((player) => player.id !== playerId)?.id;
     return {
       playerId,
-      ...(target ? { targetPlayerId: target, value: target } : { value: `vote-${playerId}` }),
+      ...(target && target !== "__truth__" ? { targetPlayerId: target } : {}),
+      value: target ?? `vote-${playerId}`,
     };
   }
 
