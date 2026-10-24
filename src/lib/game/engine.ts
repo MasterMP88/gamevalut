@@ -121,8 +121,7 @@ export function adaptiveTargetPhase(state: SessionState) {
   if (recent.length < 3) return base;
 
   const skipped = recent.filter((entry) => entry.outcome === "skipped").length;
-  const failed = recent.filter((entry) => entry.outcome === "failed").length;
-  const attempted = recent.filter((entry) => entry.outcome !== "skipped").length;
+  const attempted = recent.length - skipped;
   const done = recent.filter((entry) => entry.outcome === "done").length;
 
   const decision = adaptDifficulty({
@@ -131,7 +130,7 @@ export function adaptiveTargetPhase(state: SessionState) {
     successRate: attempted > 0 ? done / attempted : 0.5,
     averageResponseMs: 0,
     streak: Math.max(...state.streaks),
-    recentFails: failed,
+    recentFails: state.skipStreak >= 2 ? 2 : 0,
   });
 
   return Math.max(
