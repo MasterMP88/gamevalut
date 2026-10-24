@@ -88,7 +88,10 @@ function completeSession(playbook, playerCount, seed) {
     guard += 1;
 
     // Public payloads for secret-role games must never contain any private payload.
-    if (["undercover", "one-of-you", "draw-this", "secret-missions"].includes(state.gameId)) {
+    if (
+      ["undercover", "one-of-you", "draw-this", "secret-missions"].includes(state.gameId) &&
+      !["reveal", "score"].includes(publicGangView(state).stage)
+    ) {
       const serialized = JSON.stringify(publicGangView(state));
       for (const player of state.players) {
         const priv = privateGangView(state, player.id);
