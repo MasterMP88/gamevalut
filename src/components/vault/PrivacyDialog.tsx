@@ -12,8 +12,9 @@ export function PrivacyDialog({ children }: { children: ReactNode }) {
           <DialogDescription className="sr-only">Wie NOCTURNE mit euren Antworten umgeht.</DialogDescription>
         </DialogHeader>
         <ul className="space-y-4 text-[15px] leading-relaxed text-muted-foreground">
-          <li><span className="text-foreground">Kein Login, keine Datenbank.</span> Eure Antworten leben nur im Arbeitsspeicher dieses Tabs.</li>
-          <li><span className="text-foreground">Neu laden = alles weg.</span> Nichts wird lokal gespeichert, auch nicht im Browser-Speicher.</li>
+          <li><span className="text-foreground">Als Gast:</span> Der Spielstand lebt nur in diesem Tab. Neu laden = alles weg.</li>
+          <li><span className="text-foreground">Mit Account:</span> Wir sichern nur den Spielstand – Spiel, Szene, Punkte, Einstellungen, Namen. Eure getippten Antworten und Memory-Anker werden nicht automatisch gespeichert.</li>
+          <li><span className="text-foreground">Momente sichern:</span> Nur wenn du ausdrücklich „Diesen Moment dauerhaft sichern“ tippst. In Tonight jederzeit löschbar.</li>
           <li><span className="text-foreground">Memory Core.</span> In NIGHT//ECHO seht ihr jeden gemerkten Satz und könnt ihn sofort löschen.</li>
           <li><span className="text-foreground">Director (KI).</span> Nur im Spiel 08. Er bekommt eure Namen, Einstellungen, Titel der letzten Szenen und höchstens 6 kurze, nicht-private Anker – nie das ganze Gespräch. Private Anker und gelöschte Anker werden nie gesendet.</li>
           <li><span className="text-foreground">Offline?</span> Dann spielt die lokale Bibliothek nahtlos weiter.</li>
