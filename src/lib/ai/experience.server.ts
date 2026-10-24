@@ -150,22 +150,22 @@ export async function runExperience(input: unknown, userId?: string | null): Pro
     cacheKey,
     policy.cacheTtlMs,
     async () => {
-      const budget = consumeAiBudget({
-        sessionKey: request.sessionKey,
-        capability,
-        items,
-      });
-
-      if (!budget.allowed) {
-        return { ok: false as const, reason: "budget" as const };
-      }
-
       const persistent = await reservePersistentAiQuota({
         userId,
         capability,
         units: items,
       });
       if (!persistent.allowed) {
+        return { ok: false as const, reason: "budget" as const };
+      }
+
+      const budget = consumeAiBudget({
+        sessionKey: request.sessionKey,
+        capability,
+        items,
+      });
+      if (!budget.allowed) {
+        await refundPersistentAiQuota({ userId, capability, units: items });
         return { ok: false as const, reason: "budget" as const };
       }
 
