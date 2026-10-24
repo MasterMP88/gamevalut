@@ -9,6 +9,13 @@ import {
   preferredInteractionMode,
   scaleBandFor,
   validateMix,
+  createGangRoom,
+  applyGangRoomEvent,
+  activeGangPlayers,
+  electFacilitator,
+  expireGangPresence,
+  roomDeviceContext,
+  roomReadyForGame,
 } from "../dist/index.js";
 
 const base = {
@@ -97,4 +104,149 @@ test("custom mix order is preserved", () => {
   assert.ok(games.every(Boolean));
   const plan = buildMixPlan(games);
   assert.deepEqual(plan.gameIds, ["undercover", "the-majority", "secret-missions"]);
+});
+
+
+test("hostless room elects and re-elects a temporary facilitator", () => {
+  let room = createGangRoom({
+    id: "room-1",
+    code: "gang42",
+    createdAt: 1000,
+    preferences: { ...base, playerCount: 3 },
+    entryMode: "director",
+  });
+  room = applyGangRoomEvent(room, {
+    type: "PLAYER_JOIN",
+    playerId: "p2",
+    displayName: " Nova ",
+    deviceId: "d2",
+    at: 1200,
+  });
+  room = applyGangRoomEvent(room, {
+    type: "PLAYER_JOIN",
+    playerId: "p1",
+    displayName: "Ari",
+    deviceId: "d1",
+    at: 1100,
+  });
+  assert.equal(room.code, "GANG42");
+  assert.equal(room.facilitatorPlayerId, "p1");
+  assert.equal(electFacilitator(room.players), "p1");
+
+  room = applyGangRoomEvent(room, { type: "PLAYER_LEAVE", playerId: "p1", at: 2000 });
+  assert.equal(room.facilitatorPlayerId, "p2");
+
+  room = applyGangRoomEvent(room, {
+    type: "PLAYER_JOIN",
+    playerId: "p1",
+    displayName: "Ari",
+    deviceId: "d1",
+    at: 2200,
+  });
+  assert.equal(room.facilitatorPlayerId, "p1");
+  assert.equal(activeGangPlayers(room).length, 2);
+});
+
+test("room start requires two active players and keeps drop-in records", () => {
+  let room = createGangRoom({
+    id: "room-2",
+    code: "NITE",
+    createdAt: 0,
+    preferences: { ...base, playerCount: 2 },
+    entryMode: "catalog",
+  });
+  room = applyGangRoomEvent(room, {
+    type: "PLAYER_JOIN",
+    playerId: "a",
+    displayName: "A",
+    at: 1,
+  });
+  assert.equal(roomReadyForGame(room), false);
+  assert.throws(() =>
+    applyGangRoomEvent(room, { type: "SET_PHASE", phase: "playing", at: 2 }),
+  );
+
+  room = applyGangRoomEvent(room, {
+    type: "PLAYER_JOIN",
+    playerId: "b",
+    displayName: "B",
+    at: 3,
+  });
+  assert.equal(roomReadyForGame(room), true);
+  room = applyGangRoomEvent(room, { type: "SET_PHASE", phase: "playing", at: 4 });
+  assert.equal(room.phase, "playing");
+
+  room = applyGangRoomEvent(room, { type: "PLAYER_LEAVE", playerId: "b", at: 5 });
+  assert.equal(room.players.length, 2);
+  assert.equal(room.players.find((p) => p.id === "b").active, false);
+});
+
+test("presence expiry supports drop-out and deterministic rejoin", () => {
+  let room = createGangRoom({
+    id: "room-3",
+    code: "LIVE",
+    createdAt: 0,
+    preferences: { ...base, playerCount: 2 },
+    entryMode: "mix",
+  });
+  room = applyGangRoomEvent(room, {
+    type: "PLAYER_JOIN",
+    playerId: "a",
+    displayName: "A",
+    deviceId: "phone-a",
+    at: 1000,
+  });
+  room = applyGangRoomEvent(room, {
+    type: "PLAYER_JOIN",
+    playerId: "b",
+    displayName: "B",
+    deviceId: "phone-b",
+    at: 2000,
+  });
+  room = applyGangRoomEvent(room, {
+    type: "DEVICE_JOIN",
+    device: {
+      id: "phone-a",
+      connected: true,
+      joinedAt: 1000,
+      lastSeenAt: 1000,
+      kind: "phone",
+      canDisplay: true,
+      canInput: true,
+    },
+    at: 1000,
+  });
+  room = applyGangRoomEvent(room, {
+    type: "DEVICE_JOIN",
+    device: {
+      id: "screen",
+      connected: true,
+      joinedAt: 1500,
+      lastSeenAt: 1500,
+      kind: "tv",
+      canDisplay: true,
+      canInput: false,
+    },
+    at: 1500,
+  });
+
+  const ctx = roomDeviceContext(room);
+  assert.equal(ctx.connectedDevices, 1);
+  assert.equal(ctx.hasBigScreen, true);
+
+  room = expireGangPresence(room, 100_000, 90_000);
+  assert.equal(activeGangPlayers(room).length, 0);
+  assert.equal(room.facilitatorPlayerId, null);
+  assert.equal(room.devices.every((d) => !d.connected), true);
+
+  room = applyGangRoomEvent(room, {
+    type: "PLAYER_JOIN",
+    playerId: "b",
+    displayName: "B",
+    deviceId: "phone-b",
+    at: 101_000,
+  });
+  assert.equal(activeGangPlayers(room).length, 1);
+  assert.equal(room.players.length, 2);
+  assert.equal(room.facilitatorPlayerId, "b");
 });

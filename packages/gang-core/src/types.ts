@@ -92,3 +92,48 @@ export interface GangPlan {
   gameIds: string[];
   estimatedMinutes: number;
 }
+
+
+export type GangRoomPhase = "lobby" | "playing" | "paused" | "finished";
+
+export interface GangPlayer {
+  id: string;
+  displayName: string;
+  active: boolean;
+  joinedAt: number;
+  lastSeenAt: number;
+  deviceIds: string[];
+}
+
+export interface GangDevice {
+  id: string;
+  connected: boolean;
+  joinedAt: number;
+  lastSeenAt: number;
+  kind: "phone" | "tablet" | "desktop" | "tv";
+  canDisplay: boolean;
+  canInput: boolean;
+}
+
+export interface GangRoomState {
+  id: string;
+  code: string;
+  phase: GangRoomPhase;
+  revision: number;
+  createdAt: number;
+  updatedAt: number;
+  preferences: GangPreferences;
+  entryMode: GangEntryMode;
+  players: GangPlayer[];
+  devices: GangDevice[];
+  /** Deterministic temporary facilitator; not a permanent host role. */
+  facilitatorPlayerId: string | null;
+}
+
+export type GangRoomEvent =
+  | { type: "PLAYER_JOIN"; playerId: string; displayName: string; deviceId?: string; at: number }
+  | { type: "PLAYER_LEAVE"; playerId: string; at: number }
+  | { type: "PLAYER_SEEN"; playerId: string; at: number }
+  | { type: "DEVICE_JOIN"; device: GangDevice; at: number }
+  | { type: "DEVICE_LEAVE"; deviceId: string; at: number }
+  | { type: "SET_PHASE"; phase: GangRoomPhase; at: number };
