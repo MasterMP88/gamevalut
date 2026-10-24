@@ -66,14 +66,14 @@ describe("resume restores the exact playable state", () => {
 });
 
 describe("entitlements", () => {
-  it("all eight games are free today", () => {
-    for (const id of ["roxy-after-dark", "after-dark-2", "roxy-night", "battle", "coop", "one-two", "night-echo", "ai-director"] as const) expect(isUnlocked(id, [])).toBe(true);
+  it("all nine games are free today", () => {
+    for (const id of ["roxy-after-dark", "after-dark-2", "roxy-night", "battle", "coop", "one-two", "night-echo", "ai-director", "pass-the-aux"] as const) expect(isUnlocked(id, [])).toBe(true);
   });
 });
 
 describe("public vs private routes", () => {
-  it("sitemap lists home and all 8 game pages, never private routes", () => {
-    expect(publicPaths()).toHaveLength(9);
+  it("sitemap lists home and all 9 game pages, never private routes", () => {
+    expect(publicPaths()).toHaveLength(10);
     const xml = sitemapXml();
     for (const p of ["/tonight", "/auth", "/reset-password"]) expect(xml).not.toContain(p);
   });
