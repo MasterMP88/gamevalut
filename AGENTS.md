@@ -29,3 +29,4 @@
 - Guest→account handoff uses a 2h localStorage snapshot (`src/lib/game/pending.ts`) holding only `sanitizeForSave` output; it is deleted only after a confirmed account save, because email confirmation opens a new tab.
 - Supabase query builders are lazy: fire-and-forget writes must still call `.then()`, otherwise nothing is sent.
 - DB privileges are least-privilege and default privileges in `public` are revoked: every new table/function must GRANT explicitly in its migration.
+- GANG MODE UI (`/gang`, `src/lib/gang/catalog.ts`) is presentation-only: catalog data and status labels, no rules/runtime — game logic comes from GitHub `packages/gang-core/`.
