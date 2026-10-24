@@ -135,6 +135,17 @@ function Home() {
             <Recommendation key={pick?.label ?? "default"} ids={pick ? pick.ids : ["ai-director"]} why={pick ? pick.why : "Noch unentschlossen? Der Director stellt euch den Abend live zusammen."} />
           </div>
         </section>
+
+        {/* GANG MODE — group play entry, own social visual language */}
+        <section aria-labelledby="gang-h" className="relative mt-16 overflow-hidden border-t-2 border-signal bg-room px-5 py-8 sm:px-10">
+          <div aria-hidden className="absolute inset-x-0 top-0 flex h-10 items-start gap-1 opacity-50">
+            {Array.from({ length: 24 }, (_, i) => <span key={i} className="animate-gang-pulse w-full bg-signal" style={{ height: `${25 + ((i * 41) % 75)}%`, animationDelay: `${(i * 113) % 1500}ms` }} />)}
+          </div>
+          <p className="relative mt-8 font-mono text-xs tracking-[0.25em] text-signal">NEU · GANG MODE · 2–99 PLAYERS</p>
+          <h2 id="gang-h" className="font-display relative mt-2 text-[clamp(2.6rem,11vw,5rem)] leading-[0.9]">Mehr als zwei? <em className="text-signal">Der ganze Raum.</em></h2>
+          <p className="relative mt-3 max-w-xl text-foreground/85">Partyspiele für Gruppen – ohne Vorbereitung. Lass dir die Nacht planen, wähl ein Spiel oder bau deinen eigenen Mix.</p>
+          <Link to="/gang" className={cn(btn({ size: "lg" }), "relative mt-6 bg-signal text-signal-foreground hover:bg-signal/90")}>GANG MODE ansehen <ArrowRight className="size-4" /></Link>
+        </section>
       </div>
 
       {/* COLLECTION — nine authored worlds */}
