@@ -55,6 +55,20 @@ test("spicy and music titles require explicit opt-in", () => {
   ).map((g) => g.id);
   assert.ok(enabled.includes("after-dark"));
   assert.ok(enabled.includes("music-drop"));
+  assert.ok(enabled.includes("time-drop"));
+});
+
+
+test("TIME//DROP is visible when prototypes are requested but excluded from director and mixes until its dedicated UI ships", () => {
+  const withMusic = { ...base, enabledCapabilities: ["music"] };
+  const readyIds = eligibleGangGames(withMusic).map((g) => g.id);
+  const allIds = eligibleGangGames(withMusic, { includePlanned: true }).map((g) => g.id);
+  assert.equal(readyIds.includes("time-drop"), false);
+  assert.equal(allIds.includes("time-drop"), true);
+
+  const mix = validateMix(["time-drop"], withMusic);
+  assert.equal(mix.valid, false);
+  assert.deepEqual(mix.rejected, [{ id: "time-drop", reason: "not-ready" }]);
 });
 
 test("manual mixes reject unknown, duplicate and incompatible games", () => {
@@ -100,7 +114,8 @@ test("director builds a playable plan from non-planned titles", () => {
   assert.equal(plan.entryMode, "director");
   assert.ok(plan.gameIds.length >= 2);
   for (const id of plan.gameIds) {
-    assert.notEqual(getGangGame(id)?.status, "planned");
+    assert.equal(getGangGame(id)?.status, "ready");
+    assert.notEqual(id, "time-drop");
   }
 });
 
