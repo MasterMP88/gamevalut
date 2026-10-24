@@ -22,7 +22,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["social", "fast", "crowd"],
     directorEligible: true,
     mixEligible: true,
-    status: "prototype",
+    status: "ready",
   },
   {
     id: "whos-that",
@@ -39,7 +39,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["social", "reveal", "crowd"],
     directorEligible: true,
     mixEligible: true,
-    status: "prototype",
+    status: "ready",
   },
   {
     id: "undercover",
@@ -56,7 +56,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["secret", "bluff", "deduction"],
     directorEligible: true,
     mixEligible: true,
-    status: "prototype",
+    status: "ready",
   },
   {
     id: "secret-missions",
@@ -73,7 +73,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["signature", "background", "chaos"],
     directorEligible: true,
     mixEligible: true,
-    status: "prototype",
+    status: "ready",
   },
   {
     id: "bad-answers-only",
@@ -90,7 +90,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["comedy", "creative"],
     directorEligible: true,
     mixEligible: true,
-    status: "planned",
+    status: "ready",
   },
   {
     id: "bluff",
@@ -107,7 +107,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["deception", "social"],
     directorEligible: true,
     mixEligible: true,
-    status: "planned",
+    status: "ready",
   },
   {
     id: "the-line",
@@ -124,7 +124,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["physical", "crowd"],
     directorEligible: true,
     mixEligible: true,
-    status: "planned",
+    status: "ready",
   },
   {
     id: "hot-seat",
@@ -141,7 +141,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["social", "spotlight"],
     directorEligible: true,
     mixEligible: true,
-    status: "planned",
+    status: "ready",
   },
   {
     id: "team-chaos",
@@ -158,7 +158,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["teams", "crowd", "high-energy"],
     directorEligible: true,
     mixEligible: true,
-    status: "planned",
+    status: "ready",
   },
   {
     id: "photo-hunt",
@@ -175,7 +175,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["camera", "physical"],
     directorEligible: true,
     mixEligible: true,
-    status: "planned",
+    status: "ready",
   },
   {
     id: "draw-this",
@@ -192,7 +192,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["creative", "teams"],
     directorEligible: true,
     mixEligible: true,
-    status: "planned",
+    status: "ready",
   },
   {
     id: "music-drop",
@@ -209,7 +209,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["music", "crowd"],
     directorEligible: true,
     mixEligible: true,
-    status: "planned",
+    status: "ready",
   },
   {
     id: "chain-reaction",
@@ -226,7 +226,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["story", "creative"],
     directorEligible: true,
     mixEligible: true,
-    status: "planned",
+    status: "ready",
   },
   {
     id: "one-of-you",
@@ -243,7 +243,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["secret", "deduction"],
     directorEligible: true,
     mixEligible: true,
-    status: "planned",
+    status: "ready",
   },
   {
     id: "panic-button",
@@ -260,7 +260,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["fast", "crowd", "high-energy"],
     directorEligible: true,
     mixEligible: true,
-    status: "planned",
+    status: "ready",
   },
   {
     id: "after-dark",
@@ -277,7 +277,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     tags: ["adult", "optional"],
     directorEligible: true,
     mixEligible: true,
-    status: "planned",
+    status: "ready",
   },
 ] as const;
 
