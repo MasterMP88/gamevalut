@@ -100,3 +100,19 @@ Do not merge/deploy this branch to replace the Lovable production app until eith
 2. a server-capable deployment target is configured with the required Director backend environment.
 
 GitHub Pages alone is not the production target because NIGHT//ECHO — Director uses server-side generation.
+
+
+## GANG AI Engine — October 24, 2026
+
+The staging line now includes the shared cost-controlled AI experience layer.
+
+- core game state, scoring, timers, voting, sync and consent stay deterministic;
+- adaptive difficulty is local and costs zero model calls;
+- Director generation is batched (up to 6 scenes) with session limits, cooldowns, cache and local fallback;
+- shared contracts exist for personalized packs, AI Judge, secret missions and progressive music clues;
+- GANG personalization contracts support 2–99 players while large rooms are intentionally chunked rather than generating 99 live items at once;
+- paid generation is opt-in only via `NOCTURNE_AI_ENABLED=true` and remains disabled by default;
+- runtime AI uses the direct server provider adapter rather than Lovable AI, preserving Lovable credits for UI/UX only;
+- production enablement still requires server-side credentials plus authenticated persistent quotas / spend controls.
+
+See `AI_ENGINE_2026.md` for the capability matrix and economics.
