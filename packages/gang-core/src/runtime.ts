@@ -1,4 +1,5 @@
 import { getGangPlaybook, type GangGameId, type GangPrompt, type GangStageKind } from "./playbooks.js";
+import { resolveMajorityRound } from "./mechanics.js";
 
 export interface GangRuntimePlayer {
   id: string;
@@ -53,6 +54,8 @@ export interface GangRuntimeState {
   scores: Record<string, number>;
   roundNumber: number;
   targetRounds: number;
+  /** Prompt IDs already used in this session. Optional for backward-compatible restored states. */
+  promptHistory?: string[];
   round: GangRuntimeRound;
   finished: boolean;
   winnerIds: string[];
@@ -207,15 +210,24 @@ function privatePayloads(
   return { privateByPlayer, oddPlayerId, undercoverPlayerIds, seed: currentSeed };
 }
 
-function promptForRound(gameId: GangGameId, roundNumber: number, seed: number): [GangPrompt, number] {
+function promptForRound(
+  gameId: GangGameId,
+  seed: number,
+  usedPromptIds: readonly string[],
+): [GangPrompt, number] {
   const playbook = getGangPlaybook(gameId);
   if (!playbook) throw new Error(`Unknown GANG game: ${gameId}`);
-  const offset = (roundNumber - 1) % playbook.prompts.length;
-  let start: number;
+
+  const used = new Set(usedPromptIds);
+  const unseen = playbook.prompts.filter((prompt) => !used.has(prompt.id));
+  const previous = usedPromptIds[usedPromptIds.length - 1];
+  const recycled = playbook.prompts.filter((prompt) => prompt.id !== previous);
+  const candidates = unseen.length > 0 ? unseen : (recycled.length > 0 ? recycled : playbook.prompts);
+
+  let index: number;
   let nextSeed: number;
-  [start, nextSeed] = pickIndex(playbook.prompts.length, seed);
-  const prompt = playbook.prompts[(start + offset) % playbook.prompts.length]!;
-  return [prompt, nextSeed];
+  [index, nextSeed] = pickIndex(candidates.length, seed);
+  return [candidates[index]!, nextSeed];
 }
 
 function createRound(
@@ -224,12 +236,13 @@ function createRound(
   roundNumber: number,
   seed: number,
   targetRounds: number,
+  usedPromptIds: readonly string[],
 ): { round: GangRuntimeRound; seed: number } {
   const playbook = getGangPlaybook(gameId);
   if (!playbook) throw new Error(`Unknown GANG game: ${gameId}`);
   let prompt: GangPrompt;
   let nextSeed: number;
-  [prompt, nextSeed] = promptForRound(gameId, roundNumber, seed);
+  [prompt, nextSeed] = promptForRound(gameId, seed, usedPromptIds);
   const isFinal = roundNumber === targetRounds;
   if (isFinal) {
     if (gameId === "the-majority") {
@@ -312,7 +325,7 @@ export function createGangRuntime(input: {
     Math.min(input.targetRounds ?? playbook.rounds[0], playbook.rounds[1]),
   );
   const seed = input.seed ?? 1;
-  const created = createRound(input.gameId, players, 1, seed, targetRounds);
+  const created = createRound(input.gameId, players, 1, seed, targetRounds, []);
   return {
     id: input.id,
     gameId: input.gameId,
@@ -321,6 +334,7 @@ export function createGangRuntime(input: {
     scores: Object.fromEntries(players.map((player) => [player.id, 0])),
     roundNumber: 1,
     targetRounds,
+    promptHistory: [created.round.prompt.id],
     round: created.round,
     finished: false,
     winnerIds: [],
@@ -442,10 +456,15 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
   if (gameId === "the-majority") {
     const predictions = allStageSubmissions(state, "predict");
     const votes = allStageSubmissions(state, "answer");
-    const winners = mostVoted(Object.values(votes).map((action) => action.optionId ?? action.value ?? ""));
-    const correct = Object.values(predictions)
-      .filter((action) => winners.includes(action.optionId ?? action.value ?? ""))
-      .map((action) => action.playerId);
+    const optionValue = (action: GangRuntimeAction) => action.optionId ?? action.value ?? "";
+    const majority = resolveMajorityRound({
+      playerIds: players.map((player) => player.id),
+      optionIds: round.prompt.options ?? [],
+      votes: Object.fromEntries(Object.values(votes).map((action) => [action.playerId, optionValue(action)])),
+      predictions: Object.fromEntries(Object.values(predictions).map((action) => [action.playerId, optionValue(action)])),
+    });
+    const winners = majority.majorityOptionIds;
+    const correct = majority.correctPredictorIds;
     for (const id of correct) delta[id] = 1;
     return {
       headline: winners.length > 1 ? "Der Raum ist gespalten." : "Das ist die Mehrheit.",
@@ -675,12 +694,21 @@ export function advanceGangStage(state: GangRuntimeState, options: { force?: boo
       return { ...state, scores, finished: true, winnerIds, round };
     }
     const nextNumber = state.roundNumber + 1;
-    const created = createRound(state.gameId, state.players, nextNumber, state.seed, state.targetRounds);
+    const promptHistory = state.promptHistory ?? [state.round.prompt.id];
+    const created = createRound(
+      state.gameId,
+      state.players,
+      nextNumber,
+      state.seed,
+      state.targetRounds,
+      promptHistory,
+    );
     return {
       ...state,
       seed: created.seed,
       scores,
       roundNumber: nextNumber,
+      promptHistory: [...promptHistory, created.round.prompt.id],
       round: created.round,
     };
   }
