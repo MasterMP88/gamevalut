@@ -21,6 +21,8 @@ export interface SceneProps {
   battle?: | {
     players: [string, string];
     missionOwner: string | null;
+    /** Revealed only inside the Showdown, where both players look together. */
+    missionText?: string | null;
     stakes: number;
     onWin: (w: 0 | 1 | null, missionDone: boolean) => void;
   }
@@ -582,7 +584,13 @@ function ShowdownBody({ text, battle, onSkip }: SceneProps & { text: string }) {
         <p className="mt-4 text-sm text-muted-foreground">Ihr entscheidet gemeinsam, wer gewonnen hat.{battle.stakes > 3 && " Erhöht – doppelter Einsatz."}</p>
       </div>
       {battle.missionOwner && (
-        <button type="button" onClick={() => { haptic(4); setMission(!mission); }} aria-pressed={mission} className="tap mt-8 flex min-h-12 items-center gap-3 border-y border-line py-3 text-left">
+        <div className="mt-8 border-l-2 border-primary pl-4 motion-safe:animate-rise" data-testid="mission-reveal">
+          <p className="font-mono text-[0.65rem] tracking-[0.22em] text-primary">ENTSIEGELT · MISSION VON {battle.missionOwner.toUpperCase()}</p>
+          {battle.missionText && <p className="font-display mt-2 text-2xl leading-tight">{battle.missionText}</p>}
+        </div>
+      )}
+      {battle.missionOwner && (
+        <button type="button" onClick={() => { haptic(4); setMission(!mission); }} aria-pressed={mission} className="tap mt-4 flex min-h-12 items-center gap-3 border-y border-line py-3 text-left">
           <span className={cn("size-5 rounded-full border border-input transition-colors", mission && "border-primary bg-primary")} />
           Geheime Mission von {battle.missionOwner} erfüllt (+2)
         </button>
