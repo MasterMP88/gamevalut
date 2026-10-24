@@ -1,0 +1,32 @@
+name: GANG browser
+
+on:
+  pull_request:
+    paths:
+      - "gang/**"
+      - "packages/gang-core/**"
+      - ".github/workflows/gang-browser.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/gang-core/package.json
+      - name: Build and test canonical core
+        working-directory: packages/gang-core
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm test
+          npm run build
+      - name: Validate browser modules
+        run: |
+          for f in gang/*.js; do node --check "$f"; done
+          ! grep -Eiq 'PROTOTYPE|IN DEVELOPMENT|MULTIPLAYER RUNTIME.*COMING NEXT|heute noch nichts spielbar' gang/index.html gang/*.js
+          grep -q 'ONE PHONE PLAYABLE NOW' gang/index.html
+          grep -q '16 READY' gang/home.js
