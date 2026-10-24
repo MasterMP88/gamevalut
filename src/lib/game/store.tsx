@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createSession, DEFAULT_SETTINGS, reducer, type Action } from "./engine";
 import { toRow } from "./persist";
+import { saveRevisioned } from "./save";
+import { clearPending, readPending } from "./pending";
 import type { ConsentSettings, GameId, SessionState } from "./types";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
  * auto-save of the *structural* state (see persist.ts) — memory anchors and other
  * free-text never leave this tab unless saved explicitly as a Saved Moment.
  */
-export type SaveStatus = "guest" | "idle" | "saving" | "saved" | "error";
+export type SaveStatus = "guest" | "idle" | "saving" | "saved" | "migrated" | "conflict" | "error";
 
 interface Ctx {
   players: [string, string];
@@ -50,36 +52,79 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setDbIds({ ...dbId.current });
   };
 
-  const persist = useCallback(async (id: GameId, uid: string) => {
+  const conflict = useRef<Partial<Record<GameId, boolean>>>({});
+  const pendingGame = useRef<GameId | null>(null);
+
+  const persist = useCallback(async (id: GameId, uid: string, attempt = 0): Promise<void> => {
     const s = latest.current[id];
-    if (!s || saved.current[id] === s) return;
+    if (!s || saved.current[id] === s || conflict.current[id]) return;
     setSaveStatus((x) => ({ ...x, [id]: "saving" }));
     try {
       let rowId = dbId.current[id];
       if (!rowId) {
         // Adopt an open session for this game (another device, or a guest run being migrated).
         const { data: open } = await supabase.from("game_sessions").select("id, revision").eq("user_id", uid).eq("game_id", id).eq("status", "active").maybeSingle();
-        if (open) { rowId = open.id; rev.current[id] = Math.max(rev.current[id] ?? 0, open.revision); }
+        if (open) { rowId = open.id; rev.current[id] = open.revision; }
       }
-      const r = (rev.current[id] ?? 0) + 1;
-      rev.current[id] = r;
-      const row = toRow(s, uid, r);
-      if (rowId) {
-        const { error } = await supabase.from("game_sessions").update(row as never).eq("id", rowId);
-        if (error) throw error;
-        setId(id, rowId);
-      } else {
-        const { data, error } = await supabase.from("game_sessions").insert(row as never).select("id").single();
-        if (error) throw error;
-        setId(id, data.id);
+      const row = toRow(s, uid, 0);
+      const res = await saveRevisioned(
+        {
+          update: async (rid, prev, r) => {
+            const { data, error } = await supabase.from("game_sessions").update(r as never).eq("id", rid).eq("revision", prev).select("id, revision");
+            if (error) throw error;
+            const hit = data?.[0];
+            // The guard trigger silently drops stale writes: verify the stored revision really advanced.
+            return hit && hit.revision === r.revision ? hit : null;
+          },
+          insert: async (r) => {
+            const { data, error } = await supabase.from("game_sessions").insert(r as never).select("id, revision").single();
+            if (error) throw error;
+            return data;
+          },
+        },
+        rowId,
+        rev.current[id],
+        row,
+      );
+      if (!res.ok) {
+        conflict.current[id] = true;
+        setSaveStatus((x) => ({ ...x, [id]: "conflict" }));
+        return;
       }
+      rev.current[id] = res.revision;
+      setId(id, res.id);
       saved.current[id] = s;
       if (s.finished) setId(id, undefined);
-      setSaveStatus((x) => ({ ...x, [id]: "saved" }));
-    } catch {
+      if (pendingGame.current === id) {
+        pendingGame.current = null;
+        clearPending(window.localStorage);
+        setSaveStatus((x) => ({ ...x, [id]: "migrated" }));
+      } else {
+        setSaveStatus((x) => ({ ...x, [id]: "saved" }));
+      }
+    } catch (e) {
+      // Another tab/device opened the active row first (unique active-per-game): adopt it once.
+      if (attempt === 0 && (e as { code?: string })?.code === "23505") return persist(id, uid, 1);
       setSaveStatus((x) => ({ ...x, [id]: "error" }));
     }
   }, []);
+
+  // Guest → account handoff (e.g. confirmation link opened in a new tab): adopt the sanitized snapshot.
+  useEffect(() => {
+    if (!user) return;
+    const p = readPending(window.localStorage);
+    if (!p) return;
+    pendingGame.current = p.gameId;
+    if (!latest.current[p.gameId]) {
+      setSessions((x) => ({ ...x, [p.gameId]: p.state }));
+      setPlayers((cur) => (cur[0] || cur[1] ? cur : p.players));
+      setSettings(p.settings);
+    } else {
+      // Same tab: the live session is already in memory; force one save so the key can be cleared.
+      delete saved.current[p.gameId];
+      setSessions((x) => ({ ...x }));
+    }
+  }, [user]);
 
   // Debounced auto-save, serialized per game so rapid taps never race.
   useEffect(() => {
@@ -108,7 +153,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user || prefsLoaded.current !== user.id) return;
     const t = setTimeout(() => {
-      void supabase.from("preferences").upsert({ user_id: user.id, settings: settings as never, player_names: players as never, updated_at: new Date().toISOString() });
+      void supabase.from("preferences").upsert({ user_id: user.id, settings: settings as never, player_names: players as never, updated_at: new Date().toISOString() }).then(() => undefined);
     }, 1200);
     return () => clearTimeout(t);
   }, [user, players, settings]);
@@ -131,11 +176,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const end = useCallback((id: GameId) => {
     const row = dbId.current[id];
     clearTimeout(timers.current[id]);
-    if (row && user) {
-      const r = (rev.current[id] ?? 0) + 1;
-      rev.current[id] = r;
-      void supabase.from("game_sessions").update({ status: "abandoned", revision: r }).eq("id", row).eq("status", "active");
+    if (row && user && !conflict.current[id]) {
+      const prev = rev.current[id] ?? 0;
+      // Builders are lazy: .then() actually sends the request.
+      void supabase.from("game_sessions").update({ status: "abandoned", revision: prev + 1 }).eq("id", row).eq("revision", prev).eq("status", "active").then(() => undefined);
     }
+    delete conflict.current[id];
     setId(id, undefined);
     delete saved.current[id];
     delete rev.current[id];
@@ -148,6 +194,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const hydrate = useCallback((id: GameId, state: SessionState, rowId: string, revision: number) => {
     setId(id, rowId);
     rev.current[id] = revision;
+    delete conflict.current[id];
     saved.current[id] = state;
     setSaveStatus((x) => ({ ...x, [id]: "saved" }));
     setSessions((s) => ({ ...s, [id]: state }));
