@@ -1,6 +1,7 @@
 import { ECHO_TEMPLATES, SCENES } from "./scenes";
 import { DETOURS, DIRECTOR_CUTS, MILESTONES, TEMPO_CUES, TEMPO_ORDER } from "./specials";
 import { GAMES_BY_ID, poolFor } from "./games";
+import { adaptDifficulty } from "../ai/adaptive";
 import type {
   MusicRound,
   TrackEntry,
@@ -110,6 +111,35 @@ export function targetPhase(state: SessionState) {
   return Math.min(Math.floor(state.heat), maxPhase(state));
 }
 
+/**
+ * Zero-cost live adaptation from structural outcomes only.
+ * It never reads private answers, memory anchors or music selections.
+ */
+export function adaptiveTargetPhase(state: SessionState) {
+  const base = targetPhase(state);
+  const recent = state.log.slice(-8);
+  if (recent.length < 3) return base;
+
+  const skipped = recent.filter((entry) => entry.outcome === "skipped").length;
+  const failed = recent.filter((entry) => entry.outcome === "failed").length;
+  const attempted = recent.filter((entry) => entry.outcome !== "skipped").length;
+  const done = recent.filter((entry) => entry.outcome === "done").length;
+
+  const decision = adaptDifficulty({
+    currentDifficulty: base + 1,
+    skipRate: skipped / recent.length,
+    successRate: attempted > 0 ? done / attempted : 0.5,
+    averageResponseMs: 0,
+    streak: Math.max(...state.streaks),
+    recentFails: failed,
+  });
+
+  return Math.max(
+    0,
+    Math.min(maxPhase(state), Math.round(decision.difficulty) - 1),
+  );
+}
+
 const ARC_FLAVORS: Record<"classic" | "free" | "one-two", Flavor[][]> = {
   classic: [["funny"], ["funny", "cheeky"], ["cheeky", "game"], ["cheeky", "sensual"], ["sensual", "cheeky"]],
   free: [["funny", "game"], ["funny", "cheeky", "game"], ["deep", "cheeky", "game"], ["cheeky", "sensual", "deep"], ["sensual", "cheeky"]],
@@ -164,7 +194,7 @@ export function pickLocal(state: SessionState): { scene: Scene; seed: number } {
     else pool = pool.filter((s) => s.type !== "SHOWDOWN" && !(s.type === "SECRET" && state.secretMission));
   }
 
-  const tp = targetPhase(state);
+  const tp = adaptiveTargetPhase(state);
   const prefer = preferredFlavors(state);
   const avoid = state.skipStreak >= 2 ? lastFlavor(state) : null;
   const recentTypes = state.log.slice(-2).map((l) => l.type);
