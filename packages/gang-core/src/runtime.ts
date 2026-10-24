@@ -368,6 +368,9 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
   const { gameId, round, players } = state;
   const delta: Record<string, number> = Object.fromEntries(players.map((player) => [player.id, 0]));
   const playerName = (id: string) => players.find((player) => player.id === id)?.name ?? id;
+  const award = (id: string, points: number) => {
+    delta[id] = (delta[id] ?? 0) + points;
+  };
 
   if (gameId === "the-majority") {
     const predictions = allStageSubmissions(state, "predict");
@@ -403,10 +406,10 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
     const caught = accused.some((id) => round.undercoverPlayerIds.includes(id));
     if (caught) {
       for (const action of Object.values(votes)) {
-        if (round.undercoverPlayerIds.includes(action.targetPlayerId ?? action.value ?? "")) delta[action.playerId] += 1;
+        if (round.undercoverPlayerIds.includes(action.targetPlayerId ?? action.value ?? "")) award(action.playerId, 1);
       }
     } else {
-      for (const id of round.undercoverPlayerIds) delta[id] += 3;
+      for (const id of round.undercoverPlayerIds) award(id, 3);
     }
     return {
       headline: caught ? "UNDERCOVER enttarnt." : "UNDERCOVER kommt davon.",
@@ -419,7 +422,7 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
   if (gameId === "secret-missions") {
     const performed = allStageSubmissions(state, "perform");
     const winners = Object.values(performed).filter((action) => action.success).map((action) => action.playerId);
-    for (const id of winners) delta[id] += 2;
+    for (const id of winners) award(id, 2);
     return {
       headline: "Die Missionen fliegen auf.",
       detail: `${winners.length} Missionen wurden als geschafft markiert.`,
@@ -433,7 +436,7 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
     const answers = allStageSubmissions(state, gameId === "photo-hunt" ? "perform" : "answer");
     const votes = allStageSubmissions(state, "vote");
     const targets = mostVoted(Object.values(votes).map((action) => action.targetPlayerId ?? action.value ?? ""));
-    for (const id of targets) delta[id] += 2;
+    for (const id of targets) award(id, 2);
     return {
       headline: targets.length > 1 ? "Der Raum kann sich nicht entscheiden." : `${playerName(targets[0] ?? "")} nimmt die Runde.`,
       detail: gameId === "music-drop" ? "Der Crowd-Pick wandert in die Tracklist." : "Crowd-Vote abgeschlossen.",
@@ -449,8 +452,8 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
     const truthKey = "__truth__";
     for (const action of Object.values(votes)) {
       const target = action.targetPlayerId ?? action.value ?? "";
-      if (target === truthKey) delta[action.playerId] += 2;
-      else if (delta[target] !== undefined) delta[target] += 1;
+      if (target === truthKey) award(action.playerId, 2);
+      else if (delta[target] !== undefined) award(target, 1);
     }
     const leaders = Object.entries(delta).sort((a, b) => b[1] - a[1]).filter(([, score], _, arr) => score === arr[0]?.[1]).map(([id]) => id);
     return {
@@ -470,8 +473,8 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
     const answer = choice?.optionId ?? choice?.value ?? "";
     const predictions = allStageSubmissions(state, "predict");
     const correct = Object.values(predictions).filter((action) => (action.optionId ?? action.value) === answer).map((action) => action.playerId);
-    for (const id of correct) delta[id] += 1;
-    if (round.activePlayerId && correct.length < Math.ceil((players.length - 1) / 2)) delta[round.activePlayerId] += 1;
+    for (const id of correct) award(id, 1);
+    if (round.activePlayerId && correct.length < Math.ceil((players.length - 1) / 2)) award(round.activePlayerId, 1);
     return {
       headline: `${round.activePlayerId ? playerName(round.activePlayerId) : "Hot Seat"} hat gewählt.`,
       detail: `${correct.length} Prognosen waren richtig.`,
@@ -488,8 +491,8 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
       .filter((action) => (action.value ?? "").trim().toLocaleLowerCase() === answer)
       .sort((a, b) => (a.at ?? Number.MAX_SAFE_INTEGER) - (b.at ?? Number.MAX_SAFE_INTEGER));
     const first = correct[0]?.playerId;
-    if (first) delta[first] += 2;
-    if (first && round.activePlayerId) delta[round.activePlayerId] += 1;
+    if (first) award(first, 2);
+    if (first && round.activePlayerId) award(round.activePlayerId, 1);
     return {
       headline: first ? `${playerName(first)} hatte es zuerst.` : "Niemand hatte es.",
       detail: `Gesucht: ${round.prompt.answer ?? ""}.`,
@@ -503,8 +506,8 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
     const accused = mostVoted(Object.values(votes).map((action) => action.targetPlayerId ?? action.value ?? ""));
     const caught = round.oddPlayerId ? accused.includes(round.oddPlayerId) : false;
     if (caught) {
-      for (const action of Object.values(votes)) if ((action.targetPlayerId ?? action.value) === round.oddPlayerId) delta[action.playerId] += 2;
-    } else if (round.oddPlayerId) delta[round.oddPlayerId] += 3;
+      for (const action of Object.values(votes)) if ((action.targetPlayerId ?? action.value) === round.oddPlayerId) award(action.playerId, 2);
+    } else if (round.oddPlayerId) award(round.oddPlayerId, 3);
     return {
       headline: caught ? "ONE OF YOU wurde gefunden." : "ONE OF YOU bleibt unsichtbar.",
       detail: round.oddPlayerId ? `Odd Player: ${playerName(round.oddPlayerId)}.` : "",
@@ -519,7 +522,7 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
     const successB = Object.values(actions).filter((action) => players.find((p) => p.id === action.playerId)?.teamId === "B" && action.success).length;
     const winningTeam = successA === successB ? null : (successA > successB ? "A" : "B");
     const winners = winningTeam ? players.filter((player) => player.teamId === winningTeam).map((player) => player.id) : [];
-    for (const id of winners) delta[id] += 2;
+    for (const id of winners) award(id, 2);
     return {
       headline: winningTeam ? `Team ${winningTeam} nimmt die Runde.` : "Dead heat.",
       detail: `Team A ${successA} · Team B ${successB}`,
@@ -536,7 +539,7 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
       const value = (actions[player.id]?.value ?? "").trim().toLocaleLowerCase();
       if (value && !seen.has(value)) {
         seen.add(value);
-        delta[player.id] += 1;
+        award(player.id, 1);
         winners.push(player.id);
       }
     }
