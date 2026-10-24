@@ -224,7 +224,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     rounds: [5, 9],
     stages: ["answer", "vote", "reveal", "score"],
     scoring: "2 Punkte für die Wahrheit, 1 Punkt pro Person, die auf deine Lüge fällt.",
-    finale: "Double Bluff: Wahrheit wird erst nach zwei Votings enthüllt.",
+    finale: "Finale: Treffer auf die Wahrheit zählen doppelt — gute Lügen bleiben trotzdem gefährlich.",
     capabilities: [],
     prompts: prompts("bluff", [
       { prompt: "Wie viele Herzen hat ein Oktopus?", answer: "Drei" },
@@ -276,7 +276,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     rounds: [6, 12],
     stages: ["private", "predict", "reveal", "score"],
     scoring: "1 Punkt für richtige Prognose; Hot-Seat-Spieler bekommt 1 Punkt, wenn weniger als die Hälfte richtig liegt.",
-    finale: "Alle beantworten dieselbe Finalfrage geheim; dann wird auf den ganzen Raum getippt.",
+    finale: "Finale: Die letzten Hot-Seat-Prognosen zählen doppelt.",
     capabilities: [],
     prompts: prompts("hot", [
       { prompt: "Du bekommst spontan 500 €. Was nimmst du?", options: ["Kurztrip", "Essen gehen", "Technik", "Sparen"] },
@@ -302,7 +302,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     rounds: [6, 12],
     stages: ["perform", "react", "reveal", "score"],
     scoring: "Rundensieg = 2 Punkte; Underdog-Team bekommt nach zwei Niederlagen einen 1-Punkt-Comeback-Chip.",
-    finale: "Best of Three mit drei verschiedenen Mechaniken.",
+    finale: "Finale: Die letzte Team-Challenge zählt doppelt.",
     capabilities: [],
     prompts: prompts("team", [
       { prompt: "Nennt abwechselnd Dinge, die man im Hotelzimmer findet. 5 Sekunden pro Antwort.", seconds: 5, category: "Kette" },
