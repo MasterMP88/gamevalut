@@ -1,18 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Btn } from "@/components/vault/Btn";
-import { hashStr } from "@/lib/game/engine";
-import { MUSIC_VIBES } from "@/lib/game/music-scenes";
-import type { MusicReaction, MusicRound, Track } from "@/lib/game/types";
-import { externalSearchLinks } from "@/lib/music/provider";
 import { getAiExperience } from "@/lib/ai/experience.functions";
 import { musicClueResultSchema } from "@/lib/ai/experience-schema";
 import { ClueLadder } from "@/components/ai/AiSurfaces";
 import { useAuth } from "@/lib/auth";
+import { hashStr } from "@/lib/game/engine";
+import { MUSIC_VIBES } from "@/lib/game/music-scenes";
+import type { MusicRound, Track } from "@/lib/game/types";
+import { canPlay, manualProvider, sameSong, type MusicProvider } from "@/lib/music/provider";
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import { Footer, HandOver, Prompt, type SceneProps } from "./SceneView";
 
-const REACTIONS: [MusicReaction, string][] = [["match", "Match"], ["twist", "Plot Twist"], ["explains", "Das erklärt einiges"]];
+/** Resolve the provider once per round view. Manual unless Apple Music is genuinely configured; never authorizes. */
+export function useMusicProvider(override?: MusicProvider): MusicProvider {
+  const [p, setP] = useState<MusicProvider>(override ?? manualProvider);
+  useEffect(() => {
+    if (override) return;
+    let live = true;
+    import("@/lib/music/apple-music").then((m) => m.resolveMusicProvider()).then((r) => { if (live) setP(r); }).catch(() => {});
+    return () => { live = false; };
+  }, [override]);
+  return p;
+}
 
 const empty = (n: number): MusicRound => ({ sceneNumber: n, stage: "pick", picks: [null, null], prediction: null, reaction: null });
 
@@ -21,7 +31,7 @@ const empty = (n: number): MusicRound => ({ sceneNumber: n, stage: "pick", picks
  * predicts) → reveal. Round state is held by the session (props.music) so leaving and
  * returning never shows a sealed pick to the wrong person.
  */
-export function MusicRoundBody(p: SceneProps & { text: string; helper?: string | undefined }) {
+export function MusicRoundBody(p: SceneProps & { text: string; helper?: string | undefined; provider?: MusicProvider }) {
   const { scene, me, you, onDone, onSkip, text } = p;
   const { user } = useAuth();
   const mode = scene.music?.mode ?? "solo";
@@ -31,6 +41,7 @@ export function MusicRoundBody(p: SceneProps & { text: string; helper?: string |
   const set = (r: MusicRound) => { setLocalRound(r); p.music?.setRound(r); };
   // Remounted mid-round on the partner's step: gate it again behind the handoff.
   const [gate, setGate] = useState(round.stage === "second");
+  const provider = useMusicProvider(p.provider);
   const [clues, setClues] = useState<string[]>([]);
   const [clueIndex, setClueIndex] = useState(0);
   const [clueBusy, setClueBusy] = useState(false);
@@ -98,6 +109,7 @@ export function MusicRoundBody(p: SceneProps & { text: string; helper?: string |
         {rail}
         <PickForm
           key="a"
+          provider={provider}
           who={`${me} · ${mode === "speed" ? "schnell" : "verdeckt"}`}
           text={text}
           speed={mode === "speed"}
@@ -123,7 +135,7 @@ export function MusicRoundBody(p: SceneProps & { text: string; helper?: string |
     return (
       <>
         {rail}
-        <PickForm key="b" who={`${you} · verdeckt`} text={text} cta="Beide entsiegeln" onSkip={onSkip} onPick={(t) => { haptic(14); set({ ...round, picks: [round.picks[0], t], stage: "reveal" }); }} />
+        <PickForm key="b" provider={provider} who={`${you} · verdeckt`} text={text} cta="Beide entsiegeln" onSkip={onSkip} onPick={(t) => { haptic(14); set({ ...round, picks: [round.picks[0], t], stage: "reveal" }); }} />
       </>
     );
   }
@@ -189,48 +201,83 @@ export function MusicRoundBody(p: SceneProps & { text: string; helper?: string |
   }
 
   // ——— reveal
+  return <Reveal round={round} mode={mode} me={me} you={you} text={text} provider={provider} rail={rail} onNext={() => { if (mode === "duet" && sameSong(round.picks[0], round.picks[1]) && round.reaction !== "match") set({ ...round, reaction: "match" }); onDone(); }} onSkip={onSkip} />;
+}
+
+function Reveal({ round, mode, me, you, text, provider, rail, onNext, onSkip }: { round: MusicRound; mode: string; me: string; you: string; text: string; provider: MusicProvider; rail: React.ReactNode; onNext: () => void; onSkip: () => void }) {
   const [a, b] = round.picks;
-  const duet = mode === "duet" && b;
+  const duet = mode === "duet" && !!b;
+  const match = duet && sameSong(a, b);
+  useEffect(() => { haptic(match ? [12, 60, 12, 60, 24] : [10, 40, 16]); }, [match]);
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col" data-testid="music-reveal">
       {rail}
-      <p className="eyebrow mt-6 text-primary" data-testid="music-reveal">Entsiegelt</p>
-      <div className={cn("mt-4 grid gap-3", duet && "grid-cols-1 min-[420px]:grid-cols-2")}>
-        {a && <TrackCard track={a} owner={me} side="a" />}
-        {duet && <TrackCard track={b} owner={you} side="b" />}
+      <p className="mt-6 line-clamp-2 text-sm text-muted-foreground">{text}</p>
+      <div className={cn("mt-5 grid gap-px", duet && "grid-cols-1 min-[420px]:grid-cols-2")}>
+        {a && <TrackCard track={a} owner={me} side="a" provider={provider} />}
+        {duet && b && <TrackCard track={b} owner={you} side="b" provider={provider} />}
       </div>
-      {mode === "guess" && round.prediction && (
-        <p className="mt-4 border-l-2 border-primary pl-3 text-muted-foreground animate-rise" style={{ animationDelay: "500ms" }}>
-          {you} tippte: <span className="text-foreground">{round.prediction}</span>. Stimmt’s, {me}?
+      {duet && (
+        <p className="mt-6 flex items-center gap-3 motion-safe:animate-rise [animation-delay:500ms]" data-testid="music-compare" aria-live="polite">
+          <span className="h-px w-8 bg-primary" aria-hidden />
+          {match
+            ? <span><span className="font-mono text-xs tracking-[0.3em] text-primary">MATCH</span> <span className="font-display text-xl italic">· Okay, das war unheimlich.</span></span>
+            : <span className="font-display text-xl italic text-champagne">Zwei Songs. Gleicher Moment.</span>}
         </p>
       )}
-      {duet ? (
-        <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Reaktion (optional)">
-          {REACTIONS.map(([id, label]) => (
-            <Btn key={id} variant="chip" size="sm" data-on={round.reaction === id} aria-pressed={round.reaction === id} onClick={() => { haptic(5); set({ ...round, reaction: round.reaction === id ? null : id }); }}>
-              {label}
-            </Btn>
-          ))}
-        </div>
-      ) : (
-        <p className="font-display mt-6 text-2xl italic text-champagne">Warum der? Ein Satz, {mode === "guess" || mode === "solo" ? me : "laut"}.</p>
+      {mode === "guess" && round.prediction && (
+        <p className="mt-6 border-l-2 border-primary pl-3 text-muted-foreground motion-safe:animate-rise [animation-delay:500ms]">
+          {you} tippte <span className="text-foreground">{round.prediction}</span>. Stimmt’s, {me}?
+        </p>
       )}
-      <Footer primary="Nächste Runde →" onPrimary={() => onDone()} onSkip={onSkip} />
+      {!duet && mode !== "guess" && <p className="font-display mt-6 text-xl italic text-champagne">Warum der? Ein Satz, laut.</p>}
+      <div className="action-dock mt-auto flex flex-col items-stretch gap-1 pt-8">
+        <Btn size="lg" className="w-full" onClick={() => { haptic(8); onNext(); }}>Nächste Runde →</Btn>
+        <button type="button" onClick={onSkip} className="tap mx-auto min-h-11 px-4 text-sm text-muted-foreground hover:text-foreground">Skip</button>
+      </div>
     </div>
   );
 }
 
-function PickForm({ who, text, cta, onPick, onSkip, speed }: { who: string; text: string; cta: string; onPick: (t: Track) => void; onSkip: () => void; speed?: boolean }) {
+export function PickForm({ who, text, cta, onPick, onSkip, speed, provider = manualProvider }: { who: string; text: string; cta: string; onPick: (t: Track) => void; onSkip: () => void; speed?: boolean; provider?: MusicProvider }) {
+  const catalog = provider.capabilities.search && !!provider.search;
+  const [manual, setManual] = useState(false);
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState<Track[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [chosen, setChosen] = useState<Track | null>(null);
   const [left, setLeft] = useState(speed ? 25 : 0);
+  const seq = useRef(0);
   useEffect(() => {
     if (!speed || left <= 0) return;
     const t = setTimeout(() => setLeft((n) => n - 1), 1000);
     return () => clearTimeout(t);
   }, [speed, left]);
-  const ok = title.trim().length > 0;
-  const submit = () => ok && onPick({ title: title.trim().slice(0, 80), artist: artist.trim().slice(0, 60) || undefined });
+  useEffect(() => {
+    if (!catalog || manual || chosen) return;
+    const term = q.trim();
+    if (term.length < 2) { setResults([]); setSearching(false); return; }
+    const id = ++seq.current;
+    setSearching(true);
+    const t = setTimeout(() => {
+      provider.search!(term, 5).then((r) => { if (id === seq.current) setResults(r.filter((x) => x.title).slice(0, 5)); })
+        .catch(() => { if (id === seq.current) setResults([]); })
+        .finally(() => { if (id === seq.current) setSearching(false); });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q, catalog, manual, chosen, provider]);
+
+  const useCatalog = catalog && !manual;
+  const ok = useCatalog ? !!chosen : title.trim().length > 0;
+  const submit = () => {
+    if (!ok) return;
+    if (useCatalog && chosen) onPick(chosen);
+    else onPick({ title: title.trim().slice(0, 80), artist: artist.trim().slice(0, 60) || undefined });
+  };
+  const inputCls = "w-full border-b border-line bg-transparent py-3 outline-none placeholder:text-muted-foreground/50 focus:border-primary";
+  const linkCls = "tap min-h-11 px-1 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline";
   return (
     <form className="flex flex-1 flex-col animate-rise" onSubmit={(e) => { e.preventDefault(); submit(); }}>
       <Prompt className="mt-6">{text}</Prompt>
@@ -245,67 +292,85 @@ function PickForm({ who, text, cta, onPick, onSkip, speed }: { who: string; text
       )}
       <div className="mt-auto pt-8">
         <p className="eyebrow text-primary">{who}</p>
-        <label className="mt-3 block">
-          <span className="sr-only">Songtitel</span>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={80}
-            required
-            autoComplete="off"
-            enterKeyHint="next"
-            placeholder="Songtitel"
-            data-testid="song-title"
-            className="w-full border-b border-line bg-transparent py-3 font-display text-[1.9rem] leading-tight outline-none placeholder:text-muted-foreground/50 focus:border-primary"
-          />
-        </label>
-        <label className="mt-2 block">
-          <span className="sr-only">Artist (optional)</span>
-          <input
-            value={artist}
-            onChange={(e) => setArtist(e.target.value)}
-            maxLength={60}
-            autoComplete="off"
-            enterKeyHint="done"
-            placeholder="Artist · optional"
-            data-testid="song-artist"
-            className="w-full border-b border-line bg-transparent py-3 text-lg outline-none placeholder:text-muted-foreground/50 focus:border-primary"
-          />
-        </label>
+        {useCatalog ? (
+          chosen ? (
+            <div className="mt-3" data-testid="catalog-chosen">
+              <TrackRow track={chosen} selected />
+              <button type="button" className={linkCls} onClick={() => { setChosen(null); setQ(""); }}>Andere Suche</button>
+            </div>
+          ) : (
+            <>
+              <label className="mt-3 block">
+                <span className="sr-only">Song suchen</span>
+                <input type="search" value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" enterKeyHint="search" placeholder="Song oder Artist suchen" data-testid="catalog-search" className={cn(inputCls, "font-display text-[1.7rem] leading-tight")} />
+              </label>
+              <ul className="mt-2 divide-y divide-line" aria-label="Suchergebnisse" aria-busy={searching}>
+                {results.map((r) => (
+                  <li key={r.providerId ?? r.title}>
+                    <button type="button" onClick={() => { haptic(6); setChosen(r); }} className="tap block w-full text-left" data-testid="catalog-result"><TrackRow track={r} /></button>
+                  </li>
+                ))}
+              </ul>
+              {q.trim().length >= 2 && !searching && results.length === 0 && <p className="mt-2 text-sm text-muted-foreground">Nichts gefunden. Tipp anders – oder trag ihn selbst ein.</p>}
+              <button type="button" className={linkCls} onClick={() => { setManual(true); setTitle(q.trim()); }}>Manuell eingeben</button>
+            </>
+          )
+        ) : (
+          <>
+            <label className="mt-3 block">
+              <span className="sr-only">Songtitel</span>
+              <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} required autoComplete="off" enterKeyHint="next" placeholder="Songtitel" data-testid="song-title" className={cn(inputCls, "font-display text-[1.9rem] leading-tight")} />
+            </label>
+            <label className="mt-2 block">
+              <span className="sr-only">Artist (optional)</span>
+              <input value={artist} onChange={(e) => setArtist(e.target.value)} maxLength={60} autoComplete="off" enterKeyHint="done" placeholder="Artist · optional" data-testid="song-artist" className={cn(inputCls, "text-lg")} />
+            </label>
+            {catalog && <button type="button" className={linkCls} onClick={() => setManual(false)}>Im Katalog suchen</button>}
+          </>
+        )}
         <p className="mt-3 text-sm text-muted-foreground">{speed ? "Bleibt sichtbar – Speed ist offen." : "Nur du siehst das. Danach wird versiegelt."}</p>
-        <Footer primary={ok ? cta : "Erst Songtitel"} disabled={!ok} onPrimary={submit} onSkip={onSkip} />
+        <Footer primary={ok ? cta : useCatalog ? "Erst Song wählen" : "Erst Songtitel"} disabled={!ok} onPrimary={submit} onSkip={onSkip} />
       </div>
     </form>
   );
 }
 
-/** Typographic track card with a signal trace derived from the title. Covers only from real provider data. */
-export function TrackCard({ track, owner, side, compact }: { track: Track; owner: string; side?: "a" | "b"; compact?: boolean }) {
-  const h = hashStr(track.title + (track.artist ?? ""));
-  const bars = Array.from({ length: 24 }, (_, i) => 4 + (Math.abs((h >> (i % 16)) + i * 7) % 18));
-  const links = externalSearchLinks(track);
+function TrackRow({ track, selected }: { track: Track; selected?: boolean }) {
   return (
-    <article className={cn("relative overflow-hidden rounded-2xl border border-line bg-surface", compact ? "p-4" : "p-5", !compact && "animate-unseal", side === "b" && "[animation-delay:180ms]")}>
-      <div className="flex items-start gap-4">
-        {track.artworkUrl && <img src={track.artworkUrl} alt="" width={56} height={56} className="size-14 shrink-0 rounded-md" />}
+    <span className={cn("flex min-h-14 items-center gap-3 py-2", selected && "border-l-2 border-primary pl-3")}>
+      {track.artworkUrl ? <img src={track.artworkUrl} alt="" width={44} height={44} loading="lazy" className="size-11 shrink-0 rounded-sm object-cover" /> : <span className="size-11 shrink-0 bg-surface-2" aria-hidden />}
+      <span className="min-w-0">
+        <span className="block truncate text-base">{track.title}</span>
+        {track.artist && <span className="block truncate text-sm text-muted-foreground">{track.artist}</span>}
+      </span>
+    </span>
+  );
+}
+
+/** Editorial track panel: owner → real artwork (catalog only) → title → artist. No fake audio, no search links. */
+export function TrackCard({ track, owner, side, compact, provider }: { track: Track; owner: string; side?: "a" | "b"; compact?: boolean; provider?: MusicProvider }) {
+  const [playing, setPlaying] = useState(false);
+  const play = canPlay(provider, track);
+  return (
+    <article className={cn("relative flex flex-col overflow-hidden bg-surface", compact ? "p-4" : "p-5 pb-6", !compact && "motion-safe:animate-unseal", side === "b" && "[animation-delay:180ms]")} data-testid="track-card">
+      <p className="font-mono text-[0.65rem] tracking-[0.25em] text-primary">{owner.toUpperCase()}</p>
+      {track.artworkUrl && !compact && <img src={track.artworkUrl} alt={`Cover: ${track.title}`} width={300} height={300} className="mt-4 aspect-square w-full max-w-56 object-cover" />}
+      <div className={cn("flex items-start gap-3", compact ? "mt-1" : "mt-4")}>
+        {track.artworkUrl && compact && <img src={track.artworkUrl} alt="" width={44} height={44} className="size-11 shrink-0 object-cover" />}
         <div className="min-w-0 flex-1">
-          <p className="eyebrow">{owner}</p>
-          <h3 className={cn("font-display mt-1 leading-[1.05] break-words", compact ? "text-[1.45rem]" : "text-[1.9rem]")} data-testid="track-title">{track.title}</h3>
-          {track.artist && <p className="mt-1 truncate font-mono text-sm uppercase tracking-wider text-muted-foreground">{track.artist}</p>}
+          <h3 className={cn("font-display leading-[1.02] break-words text-balance", compact ? "text-[1.45rem]" : "text-[clamp(2rem,9vw,2.6rem)]")} data-testid="track-title">{track.title}</h3>
+          {track.artist && <p className="mt-1.5 truncate text-sm uppercase tracking-[0.12em] text-muted-foreground">{track.artist}</p>}
         </div>
       </div>
-      <svg viewBox="0 0 96 24" className={cn("w-full text-primary/70", compact ? "mt-3 h-4" : "mt-4 h-6")} preserveAspectRatio="none" aria-hidden>
-        {bars.map((v, i) => <rect key={i} x={i * 4} y={12 - v / 2} width="2" height={v} rx="1" fill="currentColor" />)}
-      </svg>
-      {!compact && links.length > 0 && (
-        <p className="mt-3 flex flex-wrap items-center gap-x-4 text-sm text-muted-foreground">
-          <span>Suchen in</span>
-          {links.map((l) => (
-            <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-primary">
-              {l.label} ↗
-            </a>
-          ))}
-        </p>
+      {!compact && (play || track.externalUrl) && (
+        <div className="mt-4 flex flex-wrap items-center gap-x-4">
+          {play && (
+            <button type="button" data-testid="track-play" aria-pressed={playing} onClick={() => { haptic(6); setPlaying(true); provider!.play!(track).catch(() => setPlaying(false)); }} className="tap inline-flex min-h-11 items-center gap-2 text-sm">
+              <span aria-hidden className="inline-flex size-8 items-center justify-center rounded-full border border-primary text-primary">▶</span>{playing ? "Läuft" : "Abspielen"}
+            </button>
+          )}
+          {track.externalUrl && <a href={track.externalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline-offset-4 hover:underline">In Apple Music öffnen ↗</a>}
+        </div>
       )}
     </article>
   );
