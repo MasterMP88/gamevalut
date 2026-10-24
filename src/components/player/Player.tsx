@@ -258,7 +258,7 @@ export function Player({ game }: { game: GameConfig }) {
         gameId={game.id}
         onEnd={() => { setMenu(false); setConfirmEnd(true); }}
       />
-      <SaveSheet open={saveOpen} onOpenChange={setSaveOpen} slug={game.slug} />
+      <SaveSheet open={saveOpen} onOpenChange={setSaveOpen} slug={game.slug} state={state} />
       <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>
         <AlertDialogContent className="rounded-3xl border-line bg-popover">
           <AlertDialogHeader>
