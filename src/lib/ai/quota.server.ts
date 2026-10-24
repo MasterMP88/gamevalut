@@ -11,6 +11,7 @@ export type PersistentQuotaResult =
         | "user-call-limit"
         | "user-unit-limit"
         | "global-spend-cap"
+        | "entitlement"
         | "unavailable";
     };
 
@@ -18,6 +19,29 @@ function globalCapMicrousd() {
   const raw = Number(process.env["NOCTURNE_AI_GLOBAL_MONTHLY_USD_CAP"] ?? "0");
   if (!Number.isFinite(raw) || raw <= 0) return 0;
   return Math.floor(raw * 1_000_000);
+}
+
+async function hasRequiredAiEntitlement(userId: string) {
+  if (process.env["NOCTURNE_AI_REQUIRE_ENTITLEMENT"] !== "true") return true;
+
+  const productKey =
+    process.env["NOCTURNE_AI_PRODUCT_KEY"]?.trim() || "nocturne-ai";
+
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("entitlements")
+      .select("status, ends_at")
+      .eq("user_id", userId)
+      .eq("product_key", productKey)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (error || !data) return false;
+    return !data.ends_at || Date.parse(data.ends_at) > Date.now();
+  } catch {
+    return false;
+  }
 }
 
 export async function reservePersistentAiQuota(input: {
@@ -30,6 +54,10 @@ export async function reservePersistentAiQuota(input: {
   const monthly = AI_MONTHLY_POLICIES[input.capability];
   if (!monthly || monthly.maxCalls <= 0 || monthly.maxUnits <= 0) {
     return { allowed: false, reason: "disabled" };
+  }
+
+  if (!(await hasRequiredAiEntitlement(input.userId))) {
+    return { allowed: false, reason: "entitlement" };
   }
 
   const globalCap = globalCapMicrousd();
