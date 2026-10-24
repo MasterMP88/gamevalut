@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 
 interface AuthCtx {
   user: User | null;
@@ -13,6 +13,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      setUser(null);
+      setReady(true);
+      return;
+    }
+
     const { data } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
       setReady(true);
