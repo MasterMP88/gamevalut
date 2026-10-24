@@ -69,10 +69,14 @@ function genericAction(state, playerId, index) {
   const view = publicGangView(state);
   const firstOption = view.options?.[0];
   if (view.stage === "vote") {
+    const target =
+      view.options?.find((option) => option === "__truth__" || option !== playerId) ??
+      state.players.find((player) => player.id !== playerId)?.id ??
+      firstOption;
     return {
       playerId,
-      targetPlayerId: firstOption && firstOption !== "__truth__" ? firstOption : undefined,
-      value: firstOption ?? state.players[0].id,
+      ...(target && target !== "__truth__" ? { targetPlayerId: target } : {}),
+      value: target ?? "vote",
     };
   }
   if (view.stage === "predict") {
