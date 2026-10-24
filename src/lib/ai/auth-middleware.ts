@@ -1,9 +1,10 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { supabase } from "@/integrations/supabase/client";
+import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 
 export const aiAuthMiddleware = createMiddleware({ type: "function" })
   .client(async ({ next }) => {
+    if (!isSupabaseConfigured()) return next();
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
     return next(
