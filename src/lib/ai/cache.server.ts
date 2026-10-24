@@ -22,17 +22,13 @@ function stable(value: unknown): string {
   );
 }
 
-function fnv1a(input: string) {
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i += 1) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0).toString(36);
-}
-
-export function aiCacheKey(scope: string, payload: unknown) {
-  return scope + ":" + fnv1a(stable(payload));
+export async function aiCacheKey(scope: string, payload: unknown) {
+  const bytes = new TextEncoder().encode(stable(payload));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const hash = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  return scope + ":" + hash.slice(0, 32);
 }
 
 function prune(now: number) {
