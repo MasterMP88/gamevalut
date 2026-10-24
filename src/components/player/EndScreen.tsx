@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Btn, btn } from "@/components/vault/Btn";
 import { battleWinner, nightSignature, type Action } from "@/lib/game/engine";
+import { visibleTracklist } from "@/lib/music/engine";
 import type { GameConfig } from "@/lib/game/games";
 import type { SessionState } from "@/lib/game/types";
 import { haptic } from "@/lib/haptics";
@@ -125,6 +126,50 @@ export function EndScreen({ game, state, dispatch, onEnd }: { game: GameConfig; 
           {rings.map((x) => <span key={x.k} className={cn("eyebrow", x.cls)}>{x.k}</span>)}
         </div>
         <div className="mt-auto pt-12"><Back onEnd={onEnd} game={game} className="w-full" /></div>
+      </Stage>
+    );
+  }
+
+  if (game.music && state.music) {
+    const tracks = visibleTracklist(state.music);
+    return (
+      <Stage>
+        <div className="flex items-center gap-3 text-champagne/70" aria-hidden>
+          <span className="font-display text-xl tracking-[0.16em]">N//</span>
+          <span className="h-px flex-1 bg-gradient-to-r from-champagne/60 via-primary/45 to-transparent" />
+          <span className="font-mono text-[9px] uppercase tracking-[0.18em]">aux archive</span>
+        </div>
+        <p className="eyebrow mt-8 text-champagne">PASS//THE AUX · Finale</p>
+        <h1 className="font-display mt-3 text-[4.2rem] leading-[0.86] text-balance animate-sig">
+          Tonight’s<br /><em className="not-italic text-primary">Tracklist.</em>
+        </h1>
+        <p className="mt-5 max-w-[34ch] text-muted-foreground">
+          {tracks.length ? "Die Songs, mit denen ihr heute geantwortet habt." : "Heute bleibt die Tracklist leer. Auch das ist eine Ansage."}
+        </p>
+
+        {tracks.length > 0 && (
+          <ol className="mt-10 border-t border-line">
+            {tracks.map((track, i) => (
+              <li key={[track.round, track.player, track.title, i].join("-")} className="grid grid-cols-[2.5rem_1fr] gap-3 border-b border-line py-5">
+                <span className="font-mono text-xs tabular-nums text-champagne">{String(i + 1).padStart(2, "0")}</span>
+                <div className="min-w-0">
+                  <p className="eyebrow">{state.players[track.player]} · Runde {track.round}</p>
+                  <p className="font-display mt-2 break-words text-[1.9rem] leading-[0.95]">{track.title}</p>
+                  {track.artist && <p className="mt-1 break-words text-sm text-muted-foreground">{track.artist}</p>}
+                  <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-muted-foreground/70">{track.prompt}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+
+        <p className="mt-8 border-l border-primary/40 pl-3 text-sm text-muted-foreground">
+          Diese Tracklist lebt nur in dieser Session. Sie wird nicht automatisch mit eurem Account synchronisiert.
+        </p>
+        <div className="mt-auto flex flex-col gap-2 pt-10">
+          <Btn size="lg" className="w-full" onClick={() => dispatch({ type: "AFTER_HOURS" })}>Noch einen Track →</Btn>
+          <Back onEnd={onEnd} game={game} />
+        </div>
       </Stage>
     );
   }
