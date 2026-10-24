@@ -3,10 +3,12 @@ import type { GangRoomPhase } from "./types.js";
 export const GANG_ROOM_RPC = {
   createRoom: "gang_create_room",
   joinRoom: "gang_join_room",
+  joinDisplay: "gang_join_display",
   snapshot: "gang_room_snapshot",
   leaveRoom: "gang_leave_room",
   setRoomState: "gang_set_room_state",
   submitAction: "gang_submit_action",
+  collectStageActions: "gang_collect_stage_actions",
   stageProgress: "gang_stage_progress",
   getPrivate: "gang_get_private",
   preparePrivateRound: "gang_prepare_private_round",
@@ -88,6 +90,11 @@ export interface GangRoomTransport {
     deviceKind?: GangRoomPlayerPublic["deviceKind"];
   }): Promise<GangRoomCredential>;
 
+  joinDisplay(input: {
+    code: string;
+    deviceKind?: "tablet" | "desktop" | "tv";
+  }): Promise<GangRoomCredential>;
+
   snapshot(playerToken: string): Promise<GangRoomSnapshotV1>;
   leaveRoom(playerToken: string): Promise<GangRoomSnapshotV1>;
 
@@ -108,6 +115,12 @@ export interface GangRoomTransport {
     actionType: string;
     payload: Record<string, unknown>;
   }): Promise<{ accepted: true; roundKey: string; stage: string }>;
+
+  collectStageActions(input: {
+    playerToken: string;
+    roundKey: string;
+    stage: string;
+  }): Promise<GangRevealAction[]>;
 
   stageProgress(playerToken: string): Promise<GangStageProgress>;
   getPrivate(playerToken: string, roundKey: string): Promise<Record<string, unknown> | null>;
@@ -130,8 +143,11 @@ export interface GangRoomTransport {
  * Multiplayer security invariant:
  * - room/player bearer tokens never enter URLs or public room state;
  * - private payloads are readable only through the owning player token before reveal;
- * - raw actions/private mappings are available to the elected facilitator only after
+ * - completed stage actions can be collected only by the elected facilitator, and
+ *   pre-reveal private payloads still remain owner-only;
+ * - raw private mappings become available to the elected facilitator only after
  *   the room reaches reveal/score/finished;
+ * - display-only clients never count against the room's player-seat limit;
  * - clients use optimistic room versions and must recover from version_conflict by
  *   fetching a fresh snapshot rather than force-overwriting state.
  */
