@@ -9,6 +9,7 @@ import {
   makeRound,
   normalizeAppleMusicSong,
   statsFor,
+  toDurableFirstBeatSnapshot,
   visibleTrack,
 } from "../dist-test/src/index.js";
 
@@ -64,7 +65,13 @@ test("stats report recognition pace and strongest era", () => {
   s = firstBeatReducer(s, { type: "MORE_AUDIO" });
   s = firstBeatReducer(s, { type: "REVEAL" });
   s = firstBeatReducer(s, { type: "COMPLETE_ROUND", recognized: true });
-  assert.deepEqual(statsFor(s), { rounds: 1, recognized: 1, averageRevealMs: 3000, strongestDecade: 2000, signal: 9 });
+  assert.deepEqual(statsFor(s), {
+    rounds: 1,
+    recognized: 1,
+    averageRevealMs: 3000,
+    strongestDecade: 2000,
+    signal: 9,
+  });
 });
 
 test("reset clears all music-game state", () => {
@@ -101,7 +108,10 @@ test("Apple Music normalization requires title, artist and preview URL", () => {
   });
   assert.equal(normalized?.provider, "apple-music");
   assert.equal(normalized?.artworkUrl, "https://img.example/600x600.jpg");
-  assert.equal(normalizeAppleMusicSong({ id: "bad", attributes: { name: "No preview", artistName: "Artist" } }), null);
+  assert.equal(
+    normalizeAppleMusicSong({ id: "bad", attributes: { name: "No preview", artistName: "Artist" } }),
+    null,
+  );
 });
 
 test("Apple adapter remains fail-soft when not configured", async () => {
@@ -109,9 +119,40 @@ test("Apple adapter remains fail-soft when not configured", async () => {
     isConfigured: () => false,
     isAuthorized: () => false,
     authorize: async () => undefined,
-    searchSongs: async () => { throw new Error("must not call"); },
+    searchSongs: async () => {
+      throw new Error("must not call");
+    },
   };
   const provider = new AppleMusicProvider(bridge);
   assert.equal(provider.capabilities().configured, false);
   assert.deepEqual(await provider.search("test"), []);
+});
+
+test("durable snapshot strips hidden and private song content from autosave", () => {
+  const personal = { ...track, id: "private-track", provider: "manual", pickedBy: 0 };
+  const personalRound = makeRound({
+    id: "personal",
+    type: "WHO_PICKED_IT",
+    track: personal,
+    pickedBy: 0,
+  });
+  let s = createFirstBeatSession(["A", "B"]);
+  s = firstBeatReducer(s, { type: "LOAD_ROUND", round: personalRound });
+  s = firstBeatReducer(s, { type: "START_AUDIO" });
+  s = firstBeatReducer(s, { type: "BUZZ", player: 1 });
+  s = firstBeatReducer(s, {
+    type: "SUBMIT_GUESS",
+    guess: { kind: "free-text", text: "very private guess" },
+  });
+
+  const snap = toDurableFirstBeatSnapshot(s);
+  const serialized = JSON.stringify(snap);
+
+  assert.equal(snap.current?.privateTrack, true);
+  assert.equal("trackId" in (snap.current ?? {}), false);
+  assert.equal(snap.requiresPrivateMusicRestore, true);
+  assert.equal(serialized.includes("Secret Song"), false);
+  assert.equal(serialized.includes("Hidden Artist"), false);
+  assert.equal(serialized.includes("very private guess"), false);
+  assert.equal(serialized.includes("private-track"), false);
 });
