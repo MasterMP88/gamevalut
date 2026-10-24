@@ -27,7 +27,7 @@ export const AI_POLICIES: Record<AiCapability, AiCapabilityPolicy> = {
   "personalize-pack": { mode: "ai-lite", costClass: "low", maxCallsPerSession: 2, maxItemsPerCall: 40, minScenesBetweenCalls: 0, cacheTtlMs: 15 * 60_000 },
   judge: { mode: "ai-lite", costClass: "low", maxCallsPerSession: 12, maxItemsPerCall: 12, minScenesBetweenCalls: 1, cacheTtlMs: 2 * 60_000 },
   "adaptive-difficulty": { mode: "local", costClass: "zero", maxCallsPerSession: 0, maxItemsPerCall: 0, minScenesBetweenCalls: 0, cacheTtlMs: 0 },
-  "secret-mission": { mode: "ai-lite", costClass: "low", maxCallsPerSession: 3, maxItemsPerCall: 12, minScenesBetweenCalls: 4, cacheTtlMs: 30 * 60_000 },
+  "secret-mission": { mode: "ai-lite", costClass: "low", maxCallsPerSession: 3, maxItemsPerCall: 12, minScenesBetweenCalls: 4, cacheTtlMs: 15 * 60_000 },
   "music-clue": { mode: "ai-lite", costClass: "low", maxCallsPerSession: 8, maxItemsPerCall: 8, minScenesBetweenCalls: 1, cacheTtlMs: 24 * 60 * 60_000 },
   narration: { mode: "ai-lite", costClass: "low", maxCallsPerSession: 6, maxItemsPerCall: 6, minScenesBetweenCalls: 3, cacheTtlMs: 30 * 60_000 },
   vision: { mode: "ai-premium", costClass: "high", maxCallsPerSession: 2, maxItemsPerCall: 1, minScenesBetweenCalls: 8, cacheTtlMs: 0 },
