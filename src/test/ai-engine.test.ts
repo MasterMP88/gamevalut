@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { adaptDifficulty } from "../lib/ai/adaptive";
+import { adaptiveTargetPhase, createSession, DEFAULT_SETTINGS } from "../lib/game/engine";
 import {
   AI_POLICIES,
   aiModeFor,
@@ -52,6 +53,29 @@ describe("zero-cost adaptive difficulty", () => {
       pace: "ease",
       reason: "friction",
     });
+  });
+
+
+  it("feeds structural friction back into the real local scene picker", () => {
+    const state = createSession(
+      "after-dark-2",
+      ["Ari", "Nova"],
+      DEFAULT_SETTINGS,
+      42,
+    );
+
+    const warmed = {
+      ...state,
+      heat: 3.4,
+      log: [
+        { n: 1, title: "A", type: "MISSION" as const, player: "Ari", outcome: "skipped" as const },
+        { n: 2, title: "B", type: "TIMER" as const, player: "Nova", outcome: "failed" as const },
+        { n: 3, title: "C", type: "QUESTION" as const, player: "Ari", outcome: "skipped" as const },
+        { n: 4, title: "D", type: "CHOICE" as const, player: "Nova", outcome: "failed" as const },
+      ],
+    };
+
+    expect(adaptiveTargetPhase(warmed)).toBeLessThan(3);
   });
 
   it("pushes strong fast players without a model call", () => {
