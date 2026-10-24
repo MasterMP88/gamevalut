@@ -6,6 +6,7 @@ import { ArrowLeft, SlidersHorizontal, Zap } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Btn } from "@/components/vault/Btn";
 import { SceneView } from "./SceneView";
+import { MusicRoundView } from "./MusicRoundView";
 import { SettingsSheet } from "./SettingsSheet";
 import { EndScreen } from "./EndScreen";
 import { useSessions } from "@/lib/game/store";
@@ -69,8 +70,9 @@ export function Player({ game }: { game: GameConfig }) {
           <div className="flex flex-col-reverse gap-3">
             <div className="min-w-0">
               <p className="eyebrow">
-                Szene {state.sceneNumber}
-                {game.battle ? ` · Kapitel ${Math.ceil(state.sceneNumber / BATTLE_CHAPTER)}` : ` · ${PHASE_NAMES[targetPhase(state)]}`}
+                {game.music && state.music
+                  ? `Runde ${state.music.roundNumber} · ${state.music.round.type}`
+                  : <>Szene {state.sceneNumber}{game.battle ? ` · Kapitel ${Math.ceil(state.sceneNumber / BATTLE_CHAPTER)}` : ` · ${PHASE_NAMES[targetPhase(state)]}`}</>}
               </p>
               <p className="mt-1 flex min-w-0 items-baseline gap-3">
                 <span key={`${state.sceneNumber}-${me}`} className="font-display min-w-0 truncate text-5xl leading-none animate-rise sm:text-6xl">{me}</span>
@@ -151,7 +153,7 @@ export function Player({ game }: { game: GameConfig }) {
             </p>
           )}
 
-          {(game.ai || game.id === "roxy-night") && (
+          {(game.ai || game.id === "roxy-night" || game.music) && (
             <GameArt art={game.art} steer={state.steer} status={status} className="mt-5 h-24 rounded-xl opacity-90" />
           )}
 
@@ -159,7 +161,14 @@ export function Player({ game }: { game: GameConfig }) {
             {scene?.cue && (
               <p key={`cue-${state.sceneNumber}`} className="mb-3 font-display text-lg italic text-champagne animate-rise">{fill(scene.cue, me, you)}</p>
             )}
-            {scene && (
+            {game.music && state.music ? (
+              <MusicRoundView
+                key={["music", state.music.roundNumber, state.music.stage].join("-")}
+                music={state.music}
+                players={state.players}
+                onAction={(action) => dispatch(action)}
+              />
+            ) : scene ? (
               <SceneView
                 key={`${state.sceneNumber}-${scene.id}`}
                 scene={scene}
@@ -178,7 +187,7 @@ export function Player({ game }: { game: GameConfig }) {
                     : undefined
                 }
               />
-            )}
+            ) : null}
           </div>
 
           {game.steering && (
@@ -237,9 +246,9 @@ export function Player({ game }: { game: GameConfig }) {
               <Zap className="size-4" /> {state.raise ? "Erhöht · Showdown zählt 6" : `„Erhöhen“ · Showdown zählt 6 statt 3 (${state.powerUps[state.turn]})`}
             </Btn>
           )}
-          {(
+          {(game.battle || game.signature || game.coop || (game.music && (state.music?.roundNumber ?? 0) >= 6)) && (
             <Btn variant="ghost" size="sm" className="mt-4 self-center" onClick={() => dispatch({ type: "FINISH" })}>
-              {game.battle ? "Zum Finale" : "Nacht abschließen"}
+              {game.battle ? "Zum Finale" : game.music ? "Tonight’s Tracklist" : "Nacht abschließen"}
             </Btn>
           )}
         </main>
