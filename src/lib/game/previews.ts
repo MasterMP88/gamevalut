@@ -121,5 +121,16 @@ export const PREVIEWS: Record<GameId, Preview> = {
       { tag: "DIRECTOR CUT", who: "director", text: "Musik an. Der nächste Song ist euer Soundtrack.", action: "Cut ✦" },
       { tag: "CALLBACK", who: "B", text: "„Hütte ohne Netz“ – plant das erste Wochenende dort.", action: "Gesagt ✓" },
     ],
-  },
+  },,
+  "pass-the-aux": {
+    mechanic: "Ihr antwortet mit Songs: verdeckt eintippen, Handy versiegeln, gemeinsam revealen – Musik-App optional.",
+    truths: ["für 2", "Musik", "Tracklist nur in dieser Session"],
+    idealWhen: "Ideal wenn eure besten Antworten sowieso Songs wären.",
+    frames: [
+      { tag: "PRIVATE PICK · A", who: "A", text: "Der Song, der nach eurem ersten Kuss hätte laufen sollen.", action: "Track versiegeln" },
+      { tag: "HANDY RÜBER · SEALED", who: "B", text: "A hat gewählt. Titel bleibt unsichtbar.", action: "Ich bin B →" },
+      { tag: "DUET · B", who: "B", text: "Euer Roadtrip beginnt jetzt. Nur ein Track darf zuerst laufen.", action: "Track versiegeln" },
+      { tag: "REVEAL", who: "both", text: "Zwei Antworten. Zwei Tracks. Eure Nacht bekommt eine Tracklist.", action: "Plot Twist ✦" },
+    ],
+  }
 };
