@@ -28,7 +28,7 @@ export function contractIssues(s: Scene): ContractIssue[] {
   }
   if (VERBAL.includes(s.type)) {
     if (n > 0) out.push("choices-on-verbal");
-    else if (CHOICE_LANGUAGE.test(s.prompt) || SECRET_LANGUAGE.test(s.prompt) || PREDICTION_LANGUAGE.test(s.prompt))
+    else if (!s.mechanic && (CHOICE_LANGUAGE.test(s.prompt) || SECRET_LANGUAGE.test(s.prompt) || PREDICTION_LANGUAGE.test(s.prompt)))
       out.push("choice-language-without-choices");
     if (s.type === "QUESTION" && ENUMERATION.test(s.prompt)) out.push("enumeration-in-question");
   }
