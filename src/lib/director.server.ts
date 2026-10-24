@@ -48,7 +48,7 @@ export async function runDirector(
   const sessionKey =
     ctx.sessionKey || "legacy:" + ctx.players.join(":") + ":" + String(ctx.gameId || "director");
 
-  const cacheKey = aiCacheKey("director", {
+  const cacheKey = await aiCacheKey("director", {
     ...ctx,
     batchSize: BATCH_SIZE,
   });
