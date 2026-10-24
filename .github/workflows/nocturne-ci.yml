@@ -2,7 +2,7 @@ name: NOCTURNE Premium CI
 
 on:
   push:
-    branches: ["nocturne-premium-2026"]
+    branches: ["nocturne-premium-2026", "feat/award-gameplay-2026"]
   workflow_dispatch:
 
 permissions:

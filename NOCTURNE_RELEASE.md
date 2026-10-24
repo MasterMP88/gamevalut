@@ -6,7 +6,7 @@ This branch is the premium staging line for **NOCTURNE — Games for Two**.
 - Branch: `nocturne-premium-2026`
 - Production currently remains on Lovable: https://nocturne-games-for-two.lovable.app
 - The Lovable production app remains the last stable published release.
-- The newest visual refinements in this branch are **not yet synced back to Lovable** because the Lovable workspace exhausted build credits during the final art-direction pass.
+- The staging/gameplay changes in this branch are **not production-deployed yet**; production remains the last stable Lovable release until the staging line is deliberately synced/deployed.
 
 ## Quality gates
 GitHub Actions workflow: `.github/workflows/nocturne-ci.yml`
@@ -26,7 +26,7 @@ Current required gates:
 
 Latest full green audit:
 - 7 test files
-- **66/66 tests passed**
+- **71/71 tests passed**
 - Vite client build passed
 - SSR build passed
 - Nitro build passed
@@ -49,6 +49,20 @@ Games:
 6. ONE//TWO
 7. NIGHT//ECHO
 8. NIGHT//ECHO — Director
+
+## Award gameplay pass — October 24, 2026
+This branch now adds a second, mechanics-first quality bar on top of the visual premium pass.
+
+- passive timer prompts can opt into real microgame mechanics: Alternating Rush, Tap Rush and Standoff
+- First Spark guarantees an early live standoff and sealed prediction/reveal
+- After Dark SECRET beats persist as Covert missions and return for an explicit reveal
+- Heatcheck regular challenges are opponent-refereed; success, failure and voluntary skip are separate outcomes
+- US//AFTER DARK surfaces the shared energy reward of the current beat
+- ONE//TWO gets a deliberately minimal ONE/TWO turn rail rather than generic game chrome
+- Night Shift keeps three-scene steering momentum and recurring detours
+- NIGHT//ECHO keeps typed, spaced callbacks; Director keeps validated format orchestration and rare cuts
+
+The product contract is documented in `AWARD_GAMEPLAY_2026.md`.
 
 ## What makes each mode distinct
 - **First Spark:** effortless playful/flirty ignition; fast movement and low-pressure choices before deeper beats.

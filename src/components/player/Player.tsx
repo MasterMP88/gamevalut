@@ -9,7 +9,7 @@ import { EndScreen } from "./EndScreen";
 import { useSessions } from "@/lib/game/store";
 import { haptic } from "@/lib/haptics";
 import { useDirector } from "@/lib/game/use-director";
-import { BATTLE_CHAPTER, COMEBACK_GAP, VAULT_THRESHOLD, fill, targetPhase, type Action } from "@/lib/game/engine";
+import { BATTLE_CHAPTER, COMEBACK_GAP, VAULT_THRESHOLD, energyGain, fill, targetPhase, type Action } from "@/lib/game/engine";
 import { MILESTONES } from "@/lib/game/specials";
 import { GameArt } from "@/components/vault/GameArt";
 import { PHASE_NAMES } from "@/lib/game/scenes";
@@ -36,6 +36,7 @@ export function Player({ game }: { game: GameConfig }) {
   const me = state.players[state.turn];
   const you = state.players[(1 - state.turn) as 0 | 1];
   const scene = state.current;
+  const covertDue = !!state.covert && state.sceneNumber >= state.covert.dueAt;
 
   return (
     <div className="flex min-h-dvh flex-col bg-background safe-x safe-top safe-bottom">
@@ -68,6 +69,38 @@ export function Player({ game }: { game: GameConfig }) {
               </span>
             )}
           </div>
+
+          {game.id === "roxy-after-dark" && (() => {
+            const stages = ["Ignite", "Read", "Pull", "Spark"];
+            const active = Math.min(stages.length - 1, Math.floor((state.sceneNumber - 1) / 3));
+            return (
+              <div className="mt-5 border-y border-line py-3" aria-label={`First Spark Phase ${stages[active]}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="eyebrow text-champagne">Ignition sequence</span>
+                  <span className="font-display text-lg italic">{stages[active]}</span>
+                </div>
+                <div className="mt-3 grid grid-cols-4 gap-2" aria-hidden>
+                  {stages.map((label, i) => (
+                    <span key={label} className={cn("h-[2px] rounded-full transition-colors duration-500", i <= active ? "bg-primary" : "bg-line")} />
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {game.id === "one-two" && (
+            <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center border-y border-line py-3" aria-label="ONE TWO Wechsel">
+              <div className={cn("min-w-0", state.turn === 0 ? "text-foreground" : "text-muted-foreground/45")}>
+                <p className="eyebrow">ONE</p>
+                <p className="font-display mt-1 truncate text-2xl">{state.players[0]}</p>
+              </div>
+              <span className="font-display px-4 text-xl text-muted-foreground">/</span>
+              <div className={cn("min-w-0 text-right", state.turn === 1 ? "text-foreground" : "text-muted-foreground/45")}>
+                <p className="eyebrow">TWO</p>
+                <p className="font-display mt-1 truncate text-2xl">{state.players[1]}</p>
+              </div>
+            </div>
+          )}
 
           {game.battle && (() => {
             const total = Math.max(1, state.sparks[0] + state.sparks[1]);
@@ -136,6 +169,13 @@ export function Player({ game }: { game: GameConfig }) {
             </div>
           )}
 
+          {state.covert && !covertDue && (
+            <p className="mt-4 flex items-center justify-between gap-3 border-y border-line py-2 text-sm" aria-live="polite">
+              <span className="eyebrow text-champagne">Covert live</span>
+              <span className="text-muted-foreground">Auflösung in {Math.max(1, state.covert.dueAt - state.sceneNumber)} {state.covert.dueAt - state.sceneNumber === 1 ? "Szene" : "Szenen"}</span>
+            </p>
+          )}
+
           {game.memory && state.anchors.some((a) => !a.used) && (
             <p className="mt-4 flex items-center gap-2 border-l border-violet/40 pl-3 font-mono text-[10px] uppercase tracking-[0.16em] text-violet" aria-live="polite">
               <span className="relative inline-flex size-3"><span className="absolute inset-0 rounded-full border border-violet animate-ripple" /><span className="m-auto size-1 rounded-full bg-violet" /></span>
@@ -169,10 +209,44 @@ export function Player({ game }: { game: GameConfig }) {
           )}
 
           <div className="mt-8 flex flex-1 flex-col">
-            {scene?.cue && (
+            {covertDue && state.covert && (() => {
+              const owner = state.covert.owner;
+              const other = (1 - owner) as 0 | 1;
+              const mission = fill(state.covert.text, state.players[owner], state.players[other]);
+              return (
+                <section className="mt-2 flex flex-1 flex-col animate-rise" aria-label="Covert Mission Auflösung">
+                  <p className="eyebrow text-primary">Covert reveal</p>
+                  <p className="font-display mt-3 text-[2.8rem] leading-[0.98]">Hat {state.players[owner]} es geschafft?</p>
+                  <div className="mt-6 border-y border-line py-5">
+                    <p className="eyebrow text-champagne">Der versiegelte Auftrag</p>
+                    <p className="font-display mt-2 text-2xl leading-snug">{mission}</p>
+                  </div>
+                  <p className="mt-5 text-sm text-muted-foreground">{state.players[other]} entscheidet. Danach geht die laufende Szene weiter.</p>
+                  <div className="mt-auto grid grid-cols-2 gap-3 pt-8">
+                    <Btn variant="outline" size="lg" onClick={() => dispatch({ type: "COVERT_RESULT", success: false })}>Erwischt</Btn>
+                    <Btn variant="accent" size="lg" onClick={() => dispatch({ type: "COVERT_RESULT", success: true })}>Geschafft ✦</Btn>
+                  </div>
+                </section>
+              );
+            })()}
+            {!covertDue && scene?.cue && (
               <p key={`cue-${state.sceneNumber}`} className="mb-3 font-display text-lg italic text-champagne animate-rise">{fill(scene.cue, me, you)}</p>
             )}
-            {scene && (
+            {!covertDue && game.coop && scene && (() => {
+              const gain = energyGain(scene.flavor);
+              const parts = [
+                gain.chaos ? `+${gain.chaos} Chaos` : null,
+                gain.connection ? `+${gain.connection} Connection` : null,
+                gain.heat ? `+${gain.heat} Heat` : null,
+              ].filter(Boolean);
+              return (
+                <p className="mb-4 flex items-center justify-between gap-3 border-y border-line py-2 text-sm">
+                  <span className="eyebrow text-champagne">Team reward</span>
+                  <span className="text-right text-muted-foreground">{parts.join(" · ")}</span>
+                </p>
+              );
+            })()}
+            {scene && !covertDue && (
               <SceneView
                 key={`${state.sceneNumber}-${scene.id}`}
                 scene={scene}
@@ -187,6 +261,7 @@ export function Player({ game }: { game: GameConfig }) {
                         players: state.players,
                         missionOwner: state.secretMission ? state.players[state.secretMission.player] : null,
                         onWin: (w, missionDone) => dispatch({ type: "SHOWDOWN_WIN", winner: w, missionDone }),
+                        onMissionResult: (success) => dispatch({ type: "BATTLE_RESULT", success }),
                       }
                     : undefined
                 }

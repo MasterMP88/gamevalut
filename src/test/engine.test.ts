@@ -98,6 +98,22 @@ describe("session engine", () => {
     expect(s.turn).toBe(turn);
   });
 
+  it("keeps non-battle SECRET missions alive until an explicit reveal result", () => {
+    let s = createSession("after-dark-2", P, DEFAULT_SETTINGS, 4);
+    s = {
+      ...s,
+      sceneNumber: 3,
+      turn: 0,
+      current: { id: "secret-test", type: "SECRET", flavor: "game", phase: 1, title: "Covert", prompt: "Bring {you} zum Lachen.", source: "local" },
+    };
+    s = reducer(s, { type: "DONE" });
+    expect(s.covert).toEqual({ owner: 0, text: "Bring {you} zum Lachen.", dueAt: 5 });
+    const before = s.heat;
+    s = reducer(s, { type: "COVERT_RESULT", success: true });
+    expect(s.covert).toBeNull();
+    expect(s.heat).toBeGreaterThan(before);
+  });
+
   it("battle reaches a final winner", () => {
     let s = createSession("battle", P, DEFAULT_SETTINGS, 5);
     for (let i = 0; i < 60 && !s.finished; i++)

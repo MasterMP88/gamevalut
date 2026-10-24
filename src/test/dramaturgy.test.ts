@@ -181,6 +181,8 @@ describe("Game identities", () => {
       const { seen, types } = play("roxy-after-dark", 30, seed);
       const first = seen.slice(0, 3).map((x) => x.current!);
       expect(first.some((sc) => sc.type === "MISSION" || sc.type === "TIMER")).toBe(true);
+      expect(seen.find((x) => x.sceneNumber === 2)?.current?.mechanic).toBe("standoff");
+      expect(seen.find((x) => x.sceneNumber === 4)?.current?.type).toBe("PREDICTION");
       expect(first.some((sc) => sc.type !== "QUESTION" || sc.flavor === "funny")).toBe(true);
       expect(first.every((sc) => sc.phase === 0)).toBe(true);
       for (let i = 0; i + 6 <= types.length; i++) expect(types.slice(i, i + 6).filter((t) => t === "QUESTION").length).toBeLessThanOrEqual(3);
@@ -195,6 +197,18 @@ describe("Game identities", () => {
       expect(inTempo.filter((t) => t === "QUESTION").length).toBe(0);
     }
   });
+  it("04 Heatcheck: a failed judged attempt is not a voluntary skip", () => {
+    let s = createSession("battle", P, DEFAULT_SETTINGS, 5);
+    const beforeSkips = s.skipCount;
+    const beforeHeat = s.heat;
+    const player = s.turn;
+    s = reducer(s, { type: "BATTLE_RESULT", success: false });
+    expect(s.log.at(-1)?.outcome).toBe("failed");
+    expect(s.skipCount).toBe(beforeSkips);
+    expect(s.heat).toBe(beforeHeat);
+    expect(s.streaks[player]).toBe(0);
+  });
+
   it("04 Heatcheck: REBOUND hands the scene over; skipping it pays the sender", () => {
     let s = createSession("battle", P, DEFAULT_SETTINGS, 5);
     s = { ...s, powerUps: [1, 0], turn: 0 };
