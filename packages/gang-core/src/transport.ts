@@ -14,7 +14,6 @@ export const GANG_ROOM_RPC = {
   setPrivatePayloads: "gang_set_private_payloads",
   saveRuntime: "gang_save_runtime",
   loadRuntime: "gang_load_runtime",
-  preparePrivateRound: "gang_prepare_private_round",
   revealRoundData: "gang_reveal_round_data",
 } as const;
 
@@ -137,12 +136,6 @@ export interface GangRoomTransport {
   saveRuntime(playerToken: string, runtimeState: Record<string, unknown>): Promise<{ saved: true }>;
   loadRuntime(playerToken: string): Promise<Record<string, unknown> | null>;
 
-  preparePrivateRound(input: {
-    playerToken: string;
-    gameId: "undercover" | "one-of-you" | "draw-this" | "secret-missions" | "bluff";
-    roundKey: string;
-    options?: Record<string, unknown>;
-  }): Promise<Record<string, unknown>>;
 
   revealRoundData(input: {
     playerToken: string;
