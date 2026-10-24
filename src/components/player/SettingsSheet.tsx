@@ -79,30 +79,34 @@ export function SettingsSheet({
         </div>
 
         {memory && (
-          <section className="mt-6">
-            <div className="flex items-center justify-between">
-              <h3 className="eyebrow">Memory Core · {anchors?.length ?? 0}</h3>
+          <section className="mt-6" aria-labelledby="archive-h">
+            <div className="flex items-baseline justify-between border-b border-line pb-2">
+              <h3 id="archive-h" className="font-display text-2xl">Session Archive <span className="font-mono text-xs text-muted-foreground">· {anchors?.length ?? 0} · nur in diesem Tab</span></h3>
               {!!anchors?.length && (
-                <Btn variant="ghost" size="sm" onClick={onClearAnchors}>Alle löschen</Btn>
+                <Btn variant="ghost" size="sm" onClick={onClearAnchors}>Archiv leeren</Btn>
               )}
             </div>
             {!anchors?.length ? (
-              <p className="mt-3 text-sm text-muted-foreground">Noch keine Anker. Tippt bei einer Frage eure Antwort ein, um sie für ein Echo zu merken.</p>
+              <p className="mt-3 text-sm text-muted-foreground">Noch leer. Tippt bei einer Frage eure Antwort ein, um sie für ein Echo zu merken. Nichts davon wird automatisch gespeichert.</p>
             ) : (
-              <ul className="mt-3 space-y-2">
-                {anchors.map((a) => (
-                  <li key={a.id} className="flex items-start gap-3 rounded-2xl bg-surface p-4">
+              <ol className="divide-y divide-line">
+                {anchors.map((a, i) => (
+                  <li key={a.id} className="flex items-start gap-3 py-3">
+                    <span className="w-6 pt-1 font-mono text-xs text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="eyebrow">{a.owner} · Szene {a.sceneNumber}{a.sensitivity === "high" ? " · privat" : ""}{a.used ? " · echoed" : ""}</p>
-                      <p className="mt-1 break-words">„{a.shortText}“</p>
+                      <p className="font-mono text-[0.65rem] tracking-[0.16em] text-muted-foreground">
+                        {a.owner.toUpperCase()} · SZENE {a.sceneNumber} · <span className="text-violet">{KIND_LABEL[a.kind ?? "emotional"]}</span>
+                        {" · "}{a.used ? "ZURÜCKGEKEHRT" : a.sensitivity === "high" ? "PRIVAT · KEIN ECHO" : "ECHO-BEREIT"}
+                      </p>
+                      <p className="font-display mt-1 break-words text-xl leading-snug">„{a.shortText}“</p>
                       {gameId && <SaveMomentButton gameId={gameId} text={a.shortText} title={`${a.owner} · Szene ${a.sceneNumber}`} />}
                     </div>
-                    <Btn variant="ghost" size="icon" aria-label="Anker löschen" onClick={() => onDeleteAnchor?.(a.id)}>
+                    <Btn variant="ghost" size="icon" aria-label={`Eintrag ${i + 1} löschen`} onClick={() => onDeleteAnchor?.(a.id)}>
                       <Trash2 className="size-4" />
                     </Btn>
                   </li>
                 ))}
-              </ul>
+              </ol>
             )}
           </section>
         )}
@@ -133,3 +137,12 @@ export function SettingsSheet({
     </Sheet>
   );
 }
+
+const KIND_LABEL: Record<"funny" | "emotional" | "flirty" | "future" | "prediction" | "ritual", string> = {
+  funny: "RUNNING GAG",
+  emotional: "NACHHALL",
+  flirty: "SPANNUNG",
+  future: "SPÄTER",
+  prediction: "VORHERSAGE",
+  ritual: "RITUAL",
+};
