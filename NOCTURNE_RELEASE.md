@@ -50,6 +50,20 @@ Games:
 7. NIGHT//ECHO
 8. NIGHT//ECHO — Director
 
+## Award gameplay pass — October 24, 2026
+This branch now adds a second, mechanics-first quality bar on top of the visual premium pass.
+
+- passive timer prompts can opt into real microgame mechanics: Alternating Rush, Tap Rush and Standoff
+- First Spark guarantees an early live standoff and sealed prediction/reveal
+- After Dark SECRET beats persist as Covert missions and return for an explicit reveal
+- Heatcheck regular challenges are opponent-refereed; success, failure and voluntary skip are separate outcomes
+- US//AFTER DARK surfaces the shared energy reward of the current beat
+- ONE//TWO gets a deliberately minimal ONE/TWO turn rail rather than generic game chrome
+- Night Shift keeps three-scene steering momentum and recurring detours
+- NIGHT//ECHO keeps typed, spaced callbacks; Director keeps validated format orchestration and rare cuts
+
+The product contract is documented in `AWARD_GAMEPLAY_2026.md`.
+
 ## What makes each mode distinct
 - **First Spark:** effortless playful/flirty ignition; fast movement and low-pressure choices before deeper beats.
 - **After Dark:** kinetic mini-game mode with timers, roulette, sync/prediction and multi-scene Tempo Shifts.
