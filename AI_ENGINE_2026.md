@@ -40,8 +40,10 @@ The provider adapter uses direct OpenAI credentials rather than the Lovable AI g
 - `gpt-6.1-sol` by default for the signature Director.
 - Both can be changed through `NOCTURNE_AI_LITE_MODEL` and
   `NOCTURNE_AI_PREMIUM_MODEL`.
+- Paid generation is disabled unless `NOCTURNE_AI_ENABLED=true`.
 - Missing `OPENAI_API_KEY` means AI silently becomes unavailable and local gameplay
   continues.
+- Before production enablement, bind generated endpoints to authenticated entitlements / persistent quotas and set a provider-level spend cap. The in-memory session budget is a UX/economics guard, not an abuse-proof billing boundary.
 
 ## Game mapping
 
