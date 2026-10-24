@@ -1,116 +1,108 @@
-import type { MusicProviderId, MusicTrack } from "./types.js";
+import type { GameAudioRights, GameAudioSource, MusicTrack } from "./types.js";
 
-export interface MusicProviderCapabilities {
+export interface GameAudioProviderCapabilities {
   configured: boolean;
-  searchCatalog: boolean;
-  catalogPreview: boolean;
-  library: boolean;
-  fullPlayback: boolean;
-  createPlaylist: boolean;
-  requiresUserAuthorization: boolean;
+  playableInGame: boolean;
+  rightsCleared: boolean;
+  supportsSearch: boolean;
+  supportsLocalSelection: boolean;
 }
 
-export interface MusicProvider {
-  id: MusicProviderId;
-  capabilities(): MusicProviderCapabilities;
-  search(query: string, limit?: number): Promise<MusicTrack[]>;
-  libraryTracks?(limit?: number): Promise<MusicTrack[]>;
-  authorize?(): Promise<void>;
-  play?(track: MusicTrack): Promise<void>;
-  createPlaylist?(name: string, tracks: MusicTrack[]): Promise<{ id: string; url?: string }>;
-}
-
-export interface AppleMusicSongLike {
+export interface GameAudioProvider {
   id: string;
-  attributes?: {
-    name?: string;
-    artistName?: string;
-    artwork?: { url?: string };
-    releaseDate?: string;
-    genreNames?: string[];
-    durationInMillis?: number;
-    previews?: { url?: string }[];
-  };
-}
-
-export function normalizeAppleMusicSong(song: AppleMusicSongLike): MusicTrack | null {
-  const a = song.attributes;
-  const title = a?.name?.trim();
-  const artist = a?.artistName?.trim();
-  const previewUrl = a?.previews?.find((p) => Boolean(p.url))?.url;
-  if (!title || !artist || !previewUrl) return null;
-  const artworkUrl = a?.artwork?.url
-    ?.replace("{w}", "600")
-    .replace("{h}", "600");
-  return {
-    id: song.id,
-    title,
-    artist,
-    provider: "apple-music",
-    previewUrl,
-    ...(artworkUrl ? { artworkUrl } : {}),
-    ...(a?.releaseDate ? { releaseDate: a.releaseDate } : {}),
-    ...(a?.genreNames ? { genres: a.genreNames } : {}),
-    ...(a?.durationInMillis === undefined ? {} : { durationMs: a.durationInMillis }),
-  };
+  source: GameAudioSource;
+  capabilities(): GameAudioProviderCapabilities;
+  list(limit?: number): Promise<MusicTrack[]>;
+  search?(query: string, limit?: number): Promise<MusicTrack[]>;
 }
 
 /**
- * Thin dependency-injected adapter. The app shell owns MusicKit JS loading and token retrieval.
- * No Apple private key or developer secret belongs in the browser bundle.
+ * FIRST//BEAT must only consume audio that the product is permitted to use as game material.
+ * Apple Music/iTunes preview assets are intentionally not modeled as an in-game source here.
  */
-export interface AppleMusicBridge {
-  isConfigured(): boolean;
-  isAuthorized(): boolean;
-  authorize(): Promise<void>;
-  searchSongs(query: string, limit: number): Promise<AppleMusicSongLike[]>;
-  librarySongs?(limit: number): Promise<AppleMusicSongLike[]>;
-  playSong?(id: string): Promise<void>;
-  createPlaylist?(name: string, songIds: string[]): Promise<{ id: string; url?: string }>;
+export function isRightsClearedGameTrack(track: MusicTrack): boolean {
+  return Boolean(
+    track.audioUrl &&
+      track.rights &&
+      ["owned", "licensed", "user-local"].includes(track.rights),
+  );
 }
 
-export class AppleMusicProvider implements MusicProvider {
-  readonly id = "apple-music" as const;
-  constructor(private readonly bridge: AppleMusicBridge) {}
+export function requireRightsClearedGameTrack(track: MusicTrack): MusicTrack {
+  if (!isRightsClearedGameTrack(track)) {
+    throw new Error("Track is not cleared for in-game audio use");
+  }
+  return track;
+}
 
-  capabilities(): MusicProviderCapabilities {
-    const configured = this.bridge.isConfigured();
-    const authorized = this.bridge.isAuthorized();
+export class StaticRightsClearedProvider implements GameAudioProvider {
+  readonly id: string;
+  readonly source: GameAudioSource;
+  private readonly tracks: MusicTrack[];
+  private readonly rights: GameAudioRights;
+
+  constructor(args: {
+    id: string;
+    source: Exclude<GameAudioSource, "local-file">;
+    rights: Exclude<GameAudioRights, "user-local">;
+    tracks: MusicTrack[];
+  }) {
+    this.id = args.id;
+    this.source = args.source;
+    this.rights = args.rights;
+    this.tracks = args.tracks.map((track) => ({
+      ...track,
+      source: args.source,
+      rights: args.rights,
+    }));
+  }
+
+  capabilities(): GameAudioProviderCapabilities {
     return {
-      configured,
-      searchCatalog: configured,
-      catalogPreview: configured,
-      library: configured && authorized && Boolean(this.bridge.librarySongs),
-      fullPlayback: configured && authorized && Boolean(this.bridge.playSong),
-      createPlaylist: configured && authorized && Boolean(this.bridge.createPlaylist),
-      requiresUserAuthorization: true,
+      configured: true,
+      playableInGame: true,
+      rightsCleared: true,
+      supportsSearch: true,
+      supportsLocalSelection: false,
     };
   }
 
-  async authorize(): Promise<void> {
-    if (!this.bridge.isConfigured()) throw new Error("Apple Music is not configured");
-    await this.bridge.authorize();
+  async list(limit = 50): Promise<MusicTrack[]> {
+    return this.tracks
+      .filter(isRightsClearedGameTrack)
+      .slice(0, Math.max(1, Math.min(100, limit)));
   }
 
-  async search(query: string, limit = 12): Promise<MusicTrack[]> {
-    if (!this.bridge.isConfigured()) return [];
-    const songs = await this.bridge.searchSongs(query.trim(), Math.max(1, Math.min(25, limit)));
-    return songs.map(normalizeAppleMusicSong).filter((x): x is MusicTrack => x !== null);
+  async search(query: string, limit = 20): Promise<MusicTrack[]> {
+    const q = query.trim().toLocaleLowerCase();
+    if (!q) return this.list(limit);
+    return this.tracks
+      .filter(isRightsClearedGameTrack)
+      .filter((track) =>
+        `${track.title} ${track.artist}`.toLocaleLowerCase().includes(q),
+      )
+      .slice(0, Math.max(1, Math.min(50, limit)));
   }
+}
 
-  async libraryTracks(limit = 30): Promise<MusicTrack[]> {
-    if (!this.bridge.isConfigured() || !this.bridge.isAuthorized() || !this.bridge.librarySongs) return [];
-    const songs = await this.bridge.librarySongs(Math.max(1, Math.min(100, limit)));
-    return songs.map(normalizeAppleMusicSong).filter((x): x is MusicTrack => x !== null);
-  }
-
-  async play(track: MusicTrack): Promise<void> {
-    if (!this.bridge.isAuthorized() || !this.bridge.playSong) throw new Error("Full playback is unavailable");
-    await this.bridge.playSong(track.id);
-  }
-
-  async createPlaylist(name: string, tracks: MusicTrack[]): Promise<{ id: string; url?: string }> {
-    if (!this.bridge.isAuthorized() || !this.bridge.createPlaylist) throw new Error("Playlist creation is unavailable");
-    return this.bridge.createPlaylist(name, tracks.filter((t) => t.provider === "apple-music").map((t) => t.id));
-  }
+/**
+ * Local-file tracks are created by the host app after an explicit user file selection.
+ * Object URLs are ephemeral and must never be persisted remotely.
+ */
+export function makeLocalFileTrack(args: {
+  id: string;
+  title: string;
+  artist?: string;
+  objectUrl: string;
+  pickedBy?: 0 | 1;
+}): MusicTrack {
+  return {
+    id: args.id,
+    title: args.title.trim() || "Lokaler Track",
+    artist: args.artist?.trim() || "Eigene Datei",
+    source: "local-file",
+    audioUrl: args.objectUrl,
+    rights: "user-local",
+    ...(args.pickedBy === undefined ? {} : { pickedBy: args.pickedBy }),
+  };
 }
