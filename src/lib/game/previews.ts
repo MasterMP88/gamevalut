@@ -121,7 +121,7 @@ export const PREVIEWS: Record<GameId, Preview> = {
       { tag: "DIRECTOR CUT", who: "director", text: "Musik an. Der nächste Song ist euer Soundtrack.", action: "Cut ✦" },
       { tag: "CALLBACK", who: "B", text: "„Hütte ohne Netz“ – plant das erste Wochenende dort.", action: "Gesagt ✓" },
     ],
-  },,
+  },
   "pass-the-aux": {
     mechanic: "Ihr antwortet mit Songs: verdeckt eintippen, Handy versiegeln, gemeinsam revealen – Musik-App optional.",
     truths: ["für 2", "Musik", "Tracklist nur in dieser Session"],
