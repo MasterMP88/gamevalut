@@ -9,7 +9,7 @@ import { EndScreen } from "./EndScreen";
 import { useSessions } from "@/lib/game/store";
 import { haptic } from "@/lib/haptics";
 import { useDirector } from "@/lib/game/use-director";
-import { BATTLE_CHAPTER, COMEBACK_GAP, VAULT_THRESHOLD, fill, targetPhase, type Action } from "@/lib/game/engine";
+import { BATTLE_CHAPTER, COMEBACK_GAP, VAULT_THRESHOLD, energyGain, fill, targetPhase, type Action } from "@/lib/game/engine";
 import { MILESTONES } from "@/lib/game/specials";
 import { GameArt } from "@/components/vault/GameArt";
 import { PHASE_NAMES } from "@/lib/game/scenes";
@@ -68,6 +68,38 @@ export function Player({ game }: { game: GameConfig }) {
               </span>
             )}
           </div>
+
+          {game.id === "roxy-after-dark" && (() => {
+            const stages = ["Ignite", "Read", "Pull", "Spark"];
+            const active = Math.min(stages.length - 1, Math.floor((state.sceneNumber - 1) / 3));
+            return (
+              <div className="mt-5 border-y border-line py-3" aria-label={`First Spark Phase ${stages[active]}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="eyebrow text-champagne">Ignition sequence</span>
+                  <span className="font-display text-lg italic">{stages[active]}</span>
+                </div>
+                <div className="mt-3 grid grid-cols-4 gap-2" aria-hidden>
+                  {stages.map((label, i) => (
+                    <span key={label} className={cn("h-[2px] rounded-full transition-colors duration-500", i <= active ? "bg-primary" : "bg-line")} />
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {game.id === "one-two" && (
+            <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center border-y border-line py-3" aria-label="ONE TWO Wechsel">
+              <div className={cn("min-w-0", state.turn === 0 ? "text-foreground" : "text-muted-foreground/45")}>
+                <p className="eyebrow">ONE</p>
+                <p className="font-display mt-1 truncate text-2xl">{state.players[0]}</p>
+              </div>
+              <span className="font-display px-4 text-xl text-muted-foreground">/</span>
+              <div className={cn("min-w-0 text-right", state.turn === 1 ? "text-foreground" : "text-muted-foreground/45")}>
+                <p className="eyebrow">TWO</p>
+                <p className="font-display mt-1 truncate text-2xl">{state.players[1]}</p>
+              </div>
+            </div>
+          )}
 
           {game.battle && (() => {
             const total = Math.max(1, state.sparks[0] + state.sparks[1]);
@@ -172,6 +204,20 @@ export function Player({ game }: { game: GameConfig }) {
             {scene?.cue && (
               <p key={`cue-${state.sceneNumber}`} className="mb-3 font-display text-lg italic text-champagne animate-rise">{fill(scene.cue, me, you)}</p>
             )}
+            {game.coop && scene && (() => {
+              const gain = energyGain(scene.flavor);
+              const parts = [
+                gain.chaos ? `+${gain.chaos} Chaos` : null,
+                gain.connection ? `+${gain.connection} Connection` : null,
+                gain.heat ? `+${gain.heat} Heat` : null,
+              ].filter(Boolean);
+              return (
+                <p className="mb-4 flex items-center justify-between gap-3 border-y border-line py-2 text-sm">
+                  <span className="eyebrow text-champagne">Team reward</span>
+                  <span className="text-right text-muted-foreground">{parts.join(" · ")}</span>
+                </p>
+              );
+            })()}
             {scene && (
               <SceneView
                 key={`${state.sceneNumber}-${scene.id}`}
