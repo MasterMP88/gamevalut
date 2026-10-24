@@ -68,7 +68,7 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     durationMinutes: [20, 60],
     energy: 4,
     mechanics: ["secret-mission", "physical"],
-    interactionModes: ["everyone-in", "mixed"],
+    interactionModes: ["one-phone", "everyone-in", "mixed"],
     capabilities: [],
     tags: ["signature", "background", "chaos"],
     directorEligible: true,
