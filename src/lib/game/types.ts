@@ -23,7 +23,8 @@ export type GameId =
   | "coop"
   | "one-two"
   | "night-echo"
-  | "ai-director";
+  | "ai-director"
+  | "pass-the-aux";
 
 export interface SceneFlags {
   touch?: boolean;
@@ -86,6 +87,42 @@ export type EchoKind = "funny" | "emotional" | "flirty" | "future" | "prediction
 export type Tempo = "speed" | "silent" | "swap" | "rule";
 export type PowerUp = "double" | "raise" | "rebound" | "read";
 
+export type MusicRoundType = "SOLO" | "DUET" | "GUESS" | "SPEED";
+export type MusicStage = "pick" | "handoff" | "pick-second" | "predict" | "reveal" | "reaction";
+export type MusicVibe = "Nostalgisch" | "Guilty Pleasure" | "Gefährlich gut" | "Komplett unerwartet";
+export type MusicReaction = "Match" | "Plot Twist" | "Das erklärt einiges";
+
+export interface TrackPick {
+  title: string;
+  artist?: string | undefined;
+  player: 0 | 1;
+  promptId: string;
+  prompt: string;
+  round: number;
+}
+
+export interface MusicRound {
+  id: string;
+  type: MusicRoundType;
+  promptId: string;
+  prompt: string;
+  speedSeconds?: number | undefined;
+}
+
+export interface MusicState {
+  roundNumber: number;
+  primary: 0 | 1;
+  round: MusicRound;
+  stage: MusicStage;
+  picks: TrackPick[];
+  prediction: MusicVibe | null;
+  reaction: MusicReaction | null;
+  tracklist: TrackPick[];
+  usedPromptIds: string[];
+  recentTypes: MusicRoundType[];
+  seed: number;
+}
+
 export interface Energies {
   chaos: number;
   connection: number;
@@ -147,4 +184,6 @@ export interface SessionState {
   lastDetourAt: number;
   /** ONE//TWO: topics already touched this session (from scene tags, never from answers). */
   themes: string[];
+  /** PASS//THE AUX: dedicated music state. Optional keeps older non-music saves compatible. */
+  music?: MusicState | null | undefined;
 }
