@@ -15,13 +15,15 @@ type Props = {
   energies?: { chaos: number; connection: number; heat: number };
   /** Director: current interaction type changes the editorial cue glyph. */
   sceneType?: string | undefined;
+  /** After Dark: current tempo shift changes the kinetic index. */
+  tempo?: string | undefined;
 };
 
 const VB = "0 0 400 300";
 const STEER_TILT: Record<Exclude<Steer, null>, number> = { funnier: -6, flirtier: 4, game: -2, hotter: 8 };
 
 /** Eight bespoke key-art systems — one visual grammar per game, all pure SVG, all token colours. */
-export function GameArt({ art, className = "", steer = null, status = "idle", scoreA = 0, scoreB = 0, energies, sceneType }: Props) {
+export function GameArt({ art, className = "", steer = null, status = "idle", scoreA = 0, scoreB = 0, energies, sceneType, tempo }: Props) {
   const c = "absolute inset-0 h-full w-full";
   const scoreTotal = Math.max(1, scoreA + scoreB);
   const heatX = scoreA + scoreB > 0 ? 74 + (scoreA / scoreTotal) * 252 : 200;
