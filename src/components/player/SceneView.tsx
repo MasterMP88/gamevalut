@@ -395,15 +395,16 @@ function RouletteBody({ text, scene, me, you, onDone, onSkip }: SceneProps & { t
 export function HandOver({ to, onReady, note, onSkip }: { to: string; onReady: () => void; note: string; onSkip: () => void }) {
   return (
     <div className="mt-6 flex flex-1 flex-col">
-      <div className="relative flex flex-1 flex-col justify-center overflow-hidden rounded-[2rem] border border-line bg-surface px-6 py-12">
-        <svg viewBox="0 0 200 200" className="pointer-events-none absolute -right-16 -top-16 size-72 text-primary/30 animate-slow-pulse" fill="none" stroke="currentColor" aria-hidden>
-          <circle cx="100" cy="100" r="40" />
-          <circle cx="100" cy="100" r="70" opacity=".5" />
-          <circle cx="100" cy="100" r="98" opacity=".25" />
-        </svg>
-        <p className="eyebrow">Handy weitergeben</p>
-        <p className="font-display mt-4 text-[3.2rem] leading-[0.95] text-balance break-words">Nur für<br /><em className="text-primary not-italic">{to}</em>.</p>
-        <p className="mt-5 max-w-[28ch] text-muted-foreground">{note}</p>
+      <div className="relative flex flex-1 flex-col justify-center border-y border-line py-12" data-testid="handoff">
+        <p className="flex items-center gap-3 font-mono text-[0.7rem] tracking-[0.24em] text-muted-foreground">
+          <span className="font-display text-lg tracking-normal text-champagne">N//</span>
+          <span className="h-px flex-1 bg-line" aria-hidden />
+          VERSIEGELT
+        </p>
+        <p className="eyebrow mt-8">Handy weitergeben</p>
+        <p className="font-display mt-3 text-[3.4rem] leading-[0.92] text-balance break-words">Nur für<br /><em className="text-primary">{to}</em>.</p>
+        <p className="mt-5 max-w-[30ch] text-muted-foreground">{note}</p>
+        <p className="mt-6 font-mono text-[0.65rem] tracking-[0.2em] text-muted-foreground">VORHERIGE WAHL BLEIBT VERDECKT</p>
       </div>
       <Btn size="lg" className="mt-6 w-full" onClick={() => { haptic(12); onReady(); }}>Ich bin {to} · aufdecken</Btn>
       <Btn variant="ghost" size="lg" className="mt-2 w-full" onClick={onSkip}>Skip</Btn>
