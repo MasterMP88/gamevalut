@@ -46,11 +46,6 @@ export function Player({ game }: { game: GameConfig }) {
   const [saveOpen, setSaveOpen] = useState(false);
   const [prompted, setPrompted] = useState(false);
 
-  useEffect(() => {
-    setAiSetupResolved(false);
-    setAiSetup(null);
-  }, [game.id, state?.seed]);
-
   // Contextual, once: after a few scenes a guest is offered to keep this night.
   useEffect(() => {
     if (!user && !prompted && state && state.sceneNumber >= 4 && !state.finished) { setPrompted(true); setSaveOpen(true); }
