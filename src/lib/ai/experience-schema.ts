@@ -5,6 +5,7 @@ const safeShort = z.string().trim().min(1).max(120);
 
 export const personalizePackRequestSchema = z.object({
   kind: z.literal("personalize-pack"),
+  aiConsent: z.literal(true),
   sessionKey,
   locale: z.enum(["de", "en"]).default("de"),
   playerCount: z.number().int().min(2).max(99),
@@ -18,6 +19,7 @@ export const personalizePackRequestSchema = z.object({
 
 export const judgeRequestSchema = z.object({
   kind: z.literal("judge"),
+  aiConsent: z.literal(true),
   sessionKey,
   locale: z.enum(["de", "en"]).default("de"),
   prompt: z.string().trim().min(4).max(240),
@@ -36,6 +38,7 @@ export const judgeRequestSchema = z.object({
 
 export const secretMissionRequestSchema = z.object({
   kind: z.literal("secret-mission"),
+  aiConsent: z.literal(true),
   sessionKey,
   locale: z.enum(["de", "en"]).default("de"),
   players: z
@@ -55,6 +58,7 @@ export const secretMissionRequestSchema = z.object({
 
 export const musicClueRequestSchema = z.object({
   kind: z.literal("music-clue"),
+  aiConsent: z.literal(true),
   sessionKey,
   locale: z.enum(["de", "en"]).default("de"),
   track: z.object({
