@@ -54,9 +54,9 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/tonight` } });
+        const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}${to}` } });
         if (error) throw error;
-        if (!data.session) setMsg({ kind: "ok", text: "Fast geschafft: Wir haben dir einen Bestätigungslink geschickt. Danach bist du angemeldet." });
+        if (!data.session) setMsg({ kind: "ok", text: "Fast geschafft: Bestätige die E-Mail. Dein bereinigter Gast-Spielstand wartet bis zu zwei Stunden auf diesem Gerät." });
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
         if (error) throw error;
