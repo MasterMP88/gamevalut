@@ -143,6 +143,74 @@ test("TIME//DROP cannot accidentally start through the generic GANG runtime", ()
   );
 });
 
+
+test("generic Gang sessions do not repeat prompts before the authored pool is exhausted", () => {
+  for (const playbook of GANG_PLAYBOOKS.filter((playbook) => playbook.runtime !== "time-drop")) {
+    let state = createGangRuntime({
+      id: `prompt-integrity-${playbook.id}`,
+      gameId: playbook.id,
+      players: players(playbook.minPlayers),
+      seed: 20261025,
+    });
+    const seen = new Set();
+    const roundsToCheck = Math.min(state.targetRounds, playbook.prompts.length);
+
+    for (let round = 0; round < roundsToCheck; round += 1) {
+      assert.equal(
+        seen.has(state.round.prompt.id),
+        false,
+        `${playbook.id} repeated prompt ${state.round.prompt.id} in round ${state.roundNumber}`,
+      );
+      seen.add(state.round.prompt.id);
+
+      const roundNumber = state.roundNumber;
+      let guard = 0;
+      while (!state.finished && state.roundNumber === roundNumber && guard < 20) {
+        guard += 1;
+        for (const [index, playerId] of requiredPlayerIds(state).entries()) {
+          state = submitGangAction(state, genericAction(state, playerId, index));
+        }
+        assert.equal(canAdvanceGangStage(state), true, `${playbook.id} blocked at ${publicGangView(state).stage}`);
+        state = advanceGangStage(state);
+      }
+    }
+
+    assert.equal(seen.size, roundsToCheck, `${playbook.id} did not produce a unique prompt sequence`);
+  }
+});
+
+test("majority runtime resolves tied room votes and scores only matching predictions", () => {
+  let state = createGangRuntime({
+    id: "majority-tie-runtime",
+    gameId: "the-majority",
+    players: players(4),
+    seed: 91,
+  });
+  const options = state.round.prompt.options;
+  assert.ok(options && options.length >= 3);
+  const [x, y, z] = options;
+
+  const predictions = { p1: x, p2: z, p3: y, p4: y };
+  for (const player of state.players) {
+    state = submitGangAction(state, { playerId: player.id, optionId: predictions[player.id] });
+  }
+  state = advanceGangStage(state);
+
+  const votes = { p1: x, p2: y, p3: x, p4: y };
+  for (const player of state.players) {
+    state = submitGangAction(state, { playerId: player.id, optionId: votes[player.id] });
+  }
+  state = advanceGangStage(state);
+  state = advanceGangStage(state);
+
+  assert.deepEqual(state.scores, { p1: 1, p2: 0, p3: 1, p4: 1 });
+  assert.deepEqual(
+    new Set(state.round.resolution?.revealItems?.map((item) => item.value)),
+    new Set([x, y]),
+  );
+  assert.deepEqual(new Set(state.round.resolution?.winners), new Set(["p1", "p3", "p4"]));
+});
+
 test("majority prediction awards points only after the reveal", () => {
   let state = createGangRuntime({
     id: "m1",
