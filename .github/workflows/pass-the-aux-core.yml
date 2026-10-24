@@ -1,0 +1,29 @@
+name: PASS//THE AUX core
+
+on:
+  pull_request:
+    paths:
+      - "packages/pass-the-aux-core/**"
+      - ".github/workflows/pass-the-aux-core.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/pass-the-aux-core/**"
+      - ".github/workflows/pass-the-aux-core.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pass-the-aux-core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/pass-the-aux-core/package.json
+      - run: npm install --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
