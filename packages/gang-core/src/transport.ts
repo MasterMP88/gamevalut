@@ -1,3 +1,5 @@
+import type { GangRoomPhase } from "./types.js";
+
 export const GANG_ROOM_RPC = {
   createRoom: "gang_create_room",
   joinRoom: "gang_join_room",
@@ -10,8 +12,6 @@ export const GANG_ROOM_RPC = {
   preparePrivateRound: "gang_prepare_private_round",
   revealRoundData: "gang_reveal_round_data",
 } as const;
-
-export type GangRoomPhase = "lobby" | "playing" | "paused" | "finished";
 
 export interface GangRoomPlayerPublic {
   id: string;
