@@ -353,15 +353,21 @@ function RouletteBody({ text, scene, me, you, onDone, onSkip }: SceneProps & { t
 function HandOver({ to, onReady, note, onSkip }: { to: string; onReady: () => void; note: string; onSkip: () => void }) {
   return (
     <div className="mt-6 flex flex-1 flex-col">
-      <div className="relative flex flex-1 flex-col justify-center overflow-hidden rounded-[2rem] border border-line bg-surface px-6 py-12">
+      <div className="relative flex flex-1 flex-col justify-center overflow-hidden border-y border-line bg-surface/45 px-5 py-12">
         <svg viewBox="0 0 200 200" className="pointer-events-none absolute -right-16 -top-16 size-72 text-primary/30 animate-slow-pulse" fill="none" stroke="currentColor" aria-hidden>
           <circle cx="100" cy="100" r="40" />
           <circle cx="100" cy="100" r="70" opacity=".5" />
           <circle cx="100" cy="100" r="98" opacity=".25" />
         </svg>
+        <div className="mb-8 flex items-center gap-3 text-primary/70" aria-hidden>
+          <span className="font-display text-xl tracking-[0.16em]">N//</span>
+          <span className="h-px flex-1 bg-gradient-to-r from-primary/60 to-transparent" />
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em]">sealed</span>
+        </div>
         <p className="eyebrow">Handy weitergeben</p>
         <p className="font-display mt-4 text-[3.2rem] leading-[0.95] text-balance break-words">Nur für<br /><em className="text-primary not-italic">{to}</em>.</p>
-        <p className="mt-5 max-w-[28ch] text-muted-foreground">{note}</p>
+        <p className="mt-5 max-w-[30ch] leading-relaxed text-muted-foreground">{note}</p>
+        <p className="mt-8 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground/55">Vorherige Auswahl ist verdeckt</p>
       </div>
       <Btn size="lg" className="mt-6 w-full" onClick={() => { haptic(12); onReady(); }}>Ich bin {to} · aufdecken</Btn>
       <Btn variant="ghost" size="lg" className="mt-2 w-full" onClick={onSkip}>Skip</Btn>
