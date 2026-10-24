@@ -46,6 +46,13 @@ function profileFor(capability: AiCapability): AiProfile {
   return AI_POLICIES[capability].mode === "ai-premium" ? "premium" : "lite";
 }
 
+function maxOutputTokensFor(request: ExperienceRequest) {
+  if (request.kind === "personalize-pack") return 3_600;
+  if (request.kind === "secret-mission") return 1_200;
+  if (request.kind === "judge") return 700;
+  return 700;
+}
+
 function promptFor(request: ExperienceRequest) {
   if (request.kind === "personalize-pack") {
     return {
@@ -153,6 +160,7 @@ export async function runExperience(input: unknown): Promise<ExperienceResult> {
         profile: profileFor(capability),
         system: prompt.system,
         user: prompt.user,
+        maxOutputTokens: maxOutputTokensFor(request),
       });
 
       if (!result.ok) return result;
