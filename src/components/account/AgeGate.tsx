@@ -14,7 +14,7 @@ export function useAgeConfirmed(): [boolean, () => void] {
   const confirm = useCallback(() => {
     setOk(true);
     try { localStorage.setItem(KEY, "1"); } catch { /* ignore */ }
-    if (user) void supabase.from("profiles").update({ age_confirmed_at: new Date().toISOString() }).eq("id", user.id);
+    if (user) void supabase.from("profiles").update({ age_confirmed_at: new Date().toISOString() }).eq("id", user.id).then(() => undefined);
   }, [user]);
   return [ok, confirm];
 }
