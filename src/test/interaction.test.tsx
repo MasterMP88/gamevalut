@@ -109,7 +109,7 @@ describe("scene UI", () => {
         memory={false}
         onDone={onDone}
         onSkip={onSkip}
-        battle={{ players: P, missionOwner: null, onWin: vi.fn() }}
+        battle={{ players: P, missionOwner: null, onWin: vi.fn(), onMissionResult: (success) => success ? onDone() : onSkip() }}
       />,
     );
     expect(screen.getByText(/Nova entscheidet/)).toBeInTheDocument();
@@ -117,6 +117,7 @@ describe("scene UI", () => {
     expect(screen.getByText(/Nova ist Referee/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Treffer/ }));
     expect(onDone).toHaveBeenCalledTimes(1);
+    expect(onSkip).not.toHaveBeenCalled();
   });
 
   it("prediction mismatch reads as plot twist", () => {
