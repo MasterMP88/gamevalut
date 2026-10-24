@@ -106,3 +106,37 @@ visible moments:
   permits it.
 - No live AI dependency may block starting or continuing a game.
 - No Lovable credits for backend, prompts, schemas, caching, tests or game logic.
+
+
+## Production quota stack
+
+Paid AI is fail-closed and requires all of these layers to allow a call:
+
+1. the user is authenticated; guests always keep playing through curated/local fallback;
+2. the request carries explicit AI consent for personalized experience APIs;
+3. the per-session capability budget allows the call;
+4. the persistent monthly user/capability quota allows it;
+5. the global database budget is enabled and has reserved headroom;
+6. `NOCTURNE_AI_GLOBAL_MONTHLY_USD_CAP` is configured server-side;
+7. `NOCTURNE_AI_ENABLED=true` and `OPENAI_API_KEY` are present.
+
+The database migration is `drizzle/migrations/0002_ai_usage_budget.sql`.
+The live database starts with AI disabled and a conservative reserved-cost ceiling of
+**$50/month**. The database and environment cap are both enforced; the lower effective
+limit wins.
+
+The monthly quotas are intentionally conservative beta ceilings, not product pricing.
+An optional future entitlement switch is already supported with
+`NOCTURNE_AI_REQUIRE_ENTITLEMENT=true` and `NOCTURNE_AI_PRODUCT_KEY` without
+inventing or exposing a paid plan today.
+
+### Failure behavior
+
+- Missing auth, quota exhaustion, global cap exhaustion, provider outage or missing key
+  never blocks gameplay.
+- The client receives the same deliberate local/repertoire fallback rather than provider,
+  rate-limit or billing terminology.
+- Provider failures release the conservative quota reservation.
+- Invalid model output remains charged against the reservation because the provider work
+  already occurred.
+- Public/guest games also degrade safely if Supabase configuration is unavailable.

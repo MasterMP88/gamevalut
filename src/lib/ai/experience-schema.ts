@@ -63,7 +63,7 @@ export const musicClueRequestSchema = z.object({
   locale: z.enum(["de", "en"]).default("de"),
   track: z.object({
     title: z.string().trim().min(1).max(160),
-    artist: z.string().trim().min(1).max(160),
+    artist: z.string().trim().min(1).max(160).optional(),
     year: z.number().int().min(1900).max(2100).optional(),
     genre: z.string().trim().max(80).optional(),
   }),

@@ -7,7 +7,7 @@ describe("NOCTURNE branding", () => {
     for (const g of GAMES) expect(g.title).not.toMatch(/roxy|michal/i);
   });
   it("exposes the clean public slugs", () => {
-    expect(GAMES.map((g) => g.slug)).toEqual(["first-spark", "after-dark", "night-shift", "heatcheck", "us-after-dark", "one-two", "night-echo", "director"]);
+    expect(GAMES.map((g) => g.slug)).toEqual(["first-spark", "after-dark", "night-shift", "heatcheck", "us-after-dark", "one-two", "night-echo", "director", "pass-the-aux"]);
   });
   it("every old slug aliases to an existing new slug", () => {
     for (const old of ["roxy-after-dark", "after-dark-2", "roxy-night", "battle", "coop", "ai-director"]) {

@@ -1,5 +1,5 @@
 import type { GameConfig } from "@/lib/game/games";
-import type { Steer } from "@/lib/game/types";
+import type { SceneType, Steer, Tempo } from "@/lib/game/types";
 
 type Props = {
   art: GameConfig["art"];
@@ -8,28 +8,42 @@ type Props = {
   steer?: Steer;
   /** Director: the orbit reacts to the host status. */
   status?: "idle" | "writing" | "live" | "offline";
-  /** Heatcheck: optional live score shifts the meeting point of both traces. */
-  scoreA?: number;
-  scoreB?: number;
-  /** US//AFTER DARK: optional live energy values deepen the shared third form. */
-  energies?: { chaos: number; connection: number; heat: number };
-  /** Director: current interaction type changes the editorial cue glyph. */
-  sceneType?: string | undefined;
-  /** After Dark: current tempo shift changes the kinetic index. */
-  tempo?: string | undefined;
+  /** Heatcheck: thermal meeting point follows the score. */
+  scoreA?: number | undefined;
+  scoreB?: number | undefined;
+  /** US//AFTER DARK: [chaos, connection, heat] shape the shared third form. */
+  energies?: { chaos: number; connection: number; heat: number } | undefined;
+  /** Director: cue mark reflects the current scene format. */
+  sceneType?: SceneType | undefined;
+  /** After Dark: active tempo shift. */
+  tempo?: Tempo | null | undefined;
 };
+
+const TEMPO_WORD: Record<Tempo, string> = { speed: "SPEED", silent: "STILLE", swap: "TAUSCH", rule: "REGEL" };
 
 const VB = "0 0 400 300";
 const STEER_TILT: Record<Exclude<Steer, null>, number> = { funnier: -6, flirtier: 4, game: -2, hotter: 8 };
 
-/** Eight bespoke key-art systems — one visual grammar per game, all pure SVG, all token colours. */
-export function GameArt({ art, className = "", steer = null, status = "idle", scoreA = 0, scoreB = 0, energies, sceneType, tempo }: Props) {
+/** Nine bespoke key-art systems — one visual grammar per game, all pure SVG, all token colours. */
+export function GameArt({ art, className = "", steer = null, status = "idle", scoreA, scoreB, energies, sceneType, tempo = null }: Props) {
+  const total = (scoreA ?? 0) + (scoreB ?? 0);
+  const meet = total > 0 ? 130 + ((scoreA ?? 0) / total) * 140 : 200;
+  const e = energies;
+  const avg = e ? (e.chaos + e.connection + e.heat) / 3 : 0;
+  const spread = e ? Math.max(e.chaos, e.connection, e.heat) - Math.min(e.chaos, e.connection, e.heat) : 0;
+  const blob = (() => {
+    // Organic third form: radius grows with the average, wobble grows with imbalance.
+    const r = 30 + Math.min(70, avg) * 0.8;
+    const w = Math.min(18, spread * 0.3);
+    const pts = Array.from({ length: 8 }, (_, i) => {
+      const a = (i / 8) * Math.PI * 2;
+      const rr = r + (i % 2 ? w : -w * 0.6);
+      return [201 + Math.cos(a) * rr * 0.8, 150 + Math.sin(a) * rr];
+    });
+    const mid = (i: number) => { const [x1 = 0, y1 = 0] = pts[i % 8]!; const [x2 = 0, y2 = 0] = pts[(i + 1) % 8]!; return `${((x1 + x2) / 2).toFixed(1)} ${((y1 + y2) / 2).toFixed(1)}`; };
+    return `M ${mid(7)} ` + pts.map(([x = 0, y = 0], i) => `Q ${x.toFixed(1)} ${y.toFixed(1)} ${mid(i)}`).join(" ") + " Z";
+  })();
   const c = "absolute inset-0 h-full w-full";
-  const scoreTotal = Math.max(1, scoreA + scoreB);
-  const heatX = scoreA + scoreB > 0 ? 74 + (scoreA / scoreTotal) * 252 : 200;
-  const coopAvg = energies ? (energies.chaos + energies.connection + energies.heat) / 3 : 42;
-  const coopBalance = energies ? 1 - (Math.max(energies.chaos, energies.connection, energies.heat) - Math.min(energies.chaos, energies.connection, energies.heat)) / 100 : .72;
-  const coopOpacity = Math.max(.18, Math.min(.72, .18 + (coopAvg / 100) * .54)) * Math.max(.55, coopBalance);
   return (
     <div className={`relative overflow-hidden bg-[var(--onyx)] ${className}`} aria-hidden>
       {art === "wine" && (
@@ -48,10 +62,10 @@ export function GameArt({ art, className = "", steer = null, status = "idle", sc
           {[[-14, -10], [12, -16], [18, 8], [-8, 16], [22, -2]].map(([dx, dy], i) => (
             <line key={i} x1="248" y1="138" x2={248 + dx! * 1.6} y2={138 + dy! * 1.6} stroke="var(--art-01-b)" strokeOpacity=".6" strokeLinecap="round" />
           ))}
-          {[[-36, 20, 1.7], [-24, -12, 1.2], [22, -25, 1.4], [36, 8, 1.1], [13, 27, 1.5]].map(([dx, dy, r], i) => (
-            <circle key={`ember-${i}`} cx={248 + dx!} cy={138 + dy!} r={r} fill="var(--art-01-b)" opacity={0.28 + i * .08} className="animate-slow-pulse" style={{ transformOrigin: `${248 + dx!}px ${138 + dy!}px`, animationDelay: `${i * 420}ms` }} />
-          ))}
           <circle cx="248" cy="138" r="4" fill="var(--art-01-b)" className="animate-ignite" />
+          {[[230, 120, 0], [262, 112, 1.2], [240, 160, 2.1], [270, 150, 0.6]].map(([x, y, d]) => (
+            <circle key={`${x}`} cx={x} cy={y} r="1.2" fill="var(--art-01-b)" className="animate-ember" style={{ animationDelay: `${d}s` }} />
+          ))}
         </svg>
       )}
       {art === "kinetic" && (
@@ -68,9 +82,10 @@ export function GameArt({ art, className = "", steer = null, status = "idle", sc
           ))}
           <g transform="translate(330 60)">
             <circle r="34" fill="none" stroke="var(--art-02-a)" strokeOpacity=".6" />
-            <g className="animate-orbit" style={{ animationDuration: "8s" }}>
+            <g className="animate-orbit" style={{ animationDuration: tempo === "speed" ? "2.5s" : tempo ? "5s" : "8s" }}>
               <line x1="0" y1="0" x2="0" y2="-30" stroke="var(--art-02-a)" strokeWidth="2" strokeLinecap="round" />
             </g>
+            {tempo && <text y="52" textAnchor="middle" fontFamily="Geist Mono, monospace" fontSize="10" letterSpacing="2" fill="var(--art-02-a)">{TEMPO_WORD[tempo]}</text>}
           </g>
         </svg>
       )}
@@ -93,11 +108,12 @@ export function GameArt({ art, className = "", steer = null, status = "idle", sc
       {art === "battle" && (
         /* 04 HEATCHECK — two thermal signals approaching from opposite sides */
         <svg className={c} viewBox={VB} preserveAspectRatio="xMidYMid slice">
-          <path d={`M0 110 L60 108 L80 80 L100 140 L120 96 L150 112 L${Math.max(155, heatX - 10)} 104`} stroke="var(--art-04-a)" strokeWidth="2" fill="none" pathLength={1} className="animate-draw" />
-          <path d={`M400 190 L340 192 L320 222 L300 160 L280 204 L250 186 L${Math.min(245, heatX + 10)} 196`} stroke="var(--art-04-b)" strokeWidth="2" fill="none" pathLength={1} className="animate-draw" style={{ animationDelay: "250ms" }} />
-          <line x1={heatX} y1="40" x2={heatX} y2="260" stroke="var(--art-04-a)" strokeOpacity=".28" strokeDasharray="2 5" style={{ transition: "all 700ms var(--ease-out-expo)" }} />
-          <circle cx={Math.max(155, heatX - 10)} cy="104" r="4" fill="var(--art-04-a)" style={{ transition: "all 700ms var(--ease-out-expo)" }} />
-          <circle cx={Math.min(245, heatX + 10)} cy="196" r="4" fill="var(--art-04-b)" style={{ transition: "all 700ms var(--ease-out-expo)" }} />
+          <path d="M0 110 L60 108 L80 80 L100 140 L120 96 L150 112 L190 104" stroke="var(--art-04-a)" strokeWidth="2" fill="none" pathLength={1} className="animate-draw" />
+          <path d="M400 190 L340 192 L320 222 L300 160 L280 204 L250 186 L210 196" stroke="var(--art-04-b)" strokeWidth="2" fill="none" pathLength={1} className="animate-draw" style={{ animationDelay: "250ms" }} />
+          <line x1={meet} y1="40" x2={meet} y2="260" stroke="var(--art-04-b)" strokeOpacity={total > 0 ? 0.6 : 0.25} strokeDasharray="2 5" style={{ transition: "all .8s var(--ease-out-expo)" }} />
+          {total > 0 && <circle cx={meet} cy="150" r="10" fill="var(--art-04-b)" opacity=".35" className="animate-slow-pulse" style={{ transformOrigin: `${meet}px 150px` }} />}
+          <circle cx="190" cy="104" r="4" fill="var(--art-04-a)" />
+          <circle cx="210" cy="196" r="4" fill="var(--art-04-b)" />
           <text x="200" y="285" textAnchor="middle" fontFamily="Geist Mono, monospace" fontSize="10" fill="var(--art-04-a)" opacity=".55" letterSpacing="3">01 — VS — 02</text>
         </svg>
       )}
@@ -107,9 +123,15 @@ export function GameArt({ art, className = "", steer = null, status = "idle", sc
           <defs>
             <clipPath id="co-a"><circle cx="170" cy="150" r="88" /></clipPath>
           </defs>
-          <path d="M78 150 C78 87 122 55 177 69 C222 80 238 119 218 165 C198 211 144 235 102 206 C79 190 70 171 78 150Z" fill="none" stroke="var(--art-05-a)" strokeOpacity=".82" />
-          <path d="M322 150 C322 87 278 55 223 69 C178 80 162 119 182 165 C202 211 256 235 298 206 C321 190 330 171 322 150Z" fill="none" stroke="var(--art-05-b)" strokeOpacity=".82" />
-          <path d="M168 83 C198 70 233 84 246 113 C262 149 238 197 201 218 C164 197 140 149 156 113 C160 102 164 92 168 83Z" fill="var(--art-05-a)" opacity={coopOpacity} className="animate-slow-pulse" style={{ transformOrigin: "201px 150px", transition: "opacity 800ms var(--ease-out-expo)" }} />
+          <circle cx="170" cy="150" r="88" fill="none" stroke="var(--art-05-a)" strokeOpacity=".8" />
+          <circle cx="232" cy="150" r="88" fill="none" stroke="var(--art-05-b)" strokeOpacity=".8" />
+          {e ? (
+            <path d={blob} fill="var(--art-05-a)" opacity={0.25 + Math.min(0.45, avg / 160)} style={{ transition: "d .9s var(--ease-out-expo), opacity .9s" }} />
+          ) : (
+            <g clipPath="url(#co-a)">
+              <circle cx="232" cy="150" r="88" fill="var(--art-05-a)" opacity=".5" className="animate-slow-pulse" style={{ transformOrigin: "201px 150px" }} />
+            </g>
+          )}
           {Array.from({ length: 7 }).map((_, i) => (
             <line key={i} x1="201" x2="201" y1={86 + i * 21} y2={96 + i * 21} stroke="var(--art-05-b)" strokeOpacity=".5" />
           ))}
@@ -138,6 +160,27 @@ export function GameArt({ art, className = "", steer = null, status = "idle", sc
           <text x="330" y="76" fontFamily="Geist Mono, monospace" fontSize="9" fill="var(--art-07-b)" opacity=".75" letterSpacing="1.5">SZ. 07 → 15</text>
         </svg>
       )}
+      {art === "aux" && (
+        /* 09 PASS//THE AUX — two counter-running frequency fields, a signal trace and a needle on the beat */
+        <svg className={c} viewBox={VB} preserveAspectRatio="xMidYMid slice">
+          <line x1="0" y1="150" x2="400" y2="150" stroke="var(--art-09-a)" strokeOpacity=".35" />
+          <g className="animate-aux-wave">
+            {Array.from({ length: 60 }, (_, i) => {
+              const h = 10 + ((i * 37) % 23) * 2.2;
+              return <rect key={`a${i}`} x={i * 8} y={150 - h} width="2" height={h} fill="var(--art-09-a)" opacity={0.25 + ((i * 13) % 10) / 22} />;
+            })}
+          </g>
+          <g className="animate-aux-wave" style={{ animationDirection: "reverse", animationDuration: "12s" }}>
+            {Array.from({ length: 60 }, (_, i) => {
+              const h = 8 + ((i * 53) % 19) * 2.4;
+              return <rect key={`b${i}`} x={i * 8 + 4} y={150} width="2" height={h} fill="var(--art-09-b)" opacity={0.2 + ((i * 7) % 10) / 24} />;
+            })}
+          </g>
+          <line x1="248" y1="60" x2="248" y2="240" stroke="var(--foreground)" strokeOpacity=".8" />
+          <circle cx="248" cy="150" r="4" fill="var(--foreground)" className="animate-slow-pulse" style={{ transformOrigin: "248px 150px" }} />
+          <text x="256" y="72" fontFamily="Geist Mono, monospace" fontSize="9" fill="var(--art-09-a)" opacity=".8" letterSpacing="1.5">A ⟷ B</text>
+        </svg>
+      )}
       {art === "living" && (
         /* 08 DIRECTOR — a living orbital system: controlled pulse, editorial cue marks */
         <svg className={c} viewBox={VB} preserveAspectRatio="xMidYMid slice">
@@ -156,9 +199,7 @@ export function GameArt({ art, className = "", steer = null, status = "idle", sc
             <circle cx="310" cy="150" r="3" fill="var(--art-08-a)" />
             <circle cx="130" cy="150" r="2" fill="var(--art-08-b)" />
           </g>
-          {["CUE", sceneType ? sceneType.slice(0, 4).toUpperCase() : "CUT", "ECHO"].map((t, i) => (
-            <text key={`${t}-${i}`} x={34 + i * 128} y="276" fontFamily="Geist Mono, monospace" fontSize="9" letterSpacing="3" fill="var(--art-08-a)" opacity={i === 1 && sceneType ? .78 : .5}>{`0${i + 1} ${t}`}</text>
-          ))}
+          {sceneType && <text x="24" y="282" fontFamily="Geist Mono, monospace" fontSize="10" letterSpacing="2" fill="var(--art-08-a)" opacity=".8">CUE · {sceneType}</text>}
         </svg>
       )}
     </div>

@@ -10,6 +10,7 @@ import {
   type ExperienceRequest,
 } from "./experience-schema";
 import { extractJsonObject, generateAiText, type AiProfile } from "./provider.server";
+import { refundPersistentAiQuota, reservePersistentAiQuota } from "./quota.server";
 
 export type ExperienceResult =
   | {
@@ -120,7 +121,7 @@ export function musicClueLeaksAnswer(request: ExperienceRequest, raw: unknown) {
   if (!parsed.success) return true;
 
   const title = normalized(request.track.title);
-  const artist = normalized(request.track.artist);
+  const artist = normalized(request.track.artist ?? "");
 
   return parsed.data.clues.some((clue) => {
     const candidate = normalized(clue);
@@ -131,7 +132,7 @@ export function musicClueLeaksAnswer(request: ExperienceRequest, raw: unknown) {
   });
 }
 
-export async function runExperience(input: unknown): Promise<ExperienceResult> {
+export async function runExperience(input: unknown, userId?: string | null): Promise<ExperienceResult> {
   const parsed = experienceRequestSchema.safeParse(input);
   if (!parsed.success) return { ok: false, reason: "invalid" };
 
@@ -149,13 +150,22 @@ export async function runExperience(input: unknown): Promise<ExperienceResult> {
     cacheKey,
     policy.cacheTtlMs,
     async () => {
+      const persistent = await reservePersistentAiQuota({
+        userId,
+        capability,
+        units: items,
+      });
+      if (!persistent.allowed) {
+        return { ok: false as const, reason: "budget" as const };
+      }
+
       const budget = consumeAiBudget({
         sessionKey: request.sessionKey,
         capability,
         items,
       });
-
       if (!budget.allowed) {
+        await refundPersistentAiQuota({ userId, capability, units: items });
         return { ok: false as const, reason: "budget" as const };
       }
 
@@ -167,7 +177,10 @@ export async function runExperience(input: unknown): Promise<ExperienceResult> {
         maxOutputTokens: maxOutputTokensFor(request),
       });
 
-      if (!result.ok) return result;
+      if (!result.ok) {
+        await refundPersistentAiQuota({ userId, capability, units: items });
+        return result;
+      }
 
       const json = extractJsonObject(result.text);
       if (!json || musicClueLeaksAnswer(request, json)) {

@@ -38,6 +38,12 @@ export const directorContextSchema = z.object({
   wantTypes: z.array(z.string().max(20)).max(6).optional(),
   intensityCap: z.number().int().min(1).max(5),
   skipCount: z.number().int().min(0).max(10000),
+  personalization: z.object({
+    vibe: z.enum(["chill", "funny", "wild", "flirty", "mixed"]).nullable(),
+    intensity: z.number().int().min(1).max(5),
+    insiders: z.array(z.string().max(60)).max(6),
+    taboo: z.array(z.string().max(60)).max(6),
+  }).optional(),
 });
 
 const BANNED = /(porn|nackt ausziehen|sex haben|zwing|demütig|erniedrig|schlag|würg|betrunken|trink aus|exen)/i;

@@ -4,6 +4,10 @@ import { AI_POLICIES } from "./ai/policy";
 import { consumeAiBudget } from "./ai/budget.server";
 import { aiCacheKey, withAiCache } from "./ai/cache.server";
 import { extractJsonObject, generateAiText } from "./ai/provider.server";
+import {
+  refundPersistentAiQuota,
+  reservePersistentAiQuota,
+} from "./ai/quota.server";
 
 type Ctx = z.infer<typeof directorContextSchema>;
 
@@ -29,9 +33,10 @@ const INSTRUCTIONS = [
   "DRAMATURGIE: komponiere Formate, nicht nur Fragen. Nutze recentTypes und wantTypes. Kein Typ häufiger als nötig.",
   "Pacing: lustig → Überraschung → Nähe → verspielte Spannung → Erholung → Callback.",
   "Höchstens ein ECHO pro Batch. Nach einer intensiven Szene folgt eine leichtere.",
+  "PERSONALISIERUNG: Wenn personalization vorhanden ist, nutze vibe/intensity als weiche Stilhinweise. insiders sind freiwillige Hinweise und dürfen nur subtil vorkommen, nie wie ein Dossier. taboo ist absolut: diese Themen weder direkt noch indirekt aufgreifen. Ohne personalization keine Annahmen erfinden.",
   'Antwort ausschließlich als JSON: {"scenes":[...]} mit genau ' +
     BATCH_SIZE +
-    ' Szenen im bestehenden Director-Schema.',
+    " Szenen im bestehenden Director-Schema.",
 ].join("\n");
 
 export type DirectorResult =
@@ -43,10 +48,12 @@ export type DirectorResult =
 
 export async function runDirector(
   ctx: Ctx,
+  userId?: string | null,
   signal?: AbortSignal,
 ): Promise<DirectorResult> {
   const sessionKey =
-    ctx.sessionKey || "legacy:" + ctx.players.join(":") + ":" + String(ctx.gameId || "director");
+    ctx.sessionKey ||
+    "legacy:" + ctx.players.join(":") + ":" + String(ctx.gameId || "director");
 
   const cacheKey = await aiCacheKey("director", {
     ...ctx,
@@ -57,14 +64,27 @@ export async function runDirector(
     cacheKey,
     AI_POLICIES.director.cacheTtlMs,
     async () => {
-      const budget = consumeAiBudget({
+      const persistent = await reservePersistentAiQuota({
+        userId,
+        capability: "director",
+        units: BATCH_SIZE,
+      });
+      if (!persistent.allowed) {
+        return { ok: false as const, reason: "budget" as const };
+      }
+
+      const sessionBudget = consumeAiBudget({
         sessionKey,
         capability: "director",
         items: BATCH_SIZE,
         sceneNumber: ctx.sceneNumber,
       });
-
-      if (!budget.allowed) {
+      if (!sessionBudget.allowed) {
+        await refundPersistentAiQuota({
+          userId,
+          capability: "director",
+          units: BATCH_SIZE,
+        });
         return { ok: false as const, reason: "budget" as const };
       }
 
@@ -87,7 +107,14 @@ export async function runDirector(
         ...(signal ? { signal } : {}),
       });
 
-      if (!result.ok) return result;
+      if (!result.ok) {
+        await refundPersistentAiQuota({
+          userId,
+          capability: "director",
+          units: BATCH_SIZE,
+        });
+        return result;
+      }
 
       const json = extractJsonObject(result.text);
       if (!json || typeof json !== "object") {

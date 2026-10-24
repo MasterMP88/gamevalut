@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { SaveSheet, SaveBadge } from "@/components/account/SaveSheet";
+import { useAuth } from "@/lib/auth";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, SlidersHorizontal, Zap } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -9,19 +11,20 @@ import { EndScreen } from "./EndScreen";
 import { useSessions } from "@/lib/game/store";
 import { haptic } from "@/lib/haptics";
 import { useDirector } from "@/lib/game/use-director";
-import { BATTLE_CHAPTER, COMEBACK_GAP, VAULT_THRESHOLD, energyGain, fill, targetPhase, type Action } from "@/lib/game/engine";
-import { MILESTONES } from "@/lib/game/specials";
+import { BATTLE_CHAPTER, COMEBACK_GAP, fill, targetPhase, type Action } from "@/lib/game/engine";
+import { EnergyField } from "./EnergyField";
 import { GameArt } from "@/components/vault/GameArt";
+import { DirectorStatus, NightSetup, type NightSetupValue } from "@/components/ai/AiSurfaces";
 import { PHASE_NAMES } from "@/lib/game/scenes";
 import type { GameConfig } from "@/lib/game/games";
 import type { Steer } from "@/lib/game/types";
 import { cn } from "@/lib/utils";
 
-const STEERS: { id: Exclude<Steer, null>; label: string }[] = [
-  { id: "funnier", label: "Lustiger" },
-  { id: "flirtier", label: "Flirtiger" },
-  { id: "game", label: "Spiel" },
-  { id: "hotter", label: "Heißer" },
+const STEERS: { id: Exclude<Steer, null>; label: string; arrow: string }[] = [
+  { id: "funnier", label: "Lustiger", arrow: "↖" },
+  { id: "flirtier", label: "Flirtiger", arrow: "↗" },
+  { id: "game", label: "Spiel", arrow: "↙" },
+  { id: "hotter", label: "Heißer", arrow: "↘" },
 ];
 
 export function Player({ game }: { game: GameConfig }) {
@@ -30,21 +33,55 @@ export function Player({ game }: { game: GameConfig }) {
   const dispatch = (a: Action) => d(game.id, a);
   const [menu, setMenu] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
-  const status = useDirector(state, !!game.ai, dispatch);
+  const { user } = useAuth();
+  const [aiSetupResolved, setAiSetupResolved] = useState(false);
+  const [aiSetup, setAiSetup] = useState<NightSetupValue | null>(null);
+  const status = useDirector(
+    state,
+    !!game.ai && !!user && aiSetupResolved,
+    dispatch,
+    aiSetup,
+  );
+  const { saveStatus } = useSessions();
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [prompted, setPrompted] = useState(false);
+
+  // Contextual, once: after a few scenes a guest is offered to keep this night.
+  useEffect(() => {
+    if (!user && !prompted && state && state.sceneNumber >= 4 && !state.finished) { setPrompted(true); setSaveOpen(true); }
+  }, [user, prompted, state]);
 
   if (!state) return null;
   const me = state.players[state.turn];
   const you = state.players[(1 - state.turn) as 0 | 1];
   const scene = state.current;
-  const covertDue = !!state.covert && state.sceneNumber >= state.covert.dueAt;
 
   return (
     <div className="flex min-h-dvh flex-col bg-background safe-x safe-top safe-bottom">
+      {game.ai && user && !aiSetupResolved && (
+        <div className="fixed inset-0 z-[80] overflow-y-auto bg-background safe-x safe-top safe-bottom">
+          <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center py-8">
+            <NightSetup
+              onSubmit={(value) => {
+                setAiSetup(value);
+                setAiSetupResolved(true);
+              }}
+              onSkip={() => {
+                setAiSetup(null);
+                setAiSetupResolved(true);
+              }}
+            />
+          </main>
+        </div>
+      )}
       <header className="flex items-center justify-between gap-3">
         <Link to="/" className="tap -ml-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm text-muted-foreground" aria-label="Zurück zur Übersicht (Spiel bleibt offen)">
           <ArrowLeft className="size-5" /> <span className="font-display tracking-[0.18em]">N//</span>
         </Link>
-        <p className="eyebrow truncate">{game.number} · {game.title}</p>
+        <div className="flex min-w-0 flex-col items-center">
+          <p className="eyebrow truncate">{game.number} · {game.title}</p>
+          <SaveBadge status={user ? saveStatus[game.id] ?? "idle" : "guest"} onGuest={() => setSaveOpen(true)} />
+        </div>
         <Btn variant="quiet" size="icon" aria-label="Einstellungen" onClick={() => setMenu(true)}>
           <SlidersHorizontal className="size-5" />
         </Btn>
@@ -53,53 +90,27 @@ export function Player({ game }: { game: GameConfig }) {
       {state.finished ? (
         <EndScreen game={game} state={state} dispatch={dispatch} onEnd={() => end(game.id)} />
       ) : (
-        <main className="mx-auto flex w-full max-w-xl flex-1 flex-col pt-8">
+        <main className="mx-auto flex w-full max-w-xl flex-1 flex-col pt-5 sm:pt-8">
           <div className="flex flex-col-reverse gap-3">
             <div className="min-w-0">
               <p className="eyebrow">
                 Szene {state.sceneNumber}
                 {game.battle ? ` · Kapitel ${Math.ceil(state.sceneNumber / BATTLE_CHAPTER)}` : ` · ${PHASE_NAMES[targetPhase(state)]}`}
               </p>
-              <p key={`${state.sceneNumber}-${me}`} className="font-display mt-1 truncate text-6xl leading-none animate-rise">{me}</p>
+              <p className="mt-1 flex min-w-0 items-baseline gap-3">
+                <span key={`${state.sceneNumber}-${me}`} className="font-display min-w-0 truncate text-5xl leading-none animate-rise sm:text-6xl">{me}</span>
+                <span className="shrink-0 text-sm text-muted-foreground">ist dran</span>
+              </p>
             </div>
-            {game.ai && (
-              <span className={cn("eyebrow flex min-w-0 items-center gap-2", status === "offline" ? "text-muted-foreground" : "text-champagne")} aria-live="polite">
-                <span className={cn("size-2 rounded-full", status === "offline" ? "bg-muted-foreground" : "bg-champagne animate-slow-pulse")} />
-                {status === "offline" ? "Local mode" : status === "writing" ? "Director schreibt die Nacht weiter …" : "Director live"}
-              </span>
-            )}
+            {game.ai && <DirectorStatus status={user ? status : "offline"} />}
           </div>
 
-          {game.id === "roxy-after-dark" && (() => {
-            const stages = ["Ignite", "Read", "Pull", "Spark"];
-            const active = Math.min(stages.length - 1, Math.floor((state.sceneNumber - 1) / 3));
-            return (
-              <div className="mt-5 border-y border-line py-3" aria-label={`First Spark Phase ${stages[active]}`}>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="eyebrow text-champagne">Ignition sequence</span>
-                  <span className="font-display text-lg italic">{stages[active]}</span>
-                </div>
-                <div className="mt-3 grid grid-cols-4 gap-2" aria-hidden>
-                  {stages.map((label, i) => (
-                    <span key={label} className={cn("h-[2px] rounded-full transition-colors duration-500", i <= active ? "bg-primary" : "bg-line")} />
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-
           {game.id === "one-two" && (
-            <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center border-y border-line py-3" aria-label="ONE TWO Wechsel">
-              <div className={cn("min-w-0", state.turn === 0 ? "text-foreground" : "text-muted-foreground/45")}>
-                <p className="eyebrow">ONE</p>
-                <p className="font-display mt-1 truncate text-2xl">{state.players[0]}</p>
-              </div>
-              <span className="font-display px-4 text-xl text-muted-foreground">/</span>
-              <div className={cn("min-w-0 text-right", state.turn === 1 ? "text-foreground" : "text-muted-foreground/45")}>
-                <p className="eyebrow">TWO</p>
-                <p className="font-display mt-1 truncate text-2xl">{state.players[1]}</p>
-              </div>
-            </div>
+            <p className="mt-5 flex items-center gap-3 font-display text-2xl leading-none" aria-label={`Rhythmus: Person ${state.turn + 1} von 2`} data-testid="rhythm">
+              <span className={cn("transition-colors", state.turn === 0 ? "text-foreground" : "text-muted-foreground/40")}>1</span>
+              <span className="h-px w-8 bg-line" aria-hidden />
+              <span className={cn("transition-colors", state.turn === 1 ? "text-foreground" : "text-muted-foreground/40")}>2</span>
+            </p>
           )}
 
           {game.battle && (() => {
@@ -107,16 +118,18 @@ export function Player({ game }: { game: GameConfig }) {
             const trailing = state.sparks[(1 - state.turn) as 0 | 1] - state.sparks[state.turn] >= COMEBACK_GAP;
             return (
               <div className="mt-6">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-3" aria-label={`Spielstand: ${state.players[0]} ${state.sparks[0]}, ${state.players[1]} ${state.sparks[1]} Sparks`}>
                   {state.players.map((n, i) => (
-                    <div key={i} className={cn("min-w-0", i === 1 && "text-right")}>
-                      <p className="eyebrow truncate">{n}</p>
-                      <p className={cn("mt-1 flex items-baseline gap-2", i === 1 && "justify-end")}>
-                        <span className="font-display text-4xl">{state.sparks[i]}</span>
-                        <span className="text-sm text-muted-foreground">Streak {state.streaks[i]}/3</span>
+                    <div key={i} className={cn("min-w-0 transition-opacity", i === 1 && "order-3 text-right", state.turn !== i && "opacity-60")}>
+                      <p className="eyebrow truncate">{n}{state.turn === i && " · dran"}</p>
+                      <p className={cn("font-display mt-1 text-5xl leading-none tabular-nums", state.sparks[i]! > state.sparks[1 - i]! && "text-primary")}>{state.sparks[i]}</p>
+                      <p className={cn("mt-1 flex items-center gap-1", i === 1 && "justify-end")} aria-label={`Streak ${state.streaks[i]} von 3, Power-ups ${state.powerUps[i]}`}>
+                        {[0, 1, 2].map((s) => <span key={s} className={cn("inline-block size-1.5 rotate-45", s < state.streaks[i]! ? "bg-champagne" : "bg-line")} />)}
+                        {state.powerUps[i]! > 0 && <span className="ml-1 inline-flex items-center text-xs text-champagne"><Zap className="size-3" />{state.powerUps[i]}</span>}
                       </p>
                     </div>
                   ))}
+                  <span className="order-2 pb-6 font-display text-lg italic text-muted-foreground" aria-hidden>vs</span>
                 </div>
                 {/* two thermal signals pushing toward each other */}
                 <div className="relative mt-2 flex h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden>
@@ -128,140 +141,61 @@ export function Player({ game }: { game: GameConfig }) {
             );
           })()}
 
-          {game.coop && (
-            <ol className="mt-5 grid grid-cols-3 gap-2 border-y border-line py-3" aria-label="Gemeinsame Meilensteine">
-              {MILESTONES.map((m) => {
-                const on = state.milestones.includes(m.id);
-                return (
-                  <li key={m.id} className={cn("flex min-w-0 items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors", on ? "text-foreground" : "text-muted-foreground/50")}>
-                    <span className={cn("inline-block size-2 rotate-45 border", on ? "border-champagne bg-champagne" : "border-line")} />
-                    {m.label}
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-          {game.coop && (
-            <div className="mt-4 flex items-center gap-5" aria-label={`Gemeinsame Energien: Chaos ${state.energies.chaos}, Connection ${state.energies.connection}, Heat ${state.energies.heat} von 100`}>
-              {([["chaos", "Chaos", "var(--champagne)"], ["connection", "Connection", "var(--art-07-a)"], ["heat", "Heat", "var(--primary)"]] as const).map(([k, label, col]) => {
-                const v = state.energies[k];
-                const ready = v >= VAULT_THRESHOLD;
-                return (
-                  <div key={k} className="flex items-center gap-2">
-                    <span
-                      className={cn("block rounded-full transition-all duration-700", ready && "animate-slow-pulse")}
-                      style={{ width: 8 + v / 7, height: 8 + v / 7, background: col, opacity: 0.25 + v / 140, boxShadow: ready ? `0 0 0 3px color-mix(in oklab, ${col} 25%, transparent)` : undefined }}
-                    />
-                    <span className="eyebrow">{label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {game.id === "after-dark-2" && state.tempo && (
-            <div className="mt-4 flex items-center gap-3 border-y border-line py-2" aria-live="polite">
-              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-champagne">Tempo Shift</span>
-              <span className="font-display text-lg italic">
-                {state.tempo === "speed" ? "Schneller." : state.tempo === "silent" ? "Ohne Worte." : state.tempo === "swap" ? "Rollenwechsel." : "Neue Regel."}
-              </span>
-              <span className="ml-auto font-mono text-[9px] text-muted-foreground">{state.tempoLeft} Beats</span>
-            </div>
-          )}
-
-          {state.covert && !covertDue && (
-            <p className="mt-4 flex items-center justify-between gap-3 border-y border-line py-2 text-sm" aria-live="polite">
-              <span className="eyebrow text-champagne">Covert live</span>
-              <span className="text-muted-foreground">Auflösung in {Math.max(1, state.covert.dueAt - state.sceneNumber)} {state.covert.dueAt - state.sceneNumber === 1 ? "Szene" : "Szenen"}</span>
+          {game.battle && state.secretMission && scene?.type !== "SHOWDOWN" && (
+            <p className="mt-4 flex items-center gap-3 font-mono text-[0.65rem] tracking-[0.2em] text-muted-foreground" data-testid="mission-active">
+              <span className="font-display text-sm tracking-normal text-primary">N//</span>
+              EINE GEHEIME MISSION LÄUFT · INHALT VERSIEGELT
             </p>
           )}
 
+          {game.coop && <EnergyField energies={state.energies} milestones={state.milestones.length} />}
+
           {game.memory && state.anchors.some((a) => !a.used) && (
-            <p className="mt-4 flex items-center gap-2 border-l border-violet/40 pl-3 font-mono text-[10px] uppercase tracking-[0.16em] text-violet" aria-live="polite">
+            <p className="mt-4 flex items-center gap-2 text-xs text-violet" aria-live="polite">
               <span className="relative inline-flex size-3"><span className="absolute inset-0 rounded-full border border-violet animate-ripple" /><span className="m-auto size-1 rounded-full bg-violet" /></span>
               Ein Echo formt sich · {state.anchors.filter((a) => !a.used).length}
             </p>
           )}
 
-          {game.id !== "one-two" && (
-            <div className={cn(
-              "mt-5 overflow-hidden border-y border-line",
-              game.id === "roxy-after-dark" && "h-16 opacity-80",
-              game.id === "after-dark-2" && "h-20",
-              game.id === "roxy-night" && "h-24",
-              game.id === "battle" && "h-20",
-              game.id === "coop" && "h-24",
-              game.id === "night-echo" && "h-16 opacity-85",
-              game.id === "ai-director" && "h-24"
-            )}>
-              <GameArt
-                art={game.art}
-                steer={state.steer}
-                status={status}
-                scoreA={state.sparks[0]}
-                scoreB={state.sparks[1]}
-                energies={state.energies}
-                sceneType={scene?.type}
-                tempo={state.tempo ?? undefined}
-                className="h-full w-full"
-              />
-            </div>
+          {game.id !== "one-two" && game.id !== "pass-the-aux" && (
+            <GameArt art={game.art} steer={state.steer} status={status} scoreA={game.battle ? state.sparks[0] : undefined} scoreB={game.battle ? state.sparks[1] : undefined}
+              energies={game.coop ? state.energies : undefined} sceneType={game.ai ? scene?.type : undefined} tempo={state.tempo}
+              className="mt-5 h-16 opacity-80 [mask-image:linear-gradient(90deg,transparent,black_12%,black_88%,transparent)]" />
+          )}
+          {state.tempo && (
+            <p className="mt-2 flex items-center gap-3 font-mono text-[0.7rem] tracking-[0.2em] text-[var(--art-02-a)]" aria-live="polite">
+              <span className="h-px flex-1 bg-[var(--art-02-a)]/50" aria-hidden />
+              TEMPO SHIFT · {({ speed: "SPEED", silent: "STILLE", swap: "TAUSCH", rule: "REGEL" } as const)[state.tempo]} · NOCH {state.tempoLeft}
+            </p>
           )}
 
           <div className="mt-8 flex flex-1 flex-col">
-            {covertDue && state.covert && (() => {
-              const owner = state.covert.owner;
-              const other = (1 - owner) as 0 | 1;
-              const mission = fill(state.covert.text, state.players[owner], state.players[other]);
-              return (
-                <section className="mt-2 flex flex-1 flex-col animate-rise" aria-label="Covert Mission Auflösung">
-                  <p className="eyebrow text-primary">Covert reveal</p>
-                  <p className="font-display mt-3 text-[2.8rem] leading-[0.98]">Hat {state.players[owner]} es geschafft?</p>
-                  <div className="mt-6 border-y border-line py-5">
-                    <p className="eyebrow text-champagne">Der versiegelte Auftrag</p>
-                    <p className="font-display mt-2 text-2xl leading-snug">{mission}</p>
-                  </div>
-                  <p className="mt-5 text-sm text-muted-foreground">{state.players[other]} entscheidet. Danach geht die laufende Szene weiter.</p>
-                  <div className="mt-auto grid grid-cols-2 gap-3 pt-8">
-                    <Btn variant="outline" size="lg" onClick={() => dispatch({ type: "COVERT_RESULT", success: false })}>Erwischt</Btn>
-                    <Btn variant="accent" size="lg" onClick={() => dispatch({ type: "COVERT_RESULT", success: true })}>Geschafft ✦</Btn>
-                  </div>
-                </section>
-              );
-            })()}
-            {!covertDue && scene?.cue && (
+            {scene?.cue && (
               <p key={`cue-${state.sceneNumber}`} className="mb-3 font-display text-lg italic text-champagne animate-rise">{fill(scene.cue, me, you)}</p>
             )}
-            {!covertDue && game.coop && scene && (() => {
-              const gain = energyGain(scene.flavor);
-              const parts = [
-                gain.chaos ? `+${gain.chaos} Chaos` : null,
-                gain.connection ? `+${gain.connection} Connection` : null,
-                gain.heat ? `+${gain.heat} Heat` : null,
-              ].filter(Boolean);
-              return (
-                <p className="mb-4 flex items-center justify-between gap-3 border-y border-line py-2 text-sm">
-                  <span className="eyebrow text-champagne">Team reward</span>
-                  <span className="text-right text-muted-foreground">{parts.join(" · ")}</span>
-                </p>
-              );
-            })()}
-            {scene && !covertDue && (
+            {scene && (
               <SceneView
                 key={`${state.sceneNumber}-${scene.id}`}
                 scene={scene}
                 me={me}
                 you={you}
                 memory={!!game.memory}
+                director={!!game.ai}
+                echoOf={(() => {
+                  const a = scene.anchorId ? state.anchors.find((x) => x.id === scene.anchorId && x.sensitivity === "normal") : undefined;
+                  return a ? { text: a.shortText, sceneNumber: a.sceneNumber, owner: a.owner } : undefined;
+                })()}
                 onDone={(p) => { haptic(); dispatch({ type: "DONE", ...p }); }}
                 onSkip={() => { haptic(4); dispatch({ type: "SKIP" }); }}
+                music={scene.type === "MUSIC" ? { round: state.musicRound ?? null, sceneNumber: state.sceneNumber, setRound: (round) => dispatch({ type: "MUSIC", round }) } : undefined}
                 battle={
                   game.battle
                     ? {
                         players: state.players,
                         missionOwner: state.secretMission ? state.players[state.secretMission.player] : null,
+                        missionText: state.secretMission ? fill(state.secretMission.text, state.players[state.secretMission.player], state.players[1 - state.secretMission.player]!) : null,
+                        stakes: state.raise ? 6 : 3,
                         onWin: (w, missionDone) => dispatch({ type: "SHOWDOWN_WIN", winner: w, missionDone }),
-                        onMissionResult: (success) => dispatch({ type: "BATTLE_RESULT", success }),
                       }
                     : undefined
                 }
@@ -279,35 +213,47 @@ export function Player({ game }: { game: GameConfig }) {
                   </span>
                 )}
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {STEERS.filter((s) => s.id !== "hotter" || state.settings.sensual).map((s) => (
-                  <Btn key={s.id} variant="chip" size="sm" data-on={state.steer === s.id} aria-pressed={state.steer === s.id} onClick={() => dispatch({ type: "STEER", steer: state.steer === s.id ? null : s.id })}>
-                    {s.label}
-                  </Btn>
-                ))}
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {STEERS.filter((s) => s.id !== "hotter" || state.settings.sensual).map((s) => {
+                  const on = state.steer === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => { haptic(6); dispatch({ type: "STEER", steer: on ? null : s.id }); }}
+                      className={cn(
+                        "tap group flex min-h-12 items-center justify-between rounded-lg border px-4 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        on ? "border-champagne bg-surface-2 text-foreground" : "border-line text-muted-foreground",
+                      )}
+                    >
+                      <span>{s.label}</span>
+                      <span aria-hidden className={cn("font-display text-lg transition-transform", on ? "translate-x-0.5 text-champagne" : "opacity-50")}>{s.arrow}</span>
+                    </button>
+                  );
+                })}
               </div>
             </nav>
           )}
 
-          {game.battle && state.powerUps[state.turn] > 0 && scene?.type !== "SHOWDOWN" && (
-            <section className="mt-5 border-y border-line py-3" aria-label="Heatcheck Edge">
-              <div className="flex items-center justify-between gap-3">
-                <span className="eyebrow text-champagne">Edge · {state.powerUps[state.turn]} {state.powerUps[state.turn] === 1 ? "Charge" : "Charges"}</span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Einsetzen oder sparen</span>
-              </div>
-              <div className="mt-3 grid grid-cols-3 divide-x divide-line border-y border-line">
-                <button type="button" disabled={state.doubleNext} onClick={() => dispatch({ type: "USE_POWERUP", kind: "double" })} className="tap min-h-16 px-2 py-3 text-left disabled:opacity-35">
-                  <span className="font-display block text-xl">{state.doubleNext ? "×2 aktiv" : "×2"}</span>
-                  <span className="mt-1 block text-[10px] leading-tight text-muted-foreground">Diese Szene</span>
-                </button>
-                <button type="button" disabled={state.rebound !== null} onClick={() => dispatch({ type: "USE_POWERUP", kind: "rebound" })} className="tap min-h-16 px-3 py-3 text-left disabled:opacity-35">
-                  <span className="font-display block text-xl">↩</span>
-                  <span className="mt-1 block text-[10px] leading-tight text-muted-foreground">Zurück an {you}</span>
-                </button>
-                <button type="button" disabled={state.read !== null} onClick={() => dispatch({ type: "USE_POWERUP", kind: "read" })} className="tap min-h-16 px-3 py-3 text-left disabled:opacity-35">
-                  <span className="font-display block text-xl">Read</span>
-                  <span className="mt-1 block text-[10px] leading-tight text-muted-foreground">{state.read !== null ? "Wette läuft" : `${you} macht's`}</span>
-                </button>
+          {game.battle && state.powerUps[state.turn] > 0 && scene && scene.type !== "SHOWDOWN" && (
+            <section aria-label="Edge" className="mt-5 border-y border-line py-3">
+              <p className="flex items-baseline justify-between font-mono text-[0.7rem] tracking-[0.2em] text-muted-foreground">
+                <span>EDGE · {me.toUpperCase()}</span>
+                <span className="text-champagne">{"◆".repeat(state.powerUps[state.turn])} {state.powerUps[state.turn]} {state.powerUps[state.turn] === 1 ? "Ladung" : "Ladungen"}</span>
+              </p>
+              <div className="mt-2 grid grid-cols-3 divide-x divide-line">
+                {([
+                  ["double", "×2", state.doubleNext ? "aktiv" : "diese Szene doppelt", state.doubleNext],
+                  ["rebound", "Rebound", `an ${you}`, state.rebound !== null],
+                  ["read", "Read", state.read !== null ? "Wette läuft" : `wetten: ${you} macht's`, state.read !== null],
+                ] as const).map(([k, t, d, used]) => (
+                  <button key={k} type="button" disabled={used} onClick={() => { haptic([6, 30, 6]); dispatch({ type: "USE_POWERUP", kind: k }); }}
+                    className="tap flex min-h-14 flex-col items-start justify-center px-3 text-left first:pl-0 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <span className={cn("font-display text-2xl leading-none", used && "text-champagne")}>{t}</span>
+                    <span className="mt-1 text-[0.7rem] leading-tight text-muted-foreground">{d}</span>
+                  </button>
+                ))}
               </div>
             </section>
           )}
@@ -319,7 +265,7 @@ export function Player({ game }: { game: GameConfig }) {
               <Zap className="size-4" /> {state.raise ? "Erhöht · Showdown zählt 6" : `„Erhöhen“ · Showdown zählt 6 statt 3 (${state.powerUps[state.turn]})`}
             </Btn>
           )}
-          {(game.battle || game.signature || game.coop) && (
+          {(
             <Btn variant="ghost" size="sm" className="mt-4 self-center" onClick={() => dispatch({ type: "FINISH" })}>
               {game.battle ? "Zum Finale" : "Nacht abschließen"}
             </Btn>
@@ -337,13 +283,15 @@ export function Player({ game }: { game: GameConfig }) {
         onClearAnchors={() => dispatch({ type: "CLEAR_ANCHORS" })}
         log={state.log}
         memory={!!game.memory}
+        gameId={game.id}
         onEnd={() => { setMenu(false); setConfirmEnd(true); }}
       />
+      <SaveSheet open={saveOpen} onOpenChange={setSaveOpen} slug={game.slug} />
       <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>
         <AlertDialogContent className="rounded-3xl border-line bg-popover">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-display text-3xl font-normal">Nacht wirklich beenden?</AlertDialogTitle>
-            <AlertDialogDescription>Der Spielstand und alle Memory-Anker werden sofort gelöscht.</AlertDialogDescription>
+            <AlertDialogDescription>Der laufende Spielstand und alle Memory-Anker werden aus dieser Session gelöscht. Gesicherte Nächte bleiben in deinem Verlauf.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="min-h-12 rounded-full">Weiterspielen</AlertDialogCancel>

@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SessionProvider } from "@/lib/game/store";
+import { AuthProvider } from "@/lib/auth";
 
 function NotFoundComponent() {
   return (
@@ -70,11 +71,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#141110" },
-      { title: "NOCTURNE — Games for Two" },
-      { name: "description", content: "NOCTURNE ist eine private, mobile Date-Night-Collection mit acht interaktiven Spielen für zwei Erwachsene — von leicht und lustig bis tief, frech und adaptiv. NIGHT//ECHO — Director ist das Flagship mit Session-Memory und generativer Regie. Kein Login; intime Freitexte bleiben nur in der laufenden Browser-Session." },
-      { property: "og:title", content: "NOCTURNE — Games for Two" }
-      ,{ property: "og:site_name", content: "NOCTURNE" },
-      { property: "og:description", content: "NOCTURNE ist eine private, mobile Date-Night-Collection mit acht interaktiven Spielen für zwei Erwachsene — von leicht und lustig bis tief, frech und adaptiv. NIGHT//ECHO — Director ist das Flagship mit Session-Memory und generativer Regie. Kein Login; intime Freitexte bleiben nur in der laufenden Browser-Session." },
+      { title: "NOCTURNE — Spiele für Paare · Date Night zu zweit" },
+      { property: "og:site_name", content: "NOCTURNE" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -113,9 +111,11 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <SessionProvider>
-        <Outlet />
-      </SessionProvider>
+      <AuthProvider>
+        <SessionProvider>
+          <Outlet />
+        </SessionProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

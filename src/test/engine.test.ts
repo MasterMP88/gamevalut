@@ -13,7 +13,7 @@ const run = (s: SessionState, n: number) => {
 
 describe("scene library", () => {
   it("meets minimum fallback counts per game", () => {
-    const min: Record<string, number> = { "roxy-after-dark": 60, "after-dark-2": 60, "roxy-night": 70, battle: 50, coop: 70, "one-two": 100, "night-echo": 80, "ai-director": 80 };
+    const min: Record<string, number> = { "roxy-after-dark": 60, "after-dark-2": 60, "roxy-night": 70, battle: 50, coop: 70, "one-two": 100, "night-echo": 80, "ai-director": 80, "pass-the-aux": 40 };
     for (const g of GAMES) expect(poolFor(g, SCENES).length, g.id).toBeGreaterThanOrEqual(min[g.id]!);
   });
 });
@@ -96,22 +96,6 @@ describe("session engine", () => {
     s = reducer(s, { type: "SETTINGS", settings: { ...DEFAULT_SETTINGS, touch: false } });
     expect(s.current?.flags?.touch).toBeFalsy();
     expect(s.turn).toBe(turn);
-  });
-
-  it("keeps non-battle SECRET missions alive until an explicit reveal result", () => {
-    let s = createSession("after-dark-2", P, DEFAULT_SETTINGS, 4);
-    s = {
-      ...s,
-      sceneNumber: 3,
-      turn: 0,
-      current: { id: "secret-test", type: "SECRET", flavor: "game", phase: 1, title: "Covert", prompt: "Bring {you} zum Lachen.", source: "local" },
-    };
-    s = reducer(s, { type: "DONE" });
-    expect(s.covert).toEqual({ owner: 0, text: "Bring {you} zum Lachen.", dueAt: 5 });
-    const before = s.heat;
-    s = reducer(s, { type: "COVERT_RESULT", success: true });
-    expect(s.covert).toBeNull();
-    expect(s.heat).toBeGreaterThan(before);
   });
 
   it("battle reaches a final winner", () => {

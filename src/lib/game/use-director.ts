@@ -7,10 +7,18 @@ import type { Scene, SessionState } from "./types";
 
 export type DirectorStatus = "idle" | "writing" | "live" | "offline";
 
+export interface DirectorPersonalization {
+  vibe: "chill" | "funny" | "wild" | "flirty" | "mixed" | null;
+  intensity: 1 | 2 | 3 | 4 | 5;
+  insiders: string[];
+  taboo: string[];
+}
+
 export function useDirector(
   state: SessionState | undefined,
   enabled: boolean,
   dispatch: (a: Action) => void,
+  personalization?: DirectorPersonalization | null,
 ) {
   const [status, setStatus] = useState<DirectorStatus>("idle");
   const inflight = useRef(false);
@@ -20,9 +28,21 @@ export function useDirector(
 
   const sceneNumber = state?.sceneNumber ?? 0;
   const queueLen = state?.aiQueue.length ?? 0;
-  const sessionKey = state
-    ? "s_" + state.gameId + "_" + Math.abs(state.seed).toString(36)
-    : "";
+  const sessionKeyRef = useRef("");
+  const sessionGameRef = useRef("");
+  const previousSceneRef = useRef(0);
+
+  if (state) {
+    const restarted = state.sceneNumber <= 1 && previousSceneRef.current > 1;
+    if (!sessionKeyRef.current || sessionGameRef.current !== state.gameId || restarted) {
+      sessionKeyRef.current =
+        "s_" + state.gameId + "_" + Math.abs(state.seed).toString(36);
+      sessionGameRef.current = state.gameId;
+    }
+    previousSceneRef.current = state.sceneNumber;
+  }
+
+  const sessionKey = state ? sessionKeyRef.current : "";
 
   useEffect(() => {
     calls.current = 0;
@@ -46,6 +66,7 @@ export function useDirector(
       ...buildDirectorContext(state),
       sessionKey,
       gameId: state.gameId,
+      ...(personalization ? { personalization } : {}),
     };
 
     getDirectorScenes({ data: ctx })
@@ -87,6 +108,7 @@ export function useDirector(
     sessionKey,
     state,
     dispatch,
+    personalization,
   ]);
 
   return status;

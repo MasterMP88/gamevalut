@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { adaptDifficulty } from "../lib/ai/adaptive";
 import { adaptiveTargetPhase, createSession, DEFAULT_SETTINGS } from "../lib/game/engine";
+import { reservePersistentAiQuota } from "../lib/ai/quota.server";
 import {
   AI_POLICIES,
   aiModeFor,
@@ -69,9 +70,9 @@ describe("zero-cost adaptive difficulty", () => {
       heat: 3.4,
       log: [
         { n: 1, title: "A", type: "MISSION" as const, player: "Ari", outcome: "skipped" as const },
-        { n: 2, title: "B", type: "TIMER" as const, player: "Nova", outcome: "failed" as const },
+        { n: 2, title: "B", type: "TIMER" as const, player: "Nova", outcome: "done" as const },
         { n: 3, title: "C", type: "QUESTION" as const, player: "Ari", outcome: "skipped" as const },
-        { n: 4, title: "D", type: "CHOICE" as const, player: "Nova", outcome: "failed" as const },
+        { n: 4, title: "D", type: "CHOICE" as const, player: "Nova", outcome: "skipped" as const },
       ],
     };
 
@@ -91,6 +92,38 @@ describe("zero-cost adaptive difficulty", () => {
     expect(result.difficulty).toBe(3.6);
     expect(result.pace).toBe("push");
     expect(result.reason).toBe("mastery");
+  });
+});
+
+describe("persistent AI budget", () => {
+  it("rejects guests before any paid provider work", async () => {
+    await expect(
+      reservePersistentAiQuota({
+        userId: null,
+        capability: "director",
+        units: 6,
+      }),
+    ).resolves.toEqual({ allowed: false, reason: "auth" });
+  });
+
+  it("fails closed without an explicit server monthly spend cap", async () => {
+    const previous = process.env["NOCTURNE_AI_GLOBAL_MONTHLY_USD_CAP"];
+    delete process.env["NOCTURNE_AI_GLOBAL_MONTHLY_USD_CAP"];
+    try {
+      await expect(
+        reservePersistentAiQuota({
+          userId: "00000000-0000-0000-0000-000000000001",
+          capability: "director",
+          units: 6,
+        }),
+      ).resolves.toEqual({ allowed: false, reason: "disabled" });
+    } finally {
+      if (previous === undefined) {
+        delete process.env["NOCTURNE_AI_GLOBAL_MONTHLY_USD_CAP"];
+      } else {
+        process.env["NOCTURNE_AI_GLOBAL_MONTHLY_USD_CAP"] = previous;
+      }
+    }
   });
 });
 
@@ -260,6 +293,19 @@ describe("AI experience contracts", () => {
     expect(
       experienceRequestSchema.safeParse({ ...base, count: 41 }).success,
     ).toBe(false);
+  });
+
+  it("accepts a title-only clue request after explicit opt-in", () => {
+    const result = experienceRequestSchema.safeParse({
+      kind: "music-clue",
+      aiConsent: true,
+      sessionKey: "aux-title-only",
+      locale: "de",
+      track: { title: "Song ohne Artist" },
+      difficulty: 3,
+      count: 4,
+    });
+    expect(result.success).toBe(true);
   });
 
   it("requires progressive music clue batches to stay small", () => {

@@ -3,6 +3,8 @@ import { DETOURS, DIRECTOR_CUTS, MILESTONES, TEMPO_CUES, TEMPO_ORDER } from "./s
 import { GAMES_BY_ID, poolFor } from "./games";
 import { adaptDifficulty } from "../ai/adaptive";
 import type {
+  MusicRound,
+  TrackEntry,
   ConsentSettings,
   EchoKind,
   Flavor,
@@ -110,8 +112,8 @@ export function targetPhase(state: SessionState) {
 }
 
 /**
- * Zero-cost live adaptation for the local picker. It reacts only to structural
- * outcomes (done / failed / skipped), never to private answer content.
+ * Zero-cost live adaptation from structural outcomes only.
+ * It never reads private answers, memory anchors or music selections.
  */
 export function adaptiveTargetPhase(state: SessionState) {
   const base = targetPhase(state);
@@ -119,8 +121,7 @@ export function adaptiveTargetPhase(state: SessionState) {
   if (recent.length < 3) return base;
 
   const skipped = recent.filter((entry) => entry.outcome === "skipped").length;
-  const failed = recent.filter((entry) => entry.outcome === "failed").length;
-  const attempted = recent.filter((entry) => entry.outcome !== "skipped").length;
+  const attempted = recent.length - skipped;
   const done = recent.filter((entry) => entry.outcome === "done").length;
 
   const decision = adaptDifficulty({
@@ -129,7 +130,7 @@ export function adaptiveTargetPhase(state: SessionState) {
     successRate: attempted > 0 ? done / attempted : 0.5,
     averageResponseMs: 0,
     streak: Math.max(...state.streaks),
-    recentFails: failed,
+    recentFails: state.skipStreak >= 2 ? 2 : 0,
   });
 
   return Math.max(
@@ -371,7 +372,6 @@ export function createSession(gameId: GameId, players: [string, string], setting
     powerUps: [0, 0],
     doubleNext: false,
     secretMission: null,
-    covert: null,
     aiQueue: [],
     finished: false,
     afterHours: false,
@@ -389,6 +389,8 @@ export function createSession(gameId: GameId, players: [string, string], setting
     read: null,
     lastDetourAt: 0,
     themes: [],
+    tracklist: [],
+    musicRound: null,
   };
   return advance(base);
 }
@@ -431,17 +433,6 @@ export function advance(state: SessionState): SessionState {
   let lastCutAt = state.lastCutAt;
   let milestones = state.milestones;
   const usable = (sc: Scene) => allowedByConsent(sc, state.settings) && !state.usedIds.includes(sc.id);
-
-  // 0) FIRST SPARK signature beats: the opening must feel like a game, not a deck.
-  // Scene 2 is a live standoff; scene 4 is a hidden prediction/reveal.
-  if (!scene && game.id === "roxy-after-dark" && next === 2) {
-    const signature = candidatePool(s1).find((sc) => sc.mechanic === "standoff" && usable(sc));
-    if (signature) scene = { ...signature, phase: 0, cue: "Spark Check · kein Reden, nur Nerven." };
-  }
-  if (!scene && game.id === "roxy-after-dark" && next === 4) {
-    const reveal = candidatePool(s1).find((sc) => sc.type === "PREDICTION" && usable(sc));
-    if (reveal) scene = { ...reveal, cue: "Read Me · erst tippen, dann auflösen." };
-  }
 
   // 1) US//AFTER DARK milestones
   if (game.coop) {
@@ -527,7 +518,7 @@ export function advance(state: SessionState): SessionState {
   };
 }
 
-function logCurrent(state: SessionState, outcome: "done" | "failed" | "skipped") {
+function logCurrent(state: SessionState, outcome: "done" | "skipped") {
   if (!state.current) return state.log;
   return [
     ...state.log,
@@ -562,13 +553,12 @@ export type Action =
   | { type: "DELETE_ANCHOR"; id: string }
   | { type: "CLEAR_ANCHORS" }
   | { type: "SHOWDOWN_WIN"; winner: 0 | 1 | null; missionDone?: boolean }
-  | { type: "BATTLE_RESULT"; success: boolean }
-  | { type: "COVERT_RESULT"; success: boolean }
   | { type: "USE_POWERUP"; kind?: PowerUp }
   | { type: "AI_SCENES"; scenes: Scene[] }
   | { type: "FINISH" }
   | { type: "ENDING"; ending: SessionState["ending"] }
-  | { type: "AFTER_HOURS" };
+  | { type: "AFTER_HOURS" }
+  | { type: "MUSIC"; round: MusicRound };
 
 /** Replace the current scene without flipping turn or counting a scene. */
 function reroll(state: SessionState): SessionState {
@@ -577,9 +567,41 @@ function reroll(state: SessionState): SessionState {
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
+/** PASS//THE AUX: picks of the finished round, in reveal order. Only user-entered songs. */
+export function roundTracks(state: SessionState): TrackEntry[] {
+  const r = state.musicRound;
+  const scene = state.current;
+  if (!r || !scene || scene.type !== "MUSIC" || r.sceneNumber !== state.sceneNumber) return [];
+  const mode = scene.music?.mode ?? "solo";
+  const prompt = fill(scene.prompt, state.players[state.turn], state.players[1 - state.turn]!);
+  const owners: (0 | 1)[] = [state.turn, (1 - state.turn) as 0 | 1];
+  const out: TrackEntry[] = [];
+  r.picks.forEach((t, i) => {
+    const title = t?.title.trim().slice(0, 80);
+    if (!t || !title) return;
+    if (i === 1 && mode !== "duet") return;
+    const artist = t.artist?.trim().slice(0, 60) || undefined;
+    out.push({ ...t, title, artist, n: state.sceneNumber, owner: owners[i]!, prompt, mode, ...(r.reaction ? { reaction: r.reaction } : {}) });
+  });
+  return out;
+}
+
 export function reducer(state: SessionState, action: Action): SessionState {
+  if (action.type === "MUSIC") {
+    if (state.current?.type !== "MUSIC" || action.round.sceneNumber !== state.sceneNumber || state.finished) return state;
+    return { ...state, musicRound: action.round };
+  }
+  const pre = action.type === "DONE" && state.current?.type === "MUSIC" ? { ...state, tracklist: [...(state.tracklist ?? []), ...roundTracks(state)] } : state;
+  const next = coreReducer(pre, action);
+  if (next.current?.id !== state.current?.id || next.sceneNumber !== state.sceneNumber || next.finished !== state.finished) return { ...next, musicRound: null };
+  return next;
+}
+
+function coreReducer(state: SessionState, action: Action): SessionState {
   const game = GAMES_BY_ID[state.gameId];
   switch (action.type) {
+    case "MUSIC":
+      return state;
     case "DONE": {
       const scene = state.current;
       if (!scene) return state;
@@ -605,11 +627,6 @@ export function reducer(state: SessionState, action: Action): SessionState {
             kind: echoKind(scene.capture?.tags ?? [], scene.flavor),
           },
         ];
-      }
-
-      // After Dark / Director: SECRET scenes become real multi-scene covert challenges.
-      if (!game.battle && scene.type === "SECRET") {
-        next.covert = { owner: state.turn, text: scene.prompt, dueAt: state.sceneNumber + 2 };
       }
 
       // ONE//TWO: schedule a delayed return of this question to the other player
@@ -699,31 +716,6 @@ export function reducer(state: SessionState, action: Action): SessionState {
       const next = { ...state, sparks, secretMission, raise: false, log: logCurrent(state, "done") };
       if (state.sceneNumber >= BATTLE_FINAL_SCENE) return { ...next, finished: true };
       return advance(next);
-    }
-    case "BATTLE_RESULT": {
-      if (!game.battle || !state.current || state.current.type === "SHOWDOWN") return state;
-      if (action.success) return reducer(state, { type: "DONE" });
-
-      const streaks = [...state.streaks] as [number, number];
-      streaks[state.turn] = 0;
-      const next: SessionState = {
-        ...state,
-        log: logCurrent(state, "failed"),
-        streaks,
-        doubleNext: false,
-        rebound: null,
-        // A failed attempt does not cash a READ bet and does not count as a voluntary skip.
-        read: state.read !== null && state.read !== state.turn ? null : state.read,
-      };
-      return advance(next);
-    }
-    case "COVERT_RESULT": {
-      if (!state.covert) return state;
-      return {
-        ...state,
-        covert: null,
-        heat: action.success ? clamp(state.heat + 0.4, 0, 4.99) : state.heat,
-      };
     }
     case "USE_POWERUP": {
       const p = state.turn;

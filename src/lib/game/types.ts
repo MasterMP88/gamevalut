@@ -10,16 +10,12 @@ export type SceneType =
   | "GLITCH"
   | "PRIVATE_SIGNAL"
   | "SHOWDOWN"
-  | "PREDICTION";
+  | "PREDICTION"
+  /** PASS//THE AUX: a song is the answer (see MusicRound). */
+  | "MUSIC";
 
 /** funny = Lustig, deep = Tief, cheeky = Frech, sensual = Sinnlich, game = Spiel */
 export type Flavor = "funny" | "deep" | "cheeky" | "sensual" | "game";
-
-/**
- * Optional high-touch interaction grammar for scenes that should behave like
- * real digital mini-games instead of a static prompt + timer.
- */
-export type SceneMechanic = "alternating-rush" | "tap-rush" | "standoff";
 
 export type GameId =
   | "roxy-after-dark"
@@ -29,7 +25,8 @@ export type GameId =
   | "coop"
   | "one-two"
   | "night-echo"
-  | "ai-director";
+  | "ai-director"
+  | "pass-the-aux";
 
 export interface SceneFlags {
   touch?: boolean;
@@ -51,12 +48,6 @@ export interface Scene {
   emoji?: string | undefined;
   duration?: number | undefined;
   choices?: string[] | undefined;
-  /** Premium interaction primitive rendered by SceneView when present. */
-  mechanic?: SceneMechanic | undefined;
-  /** Optional target for tap-rush scenes (for example: reach 10 answers). */
-  goal?: number | undefined;
-  /** Per-turn response window for alternating-rush scenes, in seconds. */
-  beatSeconds?: number | undefined;
   flags?: SceneFlags | undefined;
   capture?: { label: string; tags: string[] } | undefined;
   /** Optional: restrict to games. Default: all non-battle games that accept the type. */
@@ -66,6 +57,8 @@ export interface Scene {
   anchorId?: string | undefined;
   /** One-line contextual cue shown above the scene (tempo shift, Director Cut, return question). Never model reasoning. */
   cue?: string | undefined;
+  /** MUSIC scenes: which round pattern. */
+  music?: { mode: MusicMode } | undefined;
   /** Source marker */
   source?: "local" | "ai" | "echo" | undefined;
 }
@@ -109,7 +102,7 @@ export interface LogEntry {
   title: string;
   type: SceneType;
   player: string;
-  outcome: "done" | "failed" | "skipped";
+  outcome: "done" | "skipped";
 }
 
 export interface SessionState {
@@ -133,8 +126,6 @@ export interface SessionState {
   powerUps: [number, number];
   doubleNext: boolean;
   secretMission: { player: 0 | 1; text: string } | null;
-  /** After Dark / Director: a sealed multi-scene covert challenge that comes back for resolution. */
-  covert: { owner: 0 | 1; text: string; dueAt: number } | null;
   aiQueue: Scene[];
   finished: boolean;
   afterHours: boolean;
@@ -161,4 +152,42 @@ export interface SessionState {
   lastDetourAt: number;
   /** ONE//TWO: topics already touched this session (from scene tags, never from answers). */
   themes: string[];
+  /** PASS//THE AUX: songs picked this session. Session-local only — never saved remotely. */
+  tracklist?: TrackEntry[];
+  /** PASS//THE AUX: in-flight round, kept in state so remounts never re-expose a hidden pick. */
+  musicRound?: MusicRound | null;
+}
+
+export type MusicMode = "solo" | "duet" | "guess" | "speed";
+export type MusicReaction = "match" | "twist" | "explains";
+
+/** User-entered song (or, later, real provider data). Never invented by the app. */
+export interface Track {
+  title: string;
+  artist?: string | undefined;
+  /** Only set when a real provider returned this track. */
+  providerId?: string | undefined;
+  artworkUrl?: string | undefined;
+  /** Exact Apple Music song URL, only when returned by the catalog. */
+  externalUrl?: string | undefined;
+}
+
+export interface TrackEntry extends Track {
+  n: number;
+  owner: 0 | 1;
+  prompt: string;
+  mode: MusicMode;
+  reaction?: MusicReaction | undefined;
+}
+
+/**
+ * Stages: pick (current player) → handoff → second (partner picks / predicts) → reveal.
+ * Solo/guess/duet always pass a handoff; speed reveals straight away (nothing is hidden).
+ */
+export interface MusicRound {
+  sceneNumber: number;
+  stage: "pick" | "handoff" | "second" | "reveal";
+  picks: [Track | null, Track | null];
+  prediction: string | null;
+  reaction: MusicReaction | null;
 }

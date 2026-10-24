@@ -15,6 +15,7 @@ const slugs = [
   "one-two",
   "night-echo",
   "director",
+  "pass-the-aux",
 ];
 const sizes = [
   { width: 390, height: 844, label: "iphone-390" },
@@ -44,14 +45,40 @@ for (const size of sizes) {
   await page.screenshot({ path: path.join(out, `${size.label}-home.png`), fullPage: true });
   if (homeOverflow > 1) failed = true;
 
+  errors.length = 0;
+  await page.goto(`${base}/gang`, { waitUntil: "networkidle" });
+  const gangOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  await page.screenshot({ path: path.join(out, `${size.label}-gang.png`), fullPage: true });
+  report.push({
+    viewport: size.label,
+    slug: "gang",
+    detailOverflow: gangOverflow,
+    playOverflow: 0,
+    cuePresent: true,
+    errors: [...errors],
+  });
+  if (gangOverflow > 1 || errors.length) failed = true;
+
   for (const slug of slugs) {
     errors.length = 0;
     await page.goto(`${base}/game/${slug}`, { waitUntil: "networkidle" });
     const detailOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 
-    const start = page.getByRole("button", { name: /Die Nacht beginnt|Weiterspielen/ }).first();
+    const start = page.getByRole("button", { name: /Die Nacht beginnt|Director starten|Weiterspielen/ }).first();
     if (await start.count()) await start.click();
-    await page.waitForTimeout(250);
+    await page.waitForTimeout(150);
+
+    const age = page.getByRole("button", { name: "Ja, wir sind beide 18+" }).first();
+    if (await age.count()) {
+      await age.click();
+      await page.waitForTimeout(100);
+    }
+
+    const introSkip = page.getByRole("button", { name: "Überspringen", exact: true }).first();
+    if (await introSkip.count()) {
+      await introSkip.click();
+      await page.waitForTimeout(200);
+    }
 
     for (let i = 0; i < 3; i++) {
       const skip = page.getByRole("button", { name: "Skip", exact: true }).first();

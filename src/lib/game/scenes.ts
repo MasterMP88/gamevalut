@@ -51,6 +51,8 @@ const EC = { only: ["night-echo" as const] };
 const DR = { only: ["ai-director" as const] };
 const ECHOISH = { only: ["night-echo" as const, "ai-director" as const] };
 
+import { MUSIC_SCENES } from "./music-scenes";
+
 export const SCENES: Scene[] = [
   // ——— FUNNY QUESTIONS · First Signal / Mischief
   q("funny", 0, "Zehn Sekunden", "Dein allererster Gedanke über {you}. Ungefiltert, auch wenn er peinlich war.", { emoji: "👀", ...cap("Erster Gedanke", "origin") }),
@@ -189,19 +191,19 @@ export const SCENES: Scene[] = [
   m("funny", 1, "Sockenfrage", "Zeigt eure Socken. Der andere deutet sie wie ein Horoskop.", { emoji: "🧦" }),
 
   // ——— TIMERS
-  t("funny", 0, "Wortkette", "Sechzig Sekunden. Abwechselnd ein Wort, das zu {you} passt. Nach jedem Wort aufs Display tippen. Wer den Antwort-Puls verpasst, verliert.", { emoji: "⏱️", duration: 60, mechanic: "alternating-rush", beatSeconds: 3 }),
-  t("funny", 1, "Pokerface", "Dreißig Sekunden ernst bleiben. Sobald jemand bricht, sofort antippen.", { emoji: "😐", duration: 30, mechanic: "standoff" }),
-  t("cheeky", 2, "Sprint", "Fünfundvierzig Sekunden Komplimente. Nach jedem Treffer tippen. Keine Wiederholungen.", { emoji: "💨", duration: 45, mechanic: "tap-rush" }),
-  t("game", 1, "Nachtaktiv", "Dreißig Sekunden: abwechselnd Dinge, die man nur nachts tut. Nach jeder Antwort tippen. Jugendfrei.", { emoji: "🌃", duration: 30, mechanic: "alternating-rush", beatSeconds: 3 }),
+  t("funny", 0, "Wortkette", "Sechzig Sekunden: abwechselnd ein Wort, das zu {you} passt. Wer zögert, verliert.", { emoji: "⏱️", duration: 60 }),
+  t("funny", 1, "Pokerface", "Dreißig Sekunden ernst bleiben, während {me} alles versucht, um {you} zum Lachen zu bringen.", { emoji: "😐", duration: 30 }),
+  t("cheeky", 2, "Sprint", "Fünfundvierzig Sekunden Komplimente. So viele, wie {me} schafft. Keine Wiederholungen.", { emoji: "💨", duration: 45 }),
+  t("game", 1, "Nachtaktiv", "Dreißig Sekunden: abwechselnd Dinge, die man nur nachts tut. Jugendfrei.", { emoji: "🌃", duration: 30 }),
   t("deep", 2, "Stille", "Eine Minute ohne Worte. Nur Blicke, Hände, Grinsen.", { emoji: "🤐", duration: 60 }),
   t("sensual", 3, "Kein Handy", "Neunzig Sekunden: so nah zusammen, wie es sich für euch gut anfühlt. Handy liegt.", { emoji: "🧭", duration: 90, flags: TS }),
   t("funny", 0, "Satz um Satz", "Vierzig Sekunden: eine Geschichte, abwechselnd je ein Satz. Muss mit „und dann der Hund“ enden.", { emoji: "📚", duration: 40 }),
   t("game", 1, "Pantomime", "Fünfundvierzig Sekunden: {me} spielt {you}s Lieblingsfilm. Kein Laut.", { emoji: "🎭", duration: 45 }),
   t("cheeky", 2, "Blind", "Dreißig Sekunden Augen zu. {you} beschreibt, was {me} gerade trägt. Im Detail.", { emoji: "🙈", duration: 30 }),
-  t("game", 2, "Summen", "Fünfundvierzig Sekunden: {me} summt, {you} rät. Für jeden Treffer einmal tippen.", { emoji: "🎵", duration: 45, mechanic: "tap-rush" }),
+  t("game", 2, "Summen", "Fünfundvierzig Sekunden: {me} summt, {you} rät die Songs.", { emoji: "🎵", duration: 45 }),
   t("sensual", 4, "Gleicher Atem", "Eine Minute im selben Rhythmus atmen. Hände dürfen sich finden.", { emoji: "🌊", duration: 60, flags: SEN }),
   t("funny", 1, "Rückwärts", "Dreißig Sekunden: Sagt eure Namen rückwärts und erfindet die Herkunftsgeschichte dazu.", { emoji: "🔄", duration: 30 }),
-  t("game", 0, "Anfangsbuchstabe", "Fünfundvierzig Sekunden: Dinge mit dem Anfangsbuchstaben von {you}s Namen. Jeder Treffer = ein Tap.", { emoji: "🔠", duration: 45, mechanic: "tap-rush" }),
+  t("game", 0, "Anfangsbuchstabe", "Fünfundvierzig Sekunden: Dinge mit dem Anfangsbuchstaben von {you}s Namen.", { emoji: "🔠", duration: 45 }),
   t("cheeky", 3, "Fingerspitzen", "Vierzig Sekunden: nur die Fingerspitzen berühren sich. Wer zuerst grinst, erzählt etwas.", { emoji: "☝️", duration: 40, flags: T }),
   t("deep", 2, "Gute Liste", "Eine Minute: abwechselnd Dinge von heute, die gut waren. Auch Kleinigkeiten.", { emoji: "🌻", duration: 60 }),
 
@@ -311,7 +313,7 @@ export const SCENES: Scene[] = [
   // ——— FIRST SPARK · effortless, funny-flirty, warm
   q("funny", 0, "Zweiter Blick", "Was hast du heute an {you} bemerkt, bevor ihr überhaupt geredet habt?", { emoji: "🕯️", ...FS }),
   m("funny", 0, "Eröffnung", "Dimmt eine Lampe, macht eine andere an. Der Abend ist offiziell eröffnet.", { emoji: "💡", ...FS }),
-  t("cheeky", 1, "Einen Tick zu lang", "Schaut euch an. Wer zuerst wegschaut, verliert den Blickduell-Puls – und verrät, was gerade im Kopf war.", { emoji: "👁️", ...FS, duration: 20, mechanic: "standoff" }),
+  m("cheeky", 1, "Einen Tick zu lang", "Schaut euch an. Wer zuerst wegschaut, verrät, was gerade im Kopf war.", { emoji: "👁️", ...FS }),
   q("cheeky", 2, "Später ist jetzt", "Was wolltest du {you} schon länger sagen und hast es auf „später“ geschoben?", { emoji: "⏱️", ...FS }),
   q("funny", 0, "Zufallsfund", "Was ist das Seltsamste, das gerade in deiner Tasche oder Hosentasche steckt? Zeigen.", { emoji: "👜", ...FS }),
   m("funny", 1, "Fanpost", "Schreib {you} eine Autogrammwidmung auf ein Stück Papier oder eine Serviette.", { emoji: "🖊️", ...FS }),
@@ -324,7 +326,7 @@ export const SCENES: Scene[] = [
   m("game", 0, "Veto", "{me} wählt sofort den nächsten Song. {you} hat genau ein Veto.", { emoji: "🎚️", ...AD }),
   m("funny", 1, "Sportkommentar", "{me} holt etwas zu trinken – in Zeitlupe. {you} kommentiert wie im Sportfernsehen.", { emoji: "🐢", ...AD }),
   m("game", 1, "Platzwechsel", "Tauscht die Plätze. Neue Sofaseite, neue Perspektive, nächste Runde.", { emoji: "🔁", ...AD }),
-  t("game", 0, "Zehn Dinge", "Zwanzig Sekunden: Zehn Dinge im Raum, die mit S beginnen. Für jeden Treffer tippen.", { emoji: "🏃", ...AD, duration: 20, mechanic: "tap-rush", goal: 10 }),
+  t("game", 0, "Zehn Dinge", "Zwanzig Sekunden: Zehn Dinge im Raum, die mit S beginnen. Zusammen.", { emoji: "🏃", ...AD, duration: 20 }),
   t("game", 1, "Statue", "Fünfzehn Sekunden: Ihr friert als Statue ein, die „Freitagabend“ heißt.", { emoji: "🗿", ...AD, duration: 15 }),
   r("game", 1, "Raumlotterie", "Der Zufall schickt euch in diese Ecke des Raums für die nächste Szene:", { emoji: "🧭", ...AD, choices: ["Fensterbank", "Boden, Rücken an Rücken", "Küche", "Türrahmen", "Joker: {you} entscheidet"] }),
   s("game", 1, "Zahl blind", "Wählt geheim dieselbe Zahl. Ohne Absprache.", { emoji: "🔢", ...AD, choices: ["Drei", "Sieben", "Elf", "Zweiundvierzig"] }),
@@ -336,7 +338,7 @@ export const SCENES: Scene[] = [
   q("deep", 1, "Kurswechsel", "Wohin soll diese Nacht noch abbiegen, wenn du ehrlich bist?", { emoji: "🧭", ...NS }),
   m("funny", 1, "Gastgeberwechsel", "{me} übernimmt für drei Minuten. Stell {you} eine Frage, die dieses Spiel nie stellen würde.", { emoji: "🎙️", ...NS }),
   m("cheeky", 3, "Nachtprogramm", "Flüstere {you} die Überschrift der nächsten Stunde. Nur die Überschrift.", { emoji: "🌘", ...NS, flags: SEN }),
-  t("funny", 1, "Türsteher", "{me} ist Türsteher. {you} hat zwanzig Sekunden, sich ins eigene Wohnzimmer zu reden.", { emoji: "🚪", ...NS, duration: 20 }),
+  m("funny", 1, "Türsteher", "{me} ist Türsteher. {you} muss sich in zwanzig Sekunden ins eigene Wohnzimmer reden.", { emoji: "🚪", ...NS }),
   m("funny", 0, "Barkarte", "Erfindet einen Drink, der nach euch heißt. Zutaten dürfen erfunden sein.", { emoji: "🍸", ...NS }),
   q("cheeky", 2, "Letzte Bahn", "Die letzte Bahn ist weg. Wohin gehen wir zwei jetzt?", { emoji: "🚇", ...NS }),
   m("funny", 2, "Afterhour-DJ", "{me} legt drei Songs hintereinander auf, jeweils nur zehn Sekunden. {you} tanzt zu allen.", { emoji: "🪩", ...NS }),
@@ -383,7 +385,7 @@ export const SCENES: Scene[] = [
 
   // ——— DIRECTOR fallback · sophisticated, genre-mixing
   q("deep", 1, "Regieanweisung", "Diese Szene ist ein Arthouse-Film. Beschreib in einem Satz, was die Kamera gerade an {you} zeigt.", { emoji: "🎥", ...DR, ...cap("Kamerablick", "frame") }),
-  t("funny", 1, "Synchronfassung", "{me} spricht zwanzig Sekunden alles, was {you} sagt, synchron nach. Wie eine schlechte Übersetzung.", { emoji: "🎞️", ...DR, duration: 20 }),
+  m("funny", 1, "Synchronfassung", "{me} spricht die nächsten zwanzig Sekunden alles, was {you} sagt, synchron nach. Wie eine schlechte Übersetzung.", { emoji: "🎞️", ...DR }),
   g("game", 2, "Genrewechsel", "Die nächste Szene wird als Spionagethriller gespielt. Flüstern, Codenamen, Misstrauen.", { emoji: "⌁", ...DR }),
   q("cheeky", 2, "Deleted Scene", "Welche Szene aus eurer gemeinsamen Geschichte wurde im Director’s Cut leider rausgeschnitten?", { emoji: "✂️", ...DR }),
   x("deep", 2, "Zweite Ebene", "Merk dir einen Satz von {you} aus der nächsten Szene. Am Ende der Nacht gibst du ihn zurück.", { emoji: "🧵", ...DR }),
@@ -391,7 +393,8 @@ export const SCENES: Scene[] = [
   m("funny", 2, "Requisite", "Wählt einen Gegenstand im Raum. Er bekommt eine Hintergrundgeschichte und einen Auftritt in der nächsten Szene.", { emoji: "🕰️", ...DR }),
   q("deep", 3, "Off-Stimme", "Die Erzählstimme dieses Films sagt jetzt einen Satz über euch. Sprich ihn.", { emoji: "🎙️", ...DR, ...cap("Off-Stimme", "narration") }),
   p("cheeky", 2, "Regiezeichen", "Erfindet ein Zeichen für „Cut – nochmal, aber langsamer“.", { emoji: "🎬", ...DR, flags: SIG }),
-  t("sensual", 4, "Schlussbild", "Arrangiert das Schlussbild dieser Nacht. Licht, Abstand, Blick. Haltet es zehn Sekunden.", { emoji: "🖤", ...DR, flags: TS, duration: 10 }),
+  m("sensual", 4, "Schlussbild", "Arrangiert das Schlussbild dieser Nacht. Licht, Abstand, Blick. Haltet es zehn Sekunden.", { emoji: "🖤", ...DR, flags: TS }),
+  ...MUSIC_SCENES,
 ];
 
 export const PHASE_NAMES = ["First Signal", "Mischief", "Patterns", "Magnetic", "After Hours"] as const;
