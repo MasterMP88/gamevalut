@@ -17,6 +17,7 @@ export interface SceneProps {
     players: [string, string];
     missionOwner: string | null;
     onWin: (w: 0 | 1 | null, missionDone: boolean) => void;
+    onMissionResult: (success: boolean) => void;
   }
     | undefined;
 }
@@ -37,10 +38,11 @@ const TYPE_LABEL: Record<Scene["type"], string> = {
 };
 
 /** Interaction cue: answers "do I speak, tap, hide or pass the phone?" for every scene. */
-export function interactionCue(scene: Scene, memory: boolean): string {
+export function interactionCue(scene: Scene, memory: boolean, battle = false): string {
   if (scene.mechanic === "alternating-rush") return "Abwechselnd sprechen · nach jeder Antwort tippen · die App hält den Puls";
   if (scene.mechanic === "tap-rush") return "Loslegen · jeder Treffer ist ein Tap";
   if (scene.mechanic === "standoff") return "Starten · sobald jemand bricht, Namen antippen";
+  if (battle && scene.type === "MISSION" && !scene.duration) return "Tun · danach entscheidet die andere Person";
   switch (scene.type) {
     case "QUESTION":
       return memory && scene.capture ? "Laut antworten · Tippen optional" : "Laut antworten · nichts wird gespeichert";
@@ -86,7 +88,7 @@ export function SceneView(props: SceneProps) {
       </div>
       <p data-testid="scene-cue" className="mt-1.5 flex items-center gap-2 text-[0.8rem] tracking-wide text-muted-foreground">
         <span className="h-px w-4 bg-current opacity-60" aria-hidden />
-        {interactionCue(scene, props.memory)}
+        {interactionCue(scene, props.memory, !!props.battle)}
       </p>
       {glitch ? (
         <h2 className="glitch-title font-display mt-3 text-4xl leading-none" data-text={scene.title}>{scene.title}</h2>
@@ -429,7 +431,7 @@ function TimerBody({ text, helper, scene, onDone, onSkip }: SceneProps & { text:
 }
 
 
-function BattleMissionBody({ text, helper, scene, me, you, onDone, onSkip }: SceneProps & { text: string; helper?: string | undefined }) {
+function BattleMissionBody({ text, helper, scene, me, you, battle, onSkip }: SceneProps & { text: string; helper?: string | undefined }) {
   const [judge, setJudge] = useState(false);
   const stake = scene.sparks ?? 1;
   if (!judge) {
@@ -458,8 +460,8 @@ function BattleMissionBody({ text, helper, scene, me, you, onDone, onSkip }: Sce
         <p className="mt-4 text-muted-foreground">Nur das Ergebnis antippen. Diskussionen kosten Würde, aber keine Sparks.</p>
       </div>
       <div className="mt-auto grid grid-cols-2 gap-3 pt-8">
-        <Btn variant="outline" className="min-h-20 text-lg" onClick={() => { haptic(60); onSkip(); }}>Daneben</Btn>
-        <Btn variant="accent" className="min-h-20 text-lg" onClick={() => { haptic([8, 30, 14]); onDone(); }}>Treffer · +{stake}</Btn>
+        <Btn variant="outline" className="min-h-20 text-lg" onClick={() => { haptic(60); battle?.onMissionResult(false); }}>Daneben</Btn>
+        <Btn variant="accent" className="min-h-20 text-lg" onClick={() => { haptic([8, 30, 14]); battle?.onMissionResult(true); }}>Treffer · +{stake}</Btn>
       </div>
     </>
   );
