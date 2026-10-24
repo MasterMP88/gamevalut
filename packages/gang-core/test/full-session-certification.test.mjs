@@ -134,7 +134,7 @@ function completeSession(playbook, playerCount, seed) {
   return state;
 }
 
-for (const playbook of GANG_PLAYBOOKS) {
+for (const playbook of GANG_PLAYBOOKS.filter((playbook) => playbook.runtime !== "time-drop")) {
   test(`${playbook.id}: full session completes at minimum player count`, () => {
     completeSession(playbook, playbook.minPlayers, 1001);
   });
@@ -148,6 +148,8 @@ for (const playbook of GANG_PLAYBOOKS) {
   });
 }
 
-test("all full-session certification cases cover exactly sixteen games", () => {
-  assert.equal(GANG_PLAYBOOKS.length, 16);
+test("full-session certification covers 16 generic games plus one special TIME//DROP runtime", () => {
+  assert.equal(GANG_PLAYBOOKS.length, 17);
+  assert.equal(GANG_PLAYBOOKS.filter((playbook) => playbook.runtime !== "time-drop").length, 16);
+  assert.equal(GANG_PLAYBOOKS.filter((playbook) => playbook.runtime === "time-drop").length, 1);
 });
