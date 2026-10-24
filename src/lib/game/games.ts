@@ -1,6 +1,6 @@
 import type { GameId, Scene, SceneType } from "./types";
 
-export type Mood = "Lustig" | "Tief" | "Frech" | "Gemeinsam" | "Mit Memory" | "Mit AI";
+export type Mood = "Lustig" | "Tief" | "Frech" | "Gemeinsam" | "Mit Memory" | "Mit AI" | "Musik";
 
 export interface GameConfig {
   id: GameId;
@@ -22,9 +22,11 @@ export interface GameConfig {
   coop?: boolean;
   memory?: boolean;
   ai?: boolean;
+  /** PASS//THE AUX: music rounds + Tonight's Tracklist finale */
+  music?: boolean;
   signature?: boolean;
   arc: "classic" | "free" | "one-two";
-  art: "wine" | "kinetic" | "editorial" | "battle" | "coop" | "minimal" | "echo" | "living";
+  art: "wine" | "kinetic" | "editorial" | "battle" | "coop" | "minimal" | "echo" | "living" | "aux";
   /** "So fühlt es sich an" — three beats: [cue, line]. */
   beats: [string, string][];
 }
@@ -151,7 +153,7 @@ export const GAMES: GameConfig[] = [
     title: "NIGHT//ECHO",
     hook: "Das Spiel, das sich merkt, was ihr sagt.",
     description: "Wie ONE//TWO – aber eure Antworten können zu Memory Anchors werden. Ein paar Szenen später kommen sie als Echo zurück.",
-    why: ["Entstehende Insider-Witze", "Memory Core: alles sichtbar & löschbar", "Nichts verlässt euren Browser"],
+    why: ["Entstehende Insider-Witze", "Memory Core: alles sichtbar & löschbar", "Anker werden nie automatisch gespeichert"],
     duration: "60 Min – open end",
     interaction: "Abwechselnd · mit Erinnerung",
     idealMood: "Verspielt-nah",
@@ -169,7 +171,7 @@ export const GAMES: GameConfig[] = [
     slug: "director",
     number: "08",
     title: "NIGHT//ECHO — Director",
-    hook: "Ein unsichtbarer Gastgeber schreibt eure Nacht live weiter.",
+    hook: "Eure Nacht, live inszeniert.",
     description: "Der Director – eine KI im Hintergrund – erfindet Szenen aus dem Verlauf eurer Nacht: Callbacks, Geheimnisse, Glitches. Ohne Netz spielt er lokal weiter.",
     why: ["Szenen, die es nur heute gibt", "Läuft offline lokal weiter", "Sieht nur minimale, bereinigte Daten"],
     duration: "60 Min – open end",
@@ -185,6 +187,25 @@ export const GAMES: GameConfig[] = [
     arc: "free",
     art: "living",
     beats: [["Komposition", "Fragen, Wetten, Geheimnisse – live gemischt."], ["Director Cut", "Plötzlich: Stille, Musik, Platztausch."], ["Callback", "Was ihr sagt, kehrt elegant wieder."]],
+  },
+  {
+    id: "pass-the-aux",
+    slug: "pass-the-aux",
+    number: "09",
+    title: "PASS//THE AUX",
+    hook: "Ein Song sagt mehr als eine Antwort.",
+    description: "Statt zu antworten, wählt ihr Songs: verdeckt eingeben, Handy rüber, entsiegeln. Mal wählt einer, mal beide blind zum selben Prompt, mal tippt das Gegenüber vorher den Vibe. Am Ende steht eure Tracklist der Nacht.",
+    why: ["Musik ist die Antwort", "Läuft ohne Musikdienst", "Tracklist bleibt nur in dieser Session"],
+    duration: "30–60 Min",
+    interaction: "Verdeckt wählen · abwechselnd",
+    idealMood: "Lust auf Musik statt Smalltalk",
+    intensity: 2,
+    moods: ["Musik", "Lustig", "Gemeinsam"],
+    types: ["MUSIC"],
+    music: true,
+    arc: "free",
+    art: "aux",
+    beats: [["Pick", "Song eintippen – nur du siehst ihn."], ["Versiegelt", "Handy rüber. Erst tippt das Gegenüber."], ["Entsiegelt", "Beide Tracks auf einmal. Dann: Warum der?"]],
   },
 ];
 
@@ -204,6 +225,7 @@ export const NIGHT_PICKS: { label: string; ids: GameId[]; why: string }[] = [
   { label: "Reden", ids: ["one-two", "night-echo"], why: "Eine Frage nach der anderen, und die guten Antworten kommen wieder." },
   { label: "Spielen", ids: ["after-dark-2", "battle"], why: "Timer, Rad, Punkte – hier sitzt niemand still." },
   { label: "Überraschen lassen", ids: ["ai-director", "roxy-night"], why: "Ein unsichtbarer Gastgeber entscheidet, was als Nächstes passiert." },
+  { label: "Musik", ids: ["pass-the-aux", "one-two"], why: "Antwortet mit Songs statt mit Sätzen – am Ende steht eure Tracklist." },
   { label: "Mehr Spannung", ids: ["coop", "battle"], why: "Gemeinsam etwas freischalten – oder charmant gegeneinander." },
 ];
 
