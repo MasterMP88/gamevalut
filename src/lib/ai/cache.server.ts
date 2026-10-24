@@ -10,6 +10,7 @@ const cache = new Map<string, CacheEntry>();
 function stable(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return "[" + value.map(stable).join(",") + "]";
+
   const obj = value as Record<string, unknown>;
   return (
     "{" +
@@ -38,18 +39,26 @@ function prune(now: number) {
   for (const [key, entry] of cache) {
     if (entry.expiresAt <= now) cache.delete(key);
   }
+
   if (cache.size <= MAX_ENTRIES) return;
-  const oldest = [...cache.entries()].sort((a, b) => a[1].touchedAt - b[1].touchedAt);
-  for (const [key] of oldest.slice(0, cache.size - MAX_ENTRIES)) cache.delete(key);
+
+  const oldest = [...cache.entries()].sort(
+    (a, b) => a[1].touchedAt - b[1].touchedAt,
+  );
+  for (const [key] of oldest.slice(0, cache.size - MAX_ENTRIES)) {
+    cache.delete(key);
+  }
 }
 
 export async function withAiCache<T>(
   key: string,
   ttlMs: number,
   producer: () => Promise<T>,
+  shouldCache: (value: T) => boolean = () => true,
 ): Promise<{ value: T; cacheHit: boolean }> {
   const now = Date.now();
   prune(now);
+
   const current = cache.get(key);
   if (current && current.expiresAt > now) {
     current.touchedAt = now;
@@ -57,9 +66,14 @@ export async function withAiCache<T>(
   }
 
   const value = await producer();
-  if (ttlMs > 0) {
-    cache.set(key, { value, expiresAt: now + ttlMs, touchedAt: now });
+  if (ttlMs > 0 && shouldCache(value)) {
+    cache.set(key, {
+      value,
+      expiresAt: now + ttlMs,
+      touchedAt: now,
+    });
   }
+
   return { value, cacheHit: false };
 }
 
