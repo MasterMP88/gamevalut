@@ -56,7 +56,7 @@ REVOKE ALL ON public.ai_budget_config FROM PUBLIC, anon, authenticated;
 GRANT ALL ON public.ai_budget_config TO service_role;
 
 INSERT INTO public.ai_budget_config (id, enabled, monthly_reserved_microusd_cap)
-VALUES ('global', false, 0)
+VALUES ('global', false, 50000000)
 ON CONFLICT (id) DO NOTHING;
 
 CREATE OR REPLACE FUNCTION public.ai_reserve_usage(
