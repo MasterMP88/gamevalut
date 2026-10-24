@@ -112,7 +112,7 @@ function Home() {
                   {pick.ids.map((id) => {
                     const g = GAMES_BY_ID[id];
                     return (
-                      <Link key={id} to="/game/$slug" params={{ slug: g.slug }} className="tap group relative block overflow-hidden rounded-2xl border border-line">
+                      <Link key={id} to="/game/$slug" params={{ slug: g.slug }} className="tap group relative block overflow-hidden border-y border-line bg-transparent">
                         <GameArt art={g.art} className="h-32" />
                         <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/30 to-transparent" />
                         <span className="absolute inset-x-3 bottom-3">
@@ -134,8 +134,10 @@ function Home() {
             <p className="eyebrow">Heute Nacht · Flagship</p>
             <span className="font-mono text-xs text-champagne">AI · live</span>
           </div>
-          <Link to="/game/$slug" params={{ slug: FEATURED.slug }} className="group relative mt-4 block overflow-hidden rounded-[2rem] border border-line">
-            <GameArt art={FEATURED.art} className="h-[30rem] sm:h-[34rem]" />
+          <Link to="/game/$slug" params={{ slug: FEATURED.slug }} className="group relative mt-5 block overflow-hidden border-y border-line bg-surface/20">
+            <GameArt art={FEATURED.art} className="h-[34rem] sm:h-[40rem]" />
+            <span className="pointer-events-none absolute right-3 top-0 font-display text-[9rem] leading-none text-foreground/[0.08] sm:right-8 sm:text-[15rem]">08</span>
+            <span className="pointer-events-none absolute right-5 top-36 origin-top-right rotate-90 font-mono text-[10px] tracking-[0.35em] text-champagne/55 sm:right-10 sm:top-52">DIRECTOR · LIVE COMPOSITION</span>
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6 sm:p-10">
               <p className="font-mono text-sm text-champagne">{FEATURED.number}</p>
@@ -160,7 +162,12 @@ function Home() {
         </Reveal>
 
         {/* COLLECTION */}
-        <section id="sammlung" className="mt-24 scroll-mt-6">
+        <section id="sammlung" className="mt-28 scroll-mt-6">
+          <div className="mb-16 flex items-center gap-4 text-champagne/65" aria-hidden>
+            <span className="font-display text-2xl tracking-[0.18em]">N//</span>
+            <span className="h-px flex-1 bg-gradient-to-r from-champagne/55 via-line to-transparent" />
+            <span className="font-mono text-[9px] tracking-[0.28em]">EIGHT WAYS INTO THE NIGHT</span>
+          </div>
           <Reveal>
             <p className="eyebrow">Die Sammlung</p>
             <h2 className="font-display mt-2 text-[clamp(3rem,13vw,6rem)] leading-[0.9]">
@@ -248,7 +255,7 @@ function Meta({ g }: { g: GameConfig }) {
 function CollectionItem({ g, layout, flip }: { g: GameConfig; layout: (typeof LAYOUTS)[number]; flip: boolean }) {
   if (layout === "bleed")
     return (
-      <Link to="/game/$slug" params={{ slug: g.slug }} className="tap group relative -mx-5 block overflow-hidden sm:mx-0 sm:rounded-[2rem]">
+      <Link to="/game/$slug" params={{ slug: g.slug }} className="tap group relative -mx-5 block overflow-hidden border-y border-line sm:mx-0">
         <GameArt art={g.art} className="h-[26rem] sm:h-[32rem]" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
         <div className="absolute inset-x-5 bottom-5 sm:inset-x-10 sm:bottom-10">
@@ -262,7 +269,7 @@ function CollectionItem({ g, layout, flip }: { g: GameConfig; layout: (typeof LA
   if (layout === "strip")
     return (
       <Link to="/game/$slug" params={{ slug: g.slug }} className="tap group grid grid-cols-[7.5rem_1fr] items-stretch gap-4 border-y border-line py-4 sm:grid-cols-[14rem_1fr]">
-        <div className="relative overflow-hidden rounded-xl">
+        <div className="relative overflow-hidden border-x border-line">
           <GameArt art={g.art} className="h-full min-h-36" />
         </div>
         <div className="flex min-w-0 flex-col">
@@ -287,7 +294,7 @@ function CollectionItem({ g, layout, flip }: { g: GameConfig; layout: (typeof LA
     );
   return (
     <Link to="/game/$slug" params={{ slug: g.slug }} className="tap group grid items-end gap-5 sm:grid-cols-12 sm:gap-10">
-      <div className={cn("relative overflow-hidden rounded-[1.6rem] border border-line sm:col-span-7", flip && "sm:order-2")}>
+      <div className={cn("relative overflow-hidden border-y border-line sm:col-span-7", flip && "sm:order-2")}>
         <GameArt art={g.art} className="h-64 sm:h-88" />
         <span className="absolute left-4 top-3 font-display text-7xl leading-none text-foreground/85 sm:text-8xl">{g.number}</span>
       </div>
