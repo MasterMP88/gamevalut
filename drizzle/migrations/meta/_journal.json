@@ -15,6 +15,13 @@
       "when": 1792872500905,
       "tag": "0001_nocturne_security_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792873950000,
+      "tag": "0002_pass_the_aux_content",
+      "breakpoints": true
     }
   ]
 }
