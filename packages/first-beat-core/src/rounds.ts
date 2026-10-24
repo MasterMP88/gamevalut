@@ -1,4 +1,9 @@
-import type { FirstBeatRound, FirstBeatRoundType, MusicTrack, PlayerIndex } from "./types.js";
+import type {
+  FirstBeatRound,
+  FirstBeatRoundType,
+  MusicTrack,
+  PlayerIndex,
+} from "./types.js";
 
 export const ROUND_COPY: Record<FirstBeatRoundType, string[]> = {
   INTRO_RUSH: [
@@ -33,7 +38,14 @@ export const ROUND_COPY: Record<FirstBeatRoundType, string[]> = {
   ],
 };
 
-export const DEFAULT_MOODS = ["Roadtrip", "2:17 Uhr", "Kuss-Szene", "Chaos", "Melancholie", "Main Character"] as const;
+export const DEFAULT_MOODS = [
+  "Roadtrip",
+  "2:17 Uhr",
+  "Kuss-Szene",
+  "Chaos",
+  "Melancholie",
+  "Main Character",
+] as const;
 
 export function makeRound(args: {
   id: string;
@@ -45,8 +57,15 @@ export function makeRound(args: {
 }): FirstBeatRound {
   const copy = ROUND_COPY[args.type];
   const prompt = copy[(args.copyIndex ?? 0) % copy.length]!;
-  const track = args.pickedBy === undefined ? args.track : { ...args.track, pickedBy: args.pickedBy };
-  const moodOptions = args.type === "MOOD_MATCH" ? (args.moodOptions ?? [...DEFAULT_MOODS].slice(0, 4)) : undefined;
+  const track =
+    args.pickedBy === undefined
+      ? args.track
+      : { ...args.track, pickedBy: args.pickedBy };
+  const moodOptions =
+    args.type === "MOOD_MATCH"
+      ? args.moodOptions ?? [...DEFAULT_MOODS].slice(0, 4)
+      : undefined;
+
   return {
     id: args.id,
     type: args.type,
@@ -56,27 +75,45 @@ export function makeRound(args: {
   };
 }
 
-export function buildFirstBeatDeck(tracks: MusicTrack[], targetRounds = 12): FirstBeatRound[] {
-  const playable = tracks.filter((track) => Boolean(track.previewUrl));
+export function buildFirstBeatDeck(
+  tracks: MusicTrack[],
+  targetRounds = 12,
+): FirstBeatRound[] {
+  const playable = tracks.filter(
+    (track) => Boolean(track.audioUrl && track.rights),
+  );
   if (playable.length === 0) return [];
-  const types: FirstBeatRoundType[] = ["INTRO_RUSH", "TIME_WARP", "INTRO_RUSH", "MOOD_MATCH"];
+
+  const types: FirstBeatRoundType[] = [
+    "INTRO_RUSH",
+    "TIME_WARP",
+    "INTRO_RUSH",
+    "MOOD_MATCH",
+  ];
   const size = Math.max(1, Math.min(targetRounds, playable.length));
-  return playable.slice(0, size).map((track, index) => makeRound({
-    id: `first-beat-${index + 1}`,
-    type: types[index % types.length]!,
-    track,
-    copyIndex: index,
-  }));
+
+  return playable.slice(0, size).map((track, index) =>
+    makeRound({
+      id: `first-beat-${index + 1}`,
+      type: types[index % types.length]!,
+      track,
+      copyIndex: index,
+    }),
+  );
 }
 
-export function buildPersonalRounds(picks: { track: MusicTrack; pickedBy: PlayerIndex }[]): FirstBeatRound[] {
+export function buildPersonalRounds(
+  picks: { track: MusicTrack; pickedBy: PlayerIndex }[],
+): FirstBeatRound[] {
   return picks
-    .filter((x) => Boolean(x.track.previewUrl))
-    .map((x, index) => makeRound({
-      id: `personal-cut-${index + 1}`,
-      type: index % 2 === 0 ? "WHO_PICKED_IT" : "PERSONAL_CUT",
-      track: x.track,
-      pickedBy: x.pickedBy,
-      copyIndex: index,
-    }));
+    .filter((x) => Boolean(x.track.audioUrl && x.track.rights))
+    .map((x, index) =>
+      makeRound({
+        id: `personal-cut-${index + 1}`,
+        type: index % 2 === 0 ? "WHO_PICKED_IT" : "PERSONAL_CUT",
+        track: x.track,
+        pickedBy: x.pickedBy,
+        copyIndex: index,
+      }),
+    );
 }

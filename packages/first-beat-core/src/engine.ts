@@ -22,18 +22,21 @@ export function createFirstBeatSession(players: [string, string]): FirstBeatSess
 
 export function currentRevealMs(state: FirstBeatSession): number {
   if (!state.current) return REVEAL_WINDOWS_MS[0];
-  return REVEAL_WINDOWS_MS[Math.min(state.current.revealLevel, REVEAL_WINDOWS_MS.length - 1)]!;
+  return REVEAL_WINDOWS_MS[
+    Math.min(state.current.revealLevel, REVEAL_WINDOWS_MS.length - 1)
+  ]!;
 }
 
 export function visibleTrack(state: FirstBeatSession): PublicTrackView | null {
   const current = state.current;
   if (!current) return null;
   const { track } = current.round;
-  const isReveal = current.stage === "REVEAL" || current.stage === "COMPLETE";
+  const isReveal =
+    current.stage === "REVEAL" || current.stage === "COMPLETE";
   if (isReveal) return { ...track };
   return {
     id: track.id,
-    ...(track.previewUrl ? { previewUrl: track.previewUrl } : {}),
+    ...(track.audioUrl ? { audioUrl: track.audioUrl } : {}),
   };
 }
 
@@ -57,7 +60,10 @@ function releaseDecade(round: FirstBeatRound): number | undefined {
   return Math.floor(year / 10) * 10;
 }
 
-function makeResult(state: FirstBeatSession, recognized: boolean): FirstBeatRoundResult {
+function makeResult(
+  state: FirstBeatSession,
+  recognized: boolean,
+): FirstBeatRoundResult {
   const current = state.current;
   if (!current) throw new Error("Cannot complete a round when no round is loaded");
   const decade = releaseDecade(current.round);
@@ -73,7 +79,10 @@ function makeResult(state: FirstBeatSession, recognized: boolean): FirstBeatRoun
   };
 }
 
-export function firstBeatReducer(state: FirstBeatSession, action: FirstBeatAction): FirstBeatSession {
+export function firstBeatReducer(
+  state: FirstBeatSession,
+  action: FirstBeatAction,
+): FirstBeatSession {
   switch (action.type) {
     case "LOAD_ROUND":
       if (state.finished) return state;
@@ -91,25 +100,43 @@ export function firstBeatReducer(state: FirstBeatSession, action: FirstBeatActio
     case "START_AUDIO":
       if (!state.current || state.finished) return state;
       if (!["READY", "LISTENING"].includes(state.current.stage)) return state;
-      return { ...state, current: { ...state.current, stage: "LISTENING" } };
+      return {
+        ...state,
+        current: { ...state.current, stage: "LISTENING" },
+      };
 
     case "MORE_AUDIO":
       if (!state.current || state.finished) return state;
-      if (!["READY", "LISTENING", "GUESSING"].includes(state.current.stage)) return state;
+      if (!["READY", "LISTENING", "GUESSING"].includes(state.current.stage)) {
+        return state;
+      }
       return {
         ...state,
         current: {
           ...state.current,
           stage: "LISTENING",
-          revealLevel: Math.min(state.current.revealLevel + 1, REVEAL_WINDOWS_MS.length - 1),
+          revealLevel: Math.min(
+            state.current.revealLevel + 1,
+            REVEAL_WINDOWS_MS.length - 1,
+          ),
         },
       };
 
     case "BUZZ":
-      if (!state.current || state.finished || state.current.stage !== "LISTENING") return state;
+      if (
+        !state.current ||
+        state.finished ||
+        state.current.stage !== "LISTENING"
+      ) {
+        return state;
+      }
       return {
         ...state,
-        current: { ...state.current, stage: "BUZZED", buzzedBy: action.player },
+        current: {
+          ...state.current,
+          stage: "BUZZED",
+          buzzedBy: action.player,
+        },
       };
 
     case "SUBMIT_GUESS":
@@ -117,13 +144,22 @@ export function firstBeatReducer(state: FirstBeatSession, action: FirstBeatActio
       if (!["BUZZED", "GUESSING"].includes(state.current.stage)) return state;
       return {
         ...state,
-        current: { ...state.current, stage: "GUESSING", guess: action.guess },
+        current: {
+          ...state.current,
+          stage: "GUESSING",
+          guess: action.guess,
+        },
       };
 
     case "REVEAL":
       if (!state.current || state.finished) return state;
-      if (!["LISTENING", "BUZZED", "GUESSING"].includes(state.current.stage)) return state;
-      return { ...state, current: { ...state.current, stage: "REVEAL" } };
+      if (!["LISTENING", "BUZZED", "GUESSING"].includes(state.current.stage)) {
+        return state;
+      }
+      return {
+        ...state,
+        current: { ...state.current, stage: "REVEAL" },
+      };
 
     case "COMPLETE_ROUND": {
       if (!state.current || state.finished) return state;
@@ -133,7 +169,9 @@ export function firstBeatReducer(state: FirstBeatSession, action: FirstBeatActio
         ...state,
         current: { ...state.current, stage: "COMPLETE" },
         history: [...state.history, result],
-        signal: clampSignal(state.signal + signalGain(result.revealedAtMs, action.recognized)),
+        signal: clampSignal(
+          state.signal + signalGain(result.revealedAtMs, action.recognized),
+        ),
       };
     }
 
@@ -163,16 +201,25 @@ export function firstBeatReducer(state: FirstBeatSession, action: FirstBeatActio
 export function statsFor(state: FirstBeatSession): FirstBeatStats {
   const recognized = state.history.filter((x) => x.recognized);
   const averageRevealMs = recognized.length
-    ? Math.round(recognized.reduce((sum, x) => sum + x.revealedAtMs, 0) / recognized.length)
+    ? Math.round(
+        recognized.reduce((sum, x) => sum + x.revealedAtMs, 0) /
+          recognized.length,
+      )
     : 0;
 
   const decadeCounts = new Map<number, number>();
   for (const row of recognized) {
     if (row.releaseDecade === undefined) continue;
-    decadeCounts.set(row.releaseDecade, (decadeCounts.get(row.releaseDecade) ?? 0) + 1);
+    decadeCounts.set(
+      row.releaseDecade,
+      (decadeCounts.get(row.releaseDecade) ?? 0) + 1,
+    );
   }
-  const strongestDecade = [...decadeCounts.entries()]
-    .sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0] ?? null;
+
+  const strongestDecade =
+    [...decadeCounts.entries()].sort(
+      (a, b) => b[1] - a[1] || b[0] - a[0],
+    )[0]?.[0] ?? null;
 
   return {
     rounds: state.history.length,

@@ -12,7 +12,7 @@ export interface DurableFirstBeatCurrent {
   stage: FirstBeatStage;
   revealLevel: number;
   buzzedBy: PlayerIndex | null;
-  /** Present only for non-personal provider tracks that can be safely re-fetched. */
+  /** Present only for non-private catalog tracks that can be safely re-fetched. */
   trackId?: string;
   privateTrack: boolean;
 }
@@ -33,31 +33,37 @@ export interface DurableFirstBeatSnapshot {
   finished: boolean;
   current: DurableFirstBeatCurrent | null;
   history: DurableFirstBeatHistoryRow[];
-  /** True when an exact cross-device resume would need a locally/private selected track again. */
+  /** True when exact resume needs a locally/private selected track again. */
   requiresPrivateMusicRestore: boolean;
 }
 
-function durableHistoryRow(row: FirstBeatRoundResult): DurableFirstBeatHistoryRow {
+function durableHistoryRow(
+  row: FirstBeatRoundResult,
+): DurableFirstBeatHistoryRow {
   return {
     roundId: row.roundId,
     type: row.type,
     recognized: row.recognized,
     revealedAtMs: row.revealedAtMs,
     buzzedBy: row.buzzedBy,
-    ...(row.releaseDecade === undefined ? {} : { releaseDecade: row.releaseDecade }),
+    ...(row.releaseDecade === undefined
+      ? {}
+      : { releaseDecade: row.releaseDecade }),
   };
 }
 
 /**
  * Safe default for NOCTURNE account auto-save.
- * Deliberately excludes titles, artists, artwork, preview URLs, picker identity and guess text.
- * A personal/private track ID is omitted too; the host may offer an explicit opt-in save flow separately.
+ * Excludes titles, artists, artwork, audio URLs, picker identity and guess text.
+ * Local/private track IDs are omitted too.
  */
-export function toDurableFirstBeatSnapshot(state: FirstBeatSession): DurableFirstBeatSnapshot {
+export function toDurableFirstBeatSnapshot(
+  state: FirstBeatSession,
+): DurableFirstBeatSnapshot {
   const current = state.current;
   const privateTrack =
     current?.round.track.pickedBy !== undefined ||
-    current?.round.track.provider === "manual";
+    current?.round.track.source === "local-file";
 
   return {
     version: 1,

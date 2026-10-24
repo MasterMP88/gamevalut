@@ -1,23 +1,26 @@
 export type PlayerIndex = 0 | 1;
-export type MusicProviderId = "apple-music" | "manual" | "demo";
+export type GameAudioSource = "owned-pack" | "licensed-catalog" | "local-file" | "demo";
+export type GameAudioRights = "owned" | "licensed" | "user-local";
 
 export interface MusicTrack {
   id: string;
   title: string;
   artist: string;
-  provider: MusicProviderId;
-  previewUrl?: string;
+  source: GameAudioSource;
+  /** Playable game audio. Must only point at owned/licensed/user-local audio. */
+  audioUrl?: string;
   artworkUrl?: string;
   releaseDate?: string;
   genres?: string[];
   durationMs?: number;
+  rights?: GameAudioRights;
   /** Set for tracks privately chosen by a player. Never display before reveal. */
   pickedBy?: PlayerIndex;
 }
 
 export interface PublicTrackView {
   id: string;
-  previewUrl?: string;
+  audioUrl?: string;
   artworkUrl?: string;
   title?: string;
   artist?: string;
@@ -52,7 +55,6 @@ export interface FirstBeatRound {
   type: FirstBeatRoundType;
   prompt: string;
   track: MusicTrack;
-  /** For multiple-choice mood rounds. */
   moodOptions?: string[];
 }
 
