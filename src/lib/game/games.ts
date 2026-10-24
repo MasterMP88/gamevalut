@@ -1,6 +1,6 @@
 import type { GameId, Scene, SceneType } from "./types";
 
-export type Mood = "Lustig" | "Tief" | "Frech" | "Gemeinsam" | "Mit Memory" | "Mit AI";
+export type Mood = "Lustig" | "Tief" | "Frech" | "Gemeinsam" | "Mit Memory" | "Mit AI" | "Musik";
 
 export interface GameConfig {
   id: GameId;
@@ -23,8 +23,9 @@ export interface GameConfig {
   memory?: boolean;
   ai?: boolean;
   signature?: boolean;
+  music?: boolean;
   arc: "classic" | "free" | "one-two";
-  art: "wine" | "kinetic" | "editorial" | "battle" | "coop" | "minimal" | "echo" | "living";
+  art: "wine" | "kinetic" | "editorial" | "battle" | "coop" | "minimal" | "echo" | "living" | "signal";
   /** "So fühlt es sich an" — three beats: [cue, line]. */
   beats: [string, string][];
 }
@@ -185,7 +186,27 @@ export const GAMES: GameConfig[] = [
     arc: "free",
     art: "living",
     beats: [["Komposition", "Fragen, Wetten, Geheimnisse – live gemischt."], ["Director Cut", "Plötzlich: Stille, Musik, Platztausch."], ["Callback", "Was ihr sagt, kehrt elegant wieder."]],
-  },
+  },,
+  {
+    id: "pass-the-aux",
+    slug: "pass-the-aux",
+    number: "09",
+    title: "PASS//THE AUX",
+    hook: "Ein Song sagt mehr als eine Antwort.",
+    description: "Ihr antwortet mit Musik: verdeckt wählen, gemeinsam revealen, den Vibe des anderen erraten – und am Ende bleibt eure Tracklist der Nacht.",
+    why: ["Songtitel eintippen – Musik-App optional", "Verdeckte Duette und Predictions", "Tonight’s Tracklist bleibt in dieser Session"],
+    duration: "45 Min – open end",
+    interaction: "Musik · verdeckt & gemeinsam",
+    idealMood: "Musik an, Kopf aus",
+    intensity: 2,
+    moods: ["Musik", "Lustig", "Gemeinsam"],
+    types: [],
+    music: true,
+    signature: true,
+    arc: "free",
+    art: "signal",
+    beats: [["Pick", "Ein Prompt. Ein Song. Nur für dich."], ["Seal", "Auswahl verstecken, Handy rüber."], ["Reveal", "Zwei Tracks. Eine Nacht. Eure Tracklist."]],
+  }
 ];
 
 /** Old public slugs keep resolving (redirected to the new slug). */
@@ -205,6 +226,7 @@ export const NIGHT_PICKS: { label: string; ids: GameId[]; why: string }[] = [
   { label: "Spielen", ids: ["after-dark-2", "battle"], why: "Timer, Rad, Punkte – hier sitzt niemand still." },
   { label: "Überraschen lassen", ids: ["ai-director", "roxy-night"], why: "Ein unsichtbarer Gastgeber entscheidet, was als Nächstes passiert." },
   { label: "Mehr Spannung", ids: ["coop", "battle"], why: "Gemeinsam etwas freischalten – oder charmant gegeneinander." },
+  { label: "Musik", ids: ["pass-the-aux", "after-dark-2"], why: "Wenn ein Song mehr sagt als eine Antwort – PASS//THE AUX zuerst." },
 ];
 
 export const GAMES_BY_SLUG = Object.fromEntries(GAMES.map((g) => [g.slug, g])) as Record<string, GameConfig>;
