@@ -55,14 +55,12 @@ export async function reservePersistentAiQuota(input: {
     if (result["allowed"] === true) {
       return {
         allowed: true,
-        remainingCalls:
-          typeof result["remainingCalls"] === "number"
-            ? result["remainingCalls"]
-            : undefined,
-        remainingUnits:
-          typeof result["remainingUnits"] === "number"
-            ? result["remainingUnits"]
-            : undefined,
+        ...(typeof result["remainingCalls"] === "number"
+          ? { remainingCalls: result["remainingCalls"] }
+          : {}),
+        ...(typeof result["remainingUnits"] === "number"
+          ? { remainingUnits: result["remainingUnits"] }
+          : {}),
       };
     }
 
