@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  APPLE_DECADE_PLAYLISTS,
+  appleTimeDropCatalogRequests,
+  belongsToRequestedDecade,
   buildBalancedTimeDropDeck,
   canReveal,
   mapAppleCatalogSong,
@@ -342,4 +345,21 @@ test("balanced deck excludes already-used tracks and invalid provider rows", () 
     excludeIds: ["used"],
   });
   assert.deepEqual(deck.map((x) => x.id), ["ok"]);
+});
+
+
+test("Apple pool covers 60s through 10s plus a current 20s chart source", () => {
+  assert.deepEqual(Object.keys(APPLE_DECADE_PLAYLISTS).map(Number), [1960, 1970, 1980, 1990, 2000, 2010]);
+  const reqs = appleTimeDropCatalogRequests({ storefront: "DE", historicalLimit: 50, currentLimit: 120 });
+  assert.equal(reqs.length, 7);
+  assert.equal(reqs[0].path, "/v1/catalog/de/playlists/pl.405e6f67264a4a44ba1b0c3a787c78b8/tracks");
+  assert.equal(reqs[0].params.limit, 50);
+  assert.equal(reqs.at(-1).path, "/v1/catalog/de/charts");
+  assert.deepEqual(reqs.at(-1).params, { types: "songs", chart: "most-played", limit: 120 });
+});
+
+test("provider rows are checked against their intended decade instead of trusting playlist labels", () => {
+  assert.equal(belongsToRequestedDecade(1989, 1980), true);
+  assert.equal(belongsToRequestedDecade(1990, 1980), false);
+  assert.equal(belongsToRequestedDecade(2026, 2020), true);
 });
