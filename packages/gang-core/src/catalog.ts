@@ -212,6 +212,23 @@ export const GANG_GAMES: readonly GangGameDefinition[] = [
     status: "ready",
   },
   {
+    id: "time-drop",
+    slug: "time-drop",
+    title: "TIME//DROP",
+    hook: "Hear the track. Drop it into time. Lock it tighter if you dare.",
+    minPlayers: 2,
+    maxPlayers: 99,
+    durationMinutes: [10, 35],
+    energy: 4,
+    mechanics: ["music", "prediction", "reaction", "team"],
+    interactionModes: ["one-phone", "everyone-in", "big-screen", "team-device", "mixed"],
+    capabilities: ["music"],
+    tags: ["music", "timeline", "crowd", "precision"],
+    directorEligible: true,
+    mixEligible: true,
+    status: "prototype",
+  },
+  {
     id: "chain-reaction",
     slug: "chain-reaction",
     title: "CHAIN REACTION",
@@ -313,7 +330,7 @@ export function eligibleGangGames(
   options: { includePlanned?: boolean; directorOnly?: boolean } = {},
 ): GangGameDefinition[] {
   return GANG_GAMES.filter((game) => {
-    if (!options.includePlanned && game.status === "planned") return false;
+    if (!options.includePlanned && game.status !== "ready") return false;
     if (options.directorOnly && !game.directorEligible) return false;
     return isCompatibleGame(game, preferences);
   });
@@ -337,6 +354,10 @@ export function validateMix(gameIds: readonly string[], preferences: GangPrefere
     seen.add(game.id);
     if (!game.mixEligible) {
       rejected.push({ id: game.id, reason: "mix-disabled" });
+      continue;
+    }
+    if (game.status !== "ready") {
+      rejected.push({ id: game.id, reason: "not-ready" });
       continue;
     }
     if (!isCompatibleGame(game, preferences)) {

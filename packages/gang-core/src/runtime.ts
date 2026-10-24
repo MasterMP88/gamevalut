@@ -261,6 +261,9 @@ export function createGangRuntime(input: {
 }): GangRuntimeState {
   const playbook = getGangPlaybook(input.gameId);
   if (!playbook) throw new Error(`Unknown GANG game: ${input.gameId}`);
+  if (playbook.runtime === "time-drop") {
+    throw new Error("TIME//DROP uses the dedicated @nocturne/time-drop-core runtime");
+  }
   let players = uniquePlayers(input.players);
   if (input.gameId === "team-chaos") players = teamPlayers(players);
   if (players.length < playbook.minPlayers || players.length > playbook.maxPlayers) {

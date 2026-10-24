@@ -17,11 +17,15 @@ function players(n) {
   return Array.from({ length: n }, (_, i) => ({ id: `p${i + 1}`, name: `Player ${i + 1}` }));
 }
 
-test("all sixteen catalog games have production playbooks and are ready", () => {
+test("catalog has sixteen ready generic games plus TIME//DROP special runtime", () => {
   assertCompleteGangPlaybooks();
-  assert.equal(GANG_PLAYBOOKS.length, 16);
-  assert.equal(GANG_GAMES.length, 16);
-  assert.ok(GANG_GAMES.every((game) => game.status === "ready"));
+  assert.equal(GANG_PLAYBOOKS.length, 17);
+  assert.equal(GANG_GAMES.length, 17);
+  const timeDropGame = GANG_GAMES.find((game) => game.id === "time-drop");
+  const timeDropPlaybook = GANG_PLAYBOOKS.find((game) => game.id === "time-drop");
+  assert.equal(timeDropGame?.status, "prototype");
+  assert.equal(timeDropPlaybook?.runtime, "time-drop");
+  assert.ok(GANG_GAMES.filter((game) => game.id !== "time-drop").every((game) => game.status === "ready"));
   assert.deepEqual(
     new Set(GANG_GAMES.map((game) => game.id)),
     new Set(GANG_PLAYBOOKS.map((game) => game.id)),
@@ -94,8 +98,8 @@ function genericAction(state, playerId, index) {
   return { playerId, value: `ok-${playerId}` };
 }
 
-test("every Gang game can complete a full round without a dead-end", () => {
-  for (const playbook of GANG_PLAYBOOKS) {
+test("every generic Gang game can complete a full round without a dead-end", () => {
+  for (const playbook of GANG_PLAYBOOKS.filter((playbook) => playbook.runtime !== "time-drop")) {
     let state = createGangRuntime({
       id: `runtime-${playbook.id}`,
       gameId: playbook.id,
@@ -120,6 +124,19 @@ test("every Gang game can complete a full round without a dead-end", () => {
       `${playbook.id} failed to leave its first round`,
     );
   }
+});
+
+
+test("TIME//DROP cannot accidentally start through the generic GANG runtime", () => {
+  assert.throws(
+    () => createGangRuntime({
+      id: "time-drop-wrong-runtime",
+      gameId: "time-drop",
+      players: players(4),
+      seed: 7,
+    }),
+    /dedicated @nocturne\/time-drop-core runtime/,
+  );
 });
 
 test("majority prediction awards points only after the reveal", () => {

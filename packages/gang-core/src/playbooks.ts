@@ -13,6 +13,7 @@ export type GangGameId =
   | "photo-hunt"
   | "draw-this"
   | "music-drop"
+  | "time-drop"
   | "chain-reaction"
   | "one-of-you"
   | "panic-button"
@@ -42,6 +43,8 @@ export interface GangPrompt {
 export interface GangPlaybook {
   id: GangGameId;
   title: string;
+  /** Dedicated runtimes bypass the generic stage engine. */
+  runtime?: "generic" | "time-drop";
   promise: string;
   howItFeels: string;
   mechanic: GameMechanic;
@@ -393,6 +396,32 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     ]),
   },
   {
+    id: "time-drop",
+    title: "TIME//DROP",
+    runtime: "time-drop",
+    promise: "Hör den Track. Setz ihn in die Zeit. Je enger du lockst, desto mehr zählt.",
+    howItFeels: "Eine lebende Musik-Timeline, auf der alle gleichzeitig setzen. Kein DJ, kein QR-Scan, kein Warten auf zehn Einzelzüge.",
+    mechanic: "music",
+    minPlayers: 2,
+    maxPlayers: 99,
+    rounds: [8, 16],
+    stages: ["answer", "reveal", "score"],
+    scoring: "Eigener TIME//DROP-Core: Placement + Precision/Expert-Boni; Teams werden nach Durchschnitt gewertet.",
+    finale: "Final Drop: letzter Track, alle dürfen vor dem Reveal auf ±2 Jahre locken.",
+    capabilities: ["music"],
+    safetyNote: "Der Runtime-Core enthält keine Musikdateien. Playback kommt ausschließlich aus einer separat erlaubten Provider-/Rechte-Schicht.",
+    prompts: prompts("time-drop", [
+      { prompt: "FLOW · Nur in die Timeline setzen.", category: "Flow" },
+      { prompt: "PRECISION · Setzen + ±10 Jahre locken.", category: "Precision" },
+      { prompt: "PRECISION · Setzen + ±5 Jahre locken.", category: "Precision" },
+      { prompt: "PRECISION · Setzen + ±2 Jahre locken.", category: "Precision" },
+      { prompt: "EXPERT · Setzen + exaktes Jahr.", category: "Expert" },
+      { prompt: "EXPERT · Jahr + Titel-Bonus.", category: "Expert" },
+      { prompt: "CROWD · Alle gleichzeitig, dann Raum-Reveal.", category: "Crowd" },
+      { prompt: "FINAL DROP · Engster Lock der Nacht.", category: "Finale" },
+    ]),
+  },
+  {
     id: "chain-reaction",
     title: "CHAIN REACTION",
     promise: "Ein Wort startet. Danach hat jede Person nur Sekunden, die Kette am Leben zu halten.",
@@ -502,7 +531,7 @@ export function getGangPlaybook(id: string): GangPlaybook | undefined {
 }
 
 export function assertCompleteGangPlaybooks(): void {
-  if (GANG_PLAYBOOKS.length !== 16) throw new Error("All 16 GANG games must have a playbook");
+  if (GANG_PLAYBOOKS.length !== 17) throw new Error("All 17 GANG games must have a playbook");
   const ids = new Set<string>();
   for (const playbook of GANG_PLAYBOOKS) {
     if (ids.has(playbook.id)) throw new Error(`Duplicate GANG playbook: ${playbook.id}`);
