@@ -19,7 +19,7 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
       - name: Typecheck
-        run: bunx tsgo --noEmit
+        run: bunx tsc --noEmit
       - name: Tests
         run: bunx vitest run
       - name: Production build
