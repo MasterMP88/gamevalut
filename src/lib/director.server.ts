@@ -33,6 +33,7 @@ const INSTRUCTIONS = [
   "DRAMATURGIE: komponiere Formate, nicht nur Fragen. Nutze recentTypes und wantTypes. Kein Typ häufiger als nötig.",
   "Pacing: lustig → Überraschung → Nähe → verspielte Spannung → Erholung → Callback.",
   "Höchstens ein ECHO pro Batch. Nach einer intensiven Szene folgt eine leichtere.",
+  "PERSONALISIERUNG: Wenn personalization vorhanden ist, nutze vibe/intensity als weiche Stilhinweise. insiders sind freiwillige Hinweise und dürfen nur subtil vorkommen, nie wie ein Dossier. taboo ist absolut: diese Themen weder direkt noch indirekt aufgreifen. Ohne personalization keine Annahmen erfinden.",
   'Antwort ausschließlich als JSON: {"scenes":[...]} mit genau ' +
     BATCH_SIZE +
     " Szenen im bestehenden Director-Schema.",
