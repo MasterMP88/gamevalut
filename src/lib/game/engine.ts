@@ -497,7 +497,7 @@ export function advance(state: SessionState): SessionState {
   };
 }
 
-function logCurrent(state: SessionState, outcome: "done" | "skipped") {
+function logCurrent(state: SessionState, outcome: "done" | "failed" | "skipped") {
   if (!state.current) return state.log;
   return [
     ...state.log,
@@ -532,6 +532,7 @@ export type Action =
   | { type: "DELETE_ANCHOR"; id: string }
   | { type: "CLEAR_ANCHORS" }
   | { type: "SHOWDOWN_WIN"; winner: 0 | 1 | null; missionDone?: boolean }
+  | { type: "BATTLE_RESULT"; success: boolean }
   | { type: "COVERT_RESULT"; success: boolean }
   | { type: "USE_POWERUP"; kind?: PowerUp }
   | { type: "AI_SCENES"; scenes: Scene[] }
@@ -667,6 +668,23 @@ export function reducer(state: SessionState, action: Action): SessionState {
       if (secretMission) secretMission = null;
       const next = { ...state, sparks, secretMission, raise: false, log: logCurrent(state, "done") };
       if (state.sceneNumber >= BATTLE_FINAL_SCENE) return { ...next, finished: true };
+      return advance(next);
+    }
+    case "BATTLE_RESULT": {
+      if (!game.battle || !state.current || state.current.type === "SHOWDOWN") return state;
+      if (action.success) return reducer(state, { type: "DONE" });
+
+      const streaks = [...state.streaks] as [number, number];
+      streaks[state.turn] = 0;
+      const next: SessionState = {
+        ...state,
+        log: logCurrent(state, "failed"),
+        streaks,
+        doubleNext: false,
+        rebound: null,
+        // A failed attempt does not cash a READ bet and does not count as a voluntary skip.
+        read: state.read !== null && state.read !== state.turn ? null : state.read,
+      };
       return advance(next);
     }
     case "COVERT_RESULT": {
