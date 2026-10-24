@@ -250,3 +250,67 @@ test("presence expiry supports drop-out and deterministic rejoin", () => {
   assert.equal(room.players.length, 2);
   assert.equal(room.facilitatorPlayerId, "b");
 });
+
+
+test("THE MAJORITY resolves ties and prediction hits without trusting stale votes", () => {
+  const result = resolveMajorityRound({
+    playerIds: ["a", "b", "c", "d"],
+    optionIds: ["x", "y", "z"],
+    votes: { a: "x", b: "y", c: "x", d: "y", stale: "z" },
+    predictions: { a: "x", b: "z", c: "y", d: "y", stale: "x" },
+  });
+  assert.deepEqual(result.majorityOptionIds, ["x", "y"]);
+  assert.deepEqual(result.correctPredictorIds, ["a", "c", "d"]);
+  assert.equal(result.voteCount, 4);
+  assert.equal(result.predictionCount, 4);
+});
+
+test("WHO'S THAT ignores self nominations by default and supports a tied reveal", () => {
+  const result = resolveWhosThatRound({
+    playerIds: ["a", "b", "c", "d"],
+    nominations: { a: "b", b: "a", c: "b", d: "a" },
+  });
+  assert.deepEqual(result.selectedPlayerIds, ["a", "b"]);
+  assert.equal(result.counts.a, 2);
+  assert.equal(result.counts.b, 2);
+
+  const selfIgnored = resolveWhosThatRound({
+    playerIds: ["a", "b", "c"],
+    nominations: { a: "a", b: "a", c: "b" },
+  });
+  assert.equal(selfIgnored.nominationCount, 2);
+  assert.deepEqual(selfIgnored.selectedPlayerIds, ["a", "b"]);
+});
+
+test("UNDERCOVER role assignment is deterministic and always leaves civilians", () => {
+  const a = assignUndercoverRoles(["p1", "p2", "p3", "p4", "p5"], 42, 2);
+  const b = assignUndercoverRoles(["p1", "p2", "p3", "p4", "p5"], 42, 2);
+  assert.deepEqual(a, b);
+  assert.equal(a.undercoverPlayerIds.length, 2);
+  assert.equal(Object.values(a.roles).filter((r) => r === "civilian").length, 3);
+  assert.throws(() => assignUndercoverRoles(["p1", "p2", "p3"], 1));
+  assert.throws(() => assignUndercoverRoles(["p1", "p2", "p3", "p4"], 1, 4));
+});
+
+test("SECRET MISSIONS assigns unique opaque missions and resolves explicit outcomes", () => {
+  const a = assignSecretMissions({
+    playerIds: ["a", "b", "c"],
+    missionIds: ["m1", "m2", "m3", "m4"],
+    seed: 99,
+  });
+  const b = assignSecretMissions({
+    playerIds: ["a", "b", "c"],
+    missionIds: ["m1", "m2", "m3", "m4"],
+    seed: 99,
+  });
+  assert.deepEqual(a, b);
+  assert.equal(new Set(Object.values(a.assignments)).size, 3);
+
+  const result = resolveSecretMissions({
+    assignments: a.assignments,
+    outcomes: { a: true, b: false },
+  });
+  assert.deepEqual(result.completedPlayerIds, ["a"]);
+  assert.deepEqual(result.failedPlayerIds, ["b"]);
+  assert.deepEqual(result.unresolvedPlayerIds, ["c"]);
+});
