@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { adaptDifficulty } from "../lib/ai/adaptive";
 import { adaptiveTargetPhase, createSession, DEFAULT_SETTINGS } from "../lib/game/engine";
+import { reservePersistentAiQuota } from "../lib/ai/quota.server";
 import {
   AI_POLICIES,
   aiModeFor,
@@ -91,6 +92,38 @@ describe("zero-cost adaptive difficulty", () => {
     expect(result.difficulty).toBe(3.6);
     expect(result.pace).toBe("push");
     expect(result.reason).toBe("mastery");
+  });
+});
+
+describe("persistent AI budget", () => {
+  it("rejects guests before any paid provider work", async () => {
+    await expect(
+      reservePersistentAiQuota({
+        userId: null,
+        capability: "director",
+        units: 6,
+      }),
+    ).resolves.toEqual({ allowed: false, reason: "auth" });
+  });
+
+  it("fails closed without an explicit server monthly spend cap", async () => {
+    const previous = process.env["NOCTURNE_AI_GLOBAL_MONTHLY_USD_CAP"];
+    delete process.env["NOCTURNE_AI_GLOBAL_MONTHLY_USD_CAP"];
+    try {
+      await expect(
+        reservePersistentAiQuota({
+          userId: "00000000-0000-0000-0000-000000000001",
+          capability: "director",
+          units: 6,
+        }),
+      ).resolves.toEqual({ allowed: false, reason: "disabled" });
+    } finally {
+      if (previous === undefined) {
+        delete process.env["NOCTURNE_AI_GLOBAL_MONTHLY_USD_CAP"];
+      } else {
+        process.env["NOCTURNE_AI_GLOBAL_MONTHLY_USD_CAP"] = previous;
+      }
+    }
   });
 });
 
