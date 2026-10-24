@@ -10,18 +10,9 @@ export type AiProviderResult =
 
 function modelFor(profile: AiProfile) {
   if (profile === "lite") {
-    return (
-      process.env["NOCTURNE_AI_LITE_MODEL"] ||
-      process.env["NOCTURNE_AI_MODEL"] ||
-      "openai/gpt-6-astra"
-    );
+    return process.env["NOCTURNE_AI_LITE_MODEL"] || "gpt-6-luna";
   }
-
-  return (
-    process.env["NOCTURNE_AI_PREMIUM_MODEL"] ||
-    process.env["NOCTURNE_AI_MODEL"] ||
-    "openai/gpt-6-astra"
-  );
+  return process.env["NOCTURNE_AI_PREMIUM_MODEL"] || "gpt-6.1-sol";
 }
 
 export async function generateAiText(input: {
@@ -30,17 +21,10 @@ export async function generateAiText(input: {
   user: string;
   signal?: AbortSignal;
 }): Promise<AiProviderResult> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
+  const apiKey = process.env["OPENAI_API_KEY"];
   if (!apiKey) return { ok: false, reason: "unavailable" };
 
-  const provider = createOpenAI({
-    baseURL: "https://ai.gateway.lovable.dev/v1",
-    apiKey,
-    headers: {
-      "Lovable-API-Key": apiKey,
-      "X-Lovable-AIG-SDK": "vercel-ai-sdk",
-    },
-  });
+  const provider = createOpenAI({ apiKey });
 
   try {
     const result = streamText({
