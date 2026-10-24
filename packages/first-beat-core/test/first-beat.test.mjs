@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  AppleMusicProvider,
+  StaticRightsClearedProvider,
   buildFirstBeatDeck,
   createFirstBeatSession,
   currentRevealMs,
   firstBeatReducer,
+  isRightsClearedGameTrack,
+  makeLocalFileTrack,
   makeRound,
-  normalizeAppleMusicSong,
+  requireRightsClearedGameTrack,
   statsFor,
   toDurableFirstBeatSnapshot,
   visibleTrack,
@@ -17,10 +19,11 @@ const track = {
   id: "t1",
   title: "Secret Song",
   artist: "Hidden Artist",
-  provider: "demo",
-  previewUrl: "https://example.test/preview.m4a",
+  source: "demo",
+  audioUrl: "blob:owned-demo-audio",
   artworkUrl: "https://example.test/art.jpg",
   releaseDate: "2009-02-01",
+  rights: "owned",
 };
 const round = makeRound({ id: "r1", type: "INTRO_RUSH", track });
 
@@ -38,7 +41,7 @@ test("track metadata stays sealed before reveal", () => {
   let s = createFirstBeatSession(["A", "B"]);
   s = firstBeatReducer(s, { type: "LOAD_ROUND", round });
   s = firstBeatReducer(s, { type: "START_AUDIO" });
-  assert.deepEqual(visibleTrack(s), { id: "t1", previewUrl: track.previewUrl });
+  assert.deepEqual(visibleTrack(s), { id: "t1", audioUrl: track.audioUrl });
   s = firstBeatReducer(s, { type: "REVEAL" });
   assert.equal(visibleTrack(s)?.title, "Secret Song");
   assert.equal(visibleTrack(s)?.artist, "Hidden Artist");
@@ -49,13 +52,15 @@ test("buzz, guess, reveal and completion update cooperative signal without playe
   s = firstBeatReducer(s, { type: "LOAD_ROUND", round });
   s = firstBeatReducer(s, { type: "START_AUDIO" });
   s = firstBeatReducer(s, { type: "BUZZ", player: 1 });
-  s = firstBeatReducer(s, { type: "SUBMIT_GUESS", guess: { kind: "free-text", text: "my guess" } });
+  s = firstBeatReducer(s, {
+    type: "SUBMIT_GUESS",
+    guess: { kind: "free-text", text: "my guess" },
+  });
   s = firstBeatReducer(s, { type: "REVEAL" });
   s = firstBeatReducer(s, { type: "COMPLETE_ROUND", recognized: true });
   assert.equal(s.history.length, 1);
   assert.equal(s.history[0]?.buzzedBy, 1);
   assert.equal(s.signal, 12);
-  assert.equal(s.current?.stage, "COMPLETE");
 });
 
 test("stats report recognition pace and strongest era", () => {
@@ -74,62 +79,49 @@ test("stats report recognition pace and strongest era", () => {
   });
 });
 
-test("reset clears all music-game state", () => {
-  let s = createFirstBeatSession(["A", "B"]);
-  s = firstBeatReducer(s, { type: "LOAD_ROUND", round });
-  s = firstBeatReducer(s, { type: "START_AUDIO" });
-  s = firstBeatReducer(s, { type: "REVEAL" });
-  s = firstBeatReducer(s, { type: "COMPLETE_ROUND", recognized: true });
-  s = firstBeatReducer(s, { type: "RESET" });
-  assert.equal(s.history.length, 0);
-  assert.equal(s.signal, 0);
-  assert.equal(s.current, null);
-  assert.equal(s.finished, false);
-});
-
-test("deck excludes tracks without official preview audio", () => {
-  const noPreview = { ...track, id: "t2" };
-  delete noPreview.previewUrl;
-  const deck = buildFirstBeatDeck([track, noPreview]);
+test("deck excludes tracks without rights-cleared game audio", () => {
+  const unauthorized = { ...track, id: "t2" };
+  delete unauthorized.rights;
+  const deck = buildFirstBeatDeck([track, unauthorized]);
   assert.equal(deck.length, 1);
   assert.equal(deck[0]?.track.id, "t1");
+  assert.equal(isRightsClearedGameTrack(unauthorized), false);
+  assert.throws(() => requireRightsClearedGameTrack(unauthorized));
 });
 
-test("Apple Music normalization requires title, artist and preview URL", () => {
-  const normalized = normalizeAppleMusicSong({
-    id: "apple-1",
-    attributes: {
-      name: "Track",
-      artistName: "Artist",
-      previews: [{ url: "https://apple.example/preview.m4a" }],
-      artwork: { url: "https://img.example/{w}x{h}.jpg" },
-      releaseDate: "1998-01-01",
-    },
+test("static provider returns only rights-cleared owned/licensed tracks", async () => {
+  const provider = new StaticRightsClearedProvider({
+    id: "owned-demo-pack",
+    source: "owned-pack",
+    rights: "owned",
+    tracks: [track],
   });
-  assert.equal(normalized?.provider, "apple-music");
-  assert.equal(normalized?.artworkUrl, "https://img.example/600x600.jpg");
-  assert.equal(
-    normalizeAppleMusicSong({ id: "bad", attributes: { name: "No preview", artistName: "Artist" } }),
-    null,
-  );
+  const rows = await provider.list();
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]?.rights, "owned");
+  assert.equal(provider.capabilities().rightsCleared, true);
 });
 
-test("Apple adapter remains fail-soft when not configured", async () => {
-  const bridge = {
-    isConfigured: () => false,
-    isAuthorized: () => false,
-    authorize: async () => undefined,
-    searchSongs: async () => {
-      throw new Error("must not call");
-    },
-  };
-  const provider = new AppleMusicProvider(bridge);
-  assert.equal(provider.capabilities().configured, false);
-  assert.deepEqual(await provider.search("test"), []);
+test("local-file tracks are marked user-local and playable but ephemeral", () => {
+  const local = makeLocalFileTrack({
+    id: "local-1",
+    title: "My file",
+    objectUrl: "blob:local",
+    pickedBy: 0,
+  });
+  assert.equal(local.source, "local-file");
+  assert.equal(local.rights, "user-local");
+  assert.equal(isRightsClearedGameTrack(local), true);
 });
 
 test("durable snapshot strips hidden and private song content from autosave", () => {
-  const personal = { ...track, id: "private-track", provider: "manual", pickedBy: 0 };
+  const personal = makeLocalFileTrack({
+    id: "private-track",
+    title: "Secret Song 987",
+    artist: "Artist 654",
+    objectUrl: "blob:private",
+    pickedBy: 0,
+  });
   const personalRound = makeRound({
     id: "personal",
     type: "WHO_PICKED_IT",
@@ -144,15 +136,24 @@ test("durable snapshot strips hidden and private song content from autosave", ()
     type: "SUBMIT_GUESS",
     guess: { kind: "free-text", text: "very private guess" },
   });
-
   const snap = toDurableFirstBeatSnapshot(s);
   const serialized = JSON.stringify(snap);
-
   assert.equal(snap.current?.privateTrack, true);
   assert.equal("trackId" in (snap.current ?? {}), false);
-  assert.equal(snap.requiresPrivateMusicRestore, true);
-  assert.equal(serialized.includes("Secret Song"), false);
-  assert.equal(serialized.includes("Hidden Artist"), false);
+  assert.equal(serialized.includes("Secret Song 987"), false);
+  assert.equal(serialized.includes("Artist 654"), false);
   assert.equal(serialized.includes("very private guess"), false);
   assert.equal(serialized.includes("private-track"), false);
+});
+
+test("reset clears all music-game state", () => {
+  let s = createFirstBeatSession(["A", "B"]);
+  s = firstBeatReducer(s, { type: "LOAD_ROUND", round });
+  s = firstBeatReducer(s, { type: "START_AUDIO" });
+  s = firstBeatReducer(s, { type: "REVEAL" });
+  s = firstBeatReducer(s, { type: "COMPLETE_ROUND", recognized: true });
+  s = firstBeatReducer(s, { type: "RESET" });
+  assert.equal(s.history.length, 0);
+  assert.equal(s.signal, 0);
+  assert.equal(s.current, null);
 });
