@@ -169,10 +169,11 @@ describe("AI session budget", () => {
 describe("AI cache", () => {
   beforeEach(() => __clearAiCacheForTests());
 
-  it("uses stable keys regardless of object key order", () => {
-    expect(aiCacheKey("x", { a: 1, b: 2 })).toBe(
-      aiCacheKey("x", { b: 2, a: 1 }),
-    );
+  it("uses stable collision-resistant keys regardless of object key order", async () => {
+    const a = await aiCacheKey("x", { a: 1, b: 2 });
+    const b = await aiCacheKey("x", { b: 2, a: 1 });
+    expect(a).toBe(b);
+    expect(a).toMatch(/^x:[a-f0-9]{32}$/);
   });
 
   it("reuses successful work and can avoid caching failures", async () => {
