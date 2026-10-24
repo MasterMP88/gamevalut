@@ -14,6 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_budget_config: {
+        Row: {
+          enabled: boolean
+          id: string
+          monthly_reserved_microusd_cap: number
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          id: string
+          monthly_reserved_microusd_cap?: number
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          id?: string
+          monthly_reserved_microusd_cap?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_global_usage_monthly: {
+        Row: {
+          calls: number
+          period_start: string
+          reserved_microusd: number
+          units: number
+          updated_at: string
+        }
+        Insert: {
+          calls?: number
+          period_start: string
+          reserved_microusd?: number
+          units?: number
+          updated_at?: string
+        }
+        Update: {
+          calls?: number
+          period_start?: string
+          reserved_microusd?: number
+          units?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_usage_monthly: {
+        Row: {
+          calls: number
+          capability: string
+          period_start: string
+          reserved_microusd: number
+          units: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calls?: number
+          capability: string
+          period_start: string
+          reserved_microusd?: number
+          units?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calls?: number
+          capability?: string
+          period_start?: string
+          reserved_microusd?: number
+          units?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       content_versions: {
         Row: {
           game_id: string
@@ -278,7 +353,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      ai_refund_usage: {
+        Args: {
+          p_capability: string
+          p_reserved_microusd: number
+          p_units: number
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      ai_reserve_usage: {
+        Args: {
+          p_capability: string
+          p_global_reserved_microusd_limit: number
+          p_reserved_microusd: number
+          p_units: number
+          p_user_call_limit: number
+          p_user_id: string
+          p_user_unit_limit: number
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
