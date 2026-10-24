@@ -61,7 +61,7 @@ export function consumeAiBudget(input: {
 
   current.calls += 1;
   current.items += input.items;
-  current.lastScene = sceneNumber;
+  if (sceneNumber !== undefined) current.lastScene = sceneNumber;
 
   return {
     allowed: true,
