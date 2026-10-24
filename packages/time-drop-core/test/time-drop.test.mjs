@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildBalancedTimeDropDeck,
   canReveal,
+  mapAppleCatalogSong,
   completeRound,
   createTimeDropSession,
   finishTimeDrop,
@@ -284,4 +286,60 @@ test("insertTrack deduplicates the same track id", () => {
   const once = insertTrack(line, t("b", 2010));
   const twice = insertTrack(once, t("b", 2010));
   assert.equal(twice.length, 2);
+});
+
+test("Apple catalog mapping uses release metadata and ignores previews as game audio", () => {
+  const mapped = mapAppleCatalogSong({
+    id: "635016640",
+    attributes: {
+      name: "Sweater Weather",
+      artistName: "The Neighbourhood",
+      releaseDate: "2012-12-03",
+      url: "https://music.apple.com/us/album/x/1?i=635016640",
+      artwork: { url: "https://img.example/{w}x{h}.jpg" },
+      playParams: { id: "635016640", kind: "song" },
+      previews: [{ url: "https://should-not-be-used.example/preview.m4a" }],
+    },
+  });
+  assert.equal(mapped.releaseYear, 2012);
+  assert.equal(mapped.providerId, "635016640");
+  assert.equal(mapped.playbackRef, "apple-music:635016640");
+  assert.equal(mapped.artworkUrl, "https://img.example/600x600.jpg");
+  assert.equal("previewUrl" in mapped, false);
+});
+
+test("balanced deck round-robins decades before filling extra slots", () => {
+  const candidates = [
+    t("70a", 1978), t("70b", 1979),
+    t("80a", 1984), t("80b", 1988),
+    t("90a", 1991), t("90b", 1999),
+    t("00a", 2004), t("00b", 2009),
+    t("10a", 2012), t("10b", 2018),
+    t("20a", 2021), t("20b", 2025),
+  ];
+  const deck = buildBalancedTimeDropDeck({
+    candidates,
+    size: 6,
+    seed: 42,
+    decades: [1970, 1980, 1990, 2000, 2010, 2020],
+  });
+  assert.deepEqual(
+    new Set(deck.map((x) => Math.floor(x.releaseYear / 10) * 10)),
+    new Set([1970, 1980, 1990, 2000, 2010, 2020]),
+  );
+  assert.equal(new Set(deck.map((x) => x.id)).size, 6);
+});
+
+test("balanced deck excludes already-used tracks and invalid provider rows", () => {
+  const candidates = [
+    t("used", 1990),
+    t("ok", 2000),
+    { id: "bad", title: "", artist: "Artist", releaseYear: 2010 },
+  ];
+  const deck = buildBalancedTimeDropDeck({
+    candidates,
+    size: 5,
+    excludeIds: ["used"],
+  });
+  assert.deepEqual(deck.map((x) => x.id), ["ok"]);
 });
