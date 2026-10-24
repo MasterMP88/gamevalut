@@ -52,7 +52,8 @@ export function toRow(s: SessionState, userId: string, revision: number): Sessio
     current_player: s.turn,
     content_version: CONTENT_VERSION,
     state_version: STATE_VERSION,
-    intensity: s.heat,
+    // smallint column: heat is fractional in state (full value stays in `state`).
+    intensity: Math.round(s.heat),
     steer: s.steer,
     scores: g.battle ? { sparks: s.sparks, streaks: s.streaks } : null,
     energies: g.coop ? s.energies : null,
