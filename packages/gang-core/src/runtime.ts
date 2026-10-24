@@ -641,6 +641,7 @@ export function publicGangView(state: GangRuntimeState): GangPublicRoundView {
   const promptHidden =
     (state.gameId === "one-of-you" && stage !== "reveal" && stage !== "score") ||
     (state.gameId === "undercover" && stage !== "reveal" && stage !== "score") ||
+    (state.gameId === "secret-missions" && stage !== "reveal" && stage !== "score") ||
     (state.gameId === "draw-this" && stage !== "reveal" && stage !== "score");
 
   const submissions = currentSubmissions(state);
@@ -648,7 +649,11 @@ export function publicGangView(state: GangRuntimeState): GangPublicRoundView {
   return {
     id: state.round.id,
     number: state.round.number,
-    prompt: promptHidden ? "PRIVATE ROUND" : state.round.prompt.prompt,
+    prompt: promptHidden
+      ? state.gameId === "secret-missions"
+        ? "SECRET MISSIONS laufen im Hintergrund"
+        : "PRIVATE ROUND"
+      : state.round.prompt.prompt,
     ...(state.round.prompt.subline ? { subline: state.round.prompt.subline } : {}),
     ...(options ? { options } : {}),
     ...(state.round.prompt.seconds !== undefined ? { seconds: state.round.prompt.seconds } : {}),
