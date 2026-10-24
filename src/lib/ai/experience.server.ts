@@ -10,6 +10,7 @@ import {
   type ExperienceRequest,
 } from "./experience-schema";
 import { extractJsonObject, generateAiText, type AiProfile } from "./provider.server";
+import { refundPersistentAiQuota, reservePersistentAiQuota } from "./quota.server";
 
 export type ExperienceResult =
   | {
@@ -131,7 +132,7 @@ export function musicClueLeaksAnswer(request: ExperienceRequest, raw: unknown) {
   });
 }
 
-export async function runExperience(input: unknown): Promise<ExperienceResult> {
+export async function runExperience(input: unknown, userId?: string | null): Promise<ExperienceResult> {
   const parsed = experienceRequestSchema.safeParse(input);
   if (!parsed.success) return { ok: false, reason: "invalid" };
 
@@ -159,6 +160,15 @@ export async function runExperience(input: unknown): Promise<ExperienceResult> {
         return { ok: false as const, reason: "budget" as const };
       }
 
+      const persistent = await reservePersistentAiQuota({
+        userId,
+        capability,
+        units: items,
+      });
+      if (!persistent.allowed) {
+        return { ok: false as const, reason: "budget" as const };
+      }
+
       const prompt = promptFor(request);
       const result = await generateAiText({
         profile: profileFor(capability),
@@ -167,7 +177,10 @@ export async function runExperience(input: unknown): Promise<ExperienceResult> {
         maxOutputTokens: maxOutputTokensFor(request),
       });
 
-      if (!result.ok) return result;
+      if (!result.ok) {
+        await refundPersistentAiQuota({ userId, capability, units: items });
+        return result;
+      }
 
       const json = extractJsonObject(result.text);
       if (!json || musicClueLeaksAnswer(request, json)) {
