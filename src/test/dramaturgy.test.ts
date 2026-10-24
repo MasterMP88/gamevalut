@@ -181,6 +181,8 @@ describe("Game identities", () => {
       const { seen, types } = play("roxy-after-dark", 30, seed);
       const first = seen.slice(0, 3).map((x) => x.current!);
       expect(first.some((sc) => sc.type === "MISSION" || sc.type === "TIMER")).toBe(true);
+      expect(seen.find((x) => x.sceneNumber === 2)?.current?.mechanic).toBe("standoff");
+      expect(seen.find((x) => x.sceneNumber === 4)?.current?.type).toBe("PREDICTION");
       expect(first.some((sc) => sc.type !== "QUESTION" || sc.flavor === "funny")).toBe(true);
       expect(first.every((sc) => sc.phase === 0)).toBe(true);
       for (let i = 0; i + 6 <= types.length; i++) expect(types.slice(i, i + 6).filter((t) => t === "QUESTION").length).toBeLessThanOrEqual(3);
