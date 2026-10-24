@@ -21,6 +21,10 @@ export async function generateAiText(input: {
   user: string;
   signal?: AbortSignal;
 }): Promise<AiProviderResult> {
+  if (process.env["NOCTURNE_AI_ENABLED"] !== "true") {
+    return { ok: false, reason: "unavailable" };
+  }
+
   const apiKey = process.env["OPENAI_API_KEY"];
   if (!apiKey) return { ok: false, reason: "unavailable" };
 
