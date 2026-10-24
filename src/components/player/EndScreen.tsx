@@ -5,6 +5,7 @@ import { battleWinner, nightSignature, type Action } from "@/lib/game/engine";
 import type { GameConfig } from "@/lib/game/games";
 import type { SessionState } from "@/lib/game/types";
 import { haptic } from "@/lib/haptics";
+import { useSessions } from "@/lib/game/store";
 import { cn } from "@/lib/utils";
 
 export const ENDINGS = [
@@ -13,10 +14,17 @@ export const ENDINGS = [
   { id: "no-more-game", title: "No More Game", line: "Ab hier kein Spiel mehr. Nur ihr zwei." },
 ] as const;
 
-const PRIVACY = "Alles, was ihr heute gemerkt habt, lebt nur in diesem Tab. Neu laden – und es ist weg.";
+const PRIVACY = "Was ihr euch heute gesagt und gemerkt habt, bleibt in diesem Tab – außer ihr habt einen Moment ausdrücklich gesichert.";
 
-function Back({ onEnd, className }: { onEnd: () => void; className?: string }) {
-  return <Link to="/" onClick={onEnd} className={btn({ size: "lg", className })}>Zurück zu NOCTURNE</Link>;
+/** Strong next action: replay this game, or back to the collection. */
+function Back({ onEnd, game, className }: { onEnd: () => void; game: GameConfig; className?: string }) {
+  const { start } = useSessions();
+  return (
+    <div className={cn("flex flex-col gap-2", className)}>
+      <Btn size="lg" className="w-full" onClick={() => { haptic(10); onEnd(); start(game.id); }}>Nochmal {game.title} →</Btn>
+      <Link to="/" onClick={onEnd} className={btn({ variant: "ghost", size: "lg", className: "w-full" })}>Anderes Spiel wählen</Link>
+    </div>
+  );
 }
 
 /** Hand-drawn signature stroke — drawn once, the visual seal of the night. */
@@ -44,7 +52,7 @@ export function EndScreen({ game, state, dispatch, onEnd }: { game: GameConfig; 
         <SignatureStroke className="mt-10 w-48 text-primary/70" />
         <p className="mt-10 text-sm text-muted-foreground">{PRIVACY}</p>
         <div className="mt-10 flex flex-col gap-3">
-          <Back onEnd={onEnd} />
+          <Back onEnd={onEnd} game={game} />
           {game.signature && <Btn variant="ghost" size="lg" onClick={() => dispatch({ type: "AFTER_HOURS" })}>Doch noch After Hours</Btn>}
         </div>
       </Stage>
@@ -80,7 +88,7 @@ export function EndScreen({ game, state, dispatch, onEnd }: { game: GameConfig; 
             </div>
           ))}
         </div>
-        <div className="mt-auto pt-12"><Back onEnd={onEnd} className="w-full" /></div>
+        <div className="mt-auto pt-12"><Back onEnd={onEnd} game={game} className="w-full" /></div>
       </Stage>
     );
   }
@@ -116,7 +124,7 @@ export function EndScreen({ game, state, dispatch, onEnd }: { game: GameConfig; 
         <div className="mt-8 flex justify-center gap-5">
           {rings.map((x) => <span key={x.k} className={cn("eyebrow", x.cls)}>{x.k}</span>)}
         </div>
-        <div className="mt-auto pt-12"><Back onEnd={onEnd} className="w-full" /></div>
+        <div className="mt-auto pt-12"><Back onEnd={onEnd} game={game} className="w-full" /></div>
       </Stage>
     );
   }
@@ -160,12 +168,15 @@ export function EndScreen({ game, state, dispatch, onEnd }: { game: GameConfig; 
     );
   }
 
+  const played = Math.max(0, state.sceneNumber - 1);
   return (
     <Stage className="justify-center">
-      <h1 className="font-display text-6xl animate-sig">Gute Nacht.</h1>
+      <p className="eyebrow animate-rise">{game.number} · {game.title} · Abspann</p>
+      <h1 className="font-display mt-6 text-6xl leading-[0.95] animate-sig">Gute Nacht, {state.players[0]} & {state.players[1]}.</h1>
       <SignatureStroke className="mt-8 w-48 text-primary/70" />
+      <p className="font-display mt-6 text-2xl italic text-muted-foreground">{played} {played === 1 ? "Szene" : "Szenen"} gespielt.</p>
       <p className="mt-8 text-sm text-muted-foreground">{PRIVACY}</p>
-      <Back onEnd={onEnd} className="mt-10" />
+      <Back onEnd={onEnd} game={game} className="mt-10" />
     </Stage>
   );
 }
