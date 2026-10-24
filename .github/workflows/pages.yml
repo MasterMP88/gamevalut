@@ -41,7 +41,7 @@ jobs:
 
       - name: Validate GANG browser shell
         run: |
-          node --check gang/app.js
+          for f in gang/*.js; do node --check "$f"; done
           ! grep -Eiq 'PROTOTYPE|IN DEVELOPMENT|MULTIPLAYER RUNTIME.*COMING NEXT|heute noch nichts spielbar' gang/index.html gang/app.js
 
       - name: Configure Pages
