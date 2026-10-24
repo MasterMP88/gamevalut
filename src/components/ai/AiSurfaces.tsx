@@ -109,17 +109,25 @@ export function NightSetup({ onSubmit, onSkip, initial }: { onSubmit: (v: NightS
 }
 
 /* ───────── Judge verdict (renders only a real result) ───────── */
-export interface JudgeResult { winnerId: string; ranking: { id: string; name: string; note?: string }[]; headline: string; commentary?: string }
+export interface JudgeResult { winnerId: string; ranking: string[]; headline: string; commentary?: string }
 export type JudgeState = { status: "pending" } | { status: "unavailable" } | { status: "ready"; result: JudgeResult };
 
-export function JudgeReveal({ state, onContinue }: { state: JudgeState | null | undefined; onContinue: () => void }) {
+export function JudgeReveal({
+  state,
+  labels = {},
+  onContinue,
+}: {
+  state: JudgeState | null | undefined;
+  labels?: Record<string, string>;
+  onContinue: () => void;
+}) {
   const [open, setOpen] = useState(false);
   if (!state || state.status === "unavailable") return null; // fallback: the caller's curated/local flow continues
   if (state.status === "pending")
     return <p role="status" className="font-mono text-[0.7rem] tracking-[0.22em] text-muted-foreground">DAS URTEIL WIRD GESCHRIEBEN · IHR KÖNNT WEITERSPIELEN</p>;
   const { result } = state;
-  const winner = result.ranking.find((r) => r.id === result.winnerId);
-  if (!winner) return null;
+  if (!result.ranking.includes(result.winnerId)) return null;
+  const label = (id: string) => labels[id] || id;
   return (
     <section aria-labelledby="verdict-h" className="border-y border-line py-8" data-testid="judge">
       <p className="flex items-center gap-3 font-mono text-[0.7rem] tracking-[0.24em] text-champagne"><span className="font-display text-lg tracking-normal">N//</span><span className="h-px flex-1 bg-line" aria-hidden />URTEIL</p>
@@ -128,14 +136,13 @@ export function JudgeReveal({ state, onContinue }: { state: JudgeState | null | 
       ) : (
         <div className="motion-safe:animate-rise">
           <h2 id="verdict-h" className="font-display mt-6 text-[clamp(2.6rem,12vw,4.5rem)] leading-[0.9] text-balance">{result.headline}</h2>
-          <p className="mt-4 font-display text-3xl italic text-primary">{winner.name}</p>
+          <p className="mt-4 font-display text-3xl italic text-primary">{label(result.winnerId)}</p>
           {result.commentary && <p className="mt-3 max-w-prose text-foreground/85">{result.commentary}</p>}
           <ol className="mt-6 divide-y divide-line border-t border-line">
-            {result.ranking.map((r, i) => (
-              <li key={r.id} className="flex items-baseline gap-4 py-3 motion-safe:animate-rise" style={{ animationDelay: `${120 + i * 90}ms` }}>
+            {result.ranking.map((id, i) => (
+              <li key={id} className="flex items-baseline gap-4 py-3 motion-safe:animate-rise" style={{ animationDelay: `${120 + i * 90}ms` }}>
                 <span className="w-6 font-mono text-xs text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
-                <span className={cn("font-display text-2xl", r.id === result.winnerId && "text-champagne")}>{r.name}</span>
-                {r.note && <span className="ml-auto text-right text-sm text-muted-foreground">{r.note}</span>}
+                <span className={cn("font-display text-2xl", id === result.winnerId && "text-champagne")}>{label(id)}</span>
               </li>
             ))}
           </ol>
