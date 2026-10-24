@@ -436,12 +436,12 @@ function BattleMissionBody({ text, helper, scene, me, you, onDone, onSkip }: Sce
     return (
       <>
         <div className="mt-6">
-          <p className="eyebrow text-champagne">Heatcheck · ${stake} ${stake === 1 ? "Spark" : "Sparks"}</p>
+          <p className="eyebrow text-champagne">Heatcheck · {stake} {stake === 1 ? "Spark" : "Sparks"}</p>
           <Prompt>{text}</Prompt>
           <Helper text={helper} />
         </div>
         <div className="mt-auto pt-8">
-          <p className="text-sm text-muted-foreground">${you} entscheidet, ob es zählt. Keine Selbstbedienung bei Punkten.</p>
+          <p className="text-sm text-muted-foreground">{you} entscheidet, ob es zählt. Keine Selbstbedienung bei Punkten.</p>
           <div className="mt-4 flex gap-3">
             <Btn variant="ghost" size="lg" onClick={onSkip}>Passen</Btn>
             <Btn size="lg" className="flex-1" onClick={() => { haptic(8); setJudge(true); }}>Bewertung →</Btn>
@@ -453,13 +453,13 @@ function BattleMissionBody({ text, helper, scene, me, you, onDone, onSkip }: Sce
   return (
     <>
       <div className="mt-10 animate-rise">
-        <p className="eyebrow text-primary">${you} ist Referee</p>
-        <p className="font-display mt-3 text-[3rem] leading-[0.96]">Zählt der Versuch von ${me}?</p>
+        <p className="eyebrow text-primary">{you} ist Referee</p>
+        <p className="font-display mt-3 text-[3rem] leading-[0.96]">Zählt der Versuch von {me}?</p>
         <p className="mt-4 text-muted-foreground">Nur das Ergebnis antippen. Diskussionen kosten Würde, aber keine Sparks.</p>
       </div>
       <div className="mt-auto grid grid-cols-2 gap-3 pt-8">
         <Btn variant="outline" className="min-h-20 text-lg" onClick={() => { haptic(60); onSkip(); }}>Daneben</Btn>
-        <Btn variant="accent" className="min-h-20 text-lg" onClick={() => { haptic([8, 30, 14]); onDone(); }}>Treffer · +${stake}</Btn>
+        <Btn variant="accent" className="min-h-20 text-lg" onClick={() => { haptic([8, 30, 14]); onDone(); }}>Treffer · +{stake}</Btn>
       </div>
     </>
   );
