@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
     // Profile row is created on first sign-in (no privileged trigger needed).
-    void supabase.from("profiles").upsert({ id: user.id }, { onConflict: "id", ignoreDuplicates: true });
+    void supabase.from("profiles").upsert({ id: user.id }, { onConflict: "id", ignoreDuplicates: true }).then(() => undefined);
   }, [user]);
   return <Ctx.Provider value={{ user, ready, signOut: async () => { await supabase.auth.signOut(); } }}>{children}</Ctx.Provider>;
 }
