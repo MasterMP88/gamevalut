@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createSession, reducer, DEFAULT_SETTINGS } from "@/lib/game/engine";
 import { CONTENT_VERSION, STATE_VERSION, restore, sanitizeForSave, toRow } from "@/lib/game/persist";
 import { isUnlocked } from "@/lib/entitlements";
+import { GAMES } from "@/lib/game/games";
 import { publicPaths, sitemapXml } from "@/lib/seo";
 import { safeRedirect } from "@/routes/auth";
 import type { SessionState } from "@/lib/game/types";
@@ -66,14 +67,15 @@ describe("resume restores the exact playable state", () => {
 });
 
 describe("entitlements", () => {
-  it("all eight games are free today", () => {
-    for (const id of ["roxy-after-dark", "after-dark-2", "roxy-night", "battle", "coop", "one-two", "night-echo", "ai-director"] as const) expect(isUnlocked(id, [])).toBe(true);
+  it("all current games are free today", () => {
+    for (const game of GAMES) expect(isUnlocked(game.id, [])).toBe(true);
   });
 });
 
 describe("public vs private routes", () => {
-  it("sitemap lists home and all 9 game pages, never private routes", () => {
-    expect(publicPaths()).toHaveLength(10);
+  it("sitemap lists home, GANG MODE and all game pages, never private routes", () => {
+    expect(publicPaths()).toHaveLength(GAMES.length + 2);
+    expect(publicPaths()).toContain("/gang");
     expect(publicPaths()).toContain("/game/pass-the-aux");
     const xml = sitemapXml();
     for (const p of ["/tonight", "/auth", "/reset-password"]) expect(xml).not.toContain(p);
