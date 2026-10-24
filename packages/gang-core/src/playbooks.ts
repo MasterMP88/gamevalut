@@ -206,7 +206,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     finale: "Double Bluff: Wahrheit wird erst nach zwei Votings enthüllt.",
     capabilities: [],
     prompts: prompts("bluff", [
-      { prompt: "Welche Farbe hatte Coca-Cola ursprünglich nicht?", answer: "Klar/transparent war es nie – es war von Anfang an karamellfarben." },
+      { prompt: "Wie viele Herzen hat ein Oktopus?", answer: "Drei" },
       { prompt: "Welches Tier kann beim Schlafen eine Gehirnhälfte wach lassen?", answer: "Delfin" },
       { prompt: "Was ist älter: Oxford University oder das Aztekenreich?", answer: "Oxford University" },
       { prompt: "Welches Land hat mehr Pyramiden als Ägypten?", answer: "Sudan" },
@@ -215,7 +215,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
       { prompt: "Welches Säugetier kann nicht springen?", answer: "Elefant" },
       { prompt: "Welche Farbe ist die Haut eines Eisbären unter dem Fell?", answer: "Schwarz" },
       { prompt: "Welcher Planet dreht sich fast liegend um die Sonne?", answer: "Uranus" },
-      { prompt: "Was ist das meistverkaufte Musikinstrument der Welt?", answer: "Mundharmonika" },
+      { prompt: "Welches Tier produziert würfelförmigen Kot?", answer: "Wombat" },
     ]),
   },
   {
