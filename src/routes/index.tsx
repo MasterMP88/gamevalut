@@ -17,10 +17,10 @@ import { cn } from "@/lib/utils";
 const URL = "https://nocturne-games-for-two.lovable.app/";
 
 const TITLE = "NOCTURNE — Date-Night-Spiele für Paare · Spiele zu zweit";
-const DESC = "Acht interaktive Paarspiele für zwei Erwachsene auf einem Handy: Fragen, Timer, Duelle, geheime Wahlen und ein Director, der mitspielt. Als Gast starten, mit Account später weiterspielen.";
+const DESC = "Neun interaktive Paarspiele für zwei Erwachsene auf einem Handy: Fragen, Timer, Duelle, geheime Wahlen und ein Director, der mitspielt. Als Gast starten, mit Account später weiterspielen.";
 
 export const FAQ: [string, string][] = [
-  ["Was ist NOCTURNE?", "NOCTURNE ist eine Sammlung von acht interaktiven Date-Night-Spielen für Paare. Ihr spielt zu zweit auf einem Handy: Fragen, kleine Missionen, Timer, geheime Wahlen, Duelle und ein Director, der den Abend live zusammenstellt."],
+  ["Was ist NOCTURNE?", "NOCTURNE ist eine Sammlung von neun interaktiven Date-Night-Spielen für Paare. Ihr spielt zu zweit auf einem Handy: Fragen, kleine Missionen, Timer, geheime Wahlen, Duelle und ein Director, der den Abend live zusammenstellt."],
   ["Brauchen wir zwei Handys?", "Nein. Ein Handy reicht. Oben steht immer, wer dran ist, und bei geheimen Wahlen sagt euch das Spiel, wann ihr das Handy weitergebt und wer wegschaut."],
   ["Muss ich einen Account erstellen?", "Nein. Alle Spiele lassen sich als Gast starten. Ein kostenloser Account lohnt sich, wenn ihr später genau dort weiterspielen wollt – auch auf einem anderen Gerät."],
   ["Wird gespeichert, was wir antworten?", "Nein, nicht automatisch. Mit Account sichern wir nur den Spielstand: welches Spiel, welche Szene, Punkte und Einstellungen. Was ihr euch sagt oder eintippt, bleibt im laufenden Spiel – außer du sicherst einen Moment ausdrücklich."],
@@ -55,7 +55,7 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-const MOODS: Mood[] = ["Lustig", "Tief", "Frech", "Gemeinsam", "Mit Memory", "Mit AI"];
+const MOODS: Mood[] = ["Lustig", "Tief", "Frech", "Gemeinsam", "Musik", "Mit Memory", "Mit AI"];
 const FEATURED = GAMES_BY_ID["ai-director"];
 const INTENSITY = ["", "Sanft", "Verspielt", "Mutig"];
 const COLLECTION = GAMES.filter((g) => g.id !== FEATURED.id);
@@ -99,13 +99,13 @@ function Home() {
             Ein Handy. Zwei Menschen. <em className="text-primary">Eine Nacht, die mitspielt.</em>
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-snug text-foreground/85 animate-rise" style={{ animationDelay: "200ms" }}>
-            Acht interaktive Date-Night-Spiele für Paare – für zwei Erwachsene auf einem Handy. Jedes Spiel hat eigene Regeln, und der Abend passt sich eurer Stimmung an.
+            Neun interaktive Date-Night-Spiele für Paare – für zwei Erwachsene auf einem Handy. Jedes Spiel hat eigene Regeln, und der Abend passt sich eurer Stimmung an.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4 animate-rise" style={{ animationDelay: "280ms" }}>
             <Link to="/game/$slug" params={{ slug: COLLECTION[0]!.slug }} onClick={() => haptic()} className={btn({ size: "lg" })}>
               Als Gast starten <ArrowRight className="size-5" />
             </Link>
-            <a href="#sammlung" className="tap eyebrow inline-flex min-h-11 items-center hover:text-foreground">8 Spiele ansehen</a>
+            <a href="#sammlung" className="tap eyebrow inline-flex min-h-11 items-center hover:text-foreground">9 Spiele ansehen</a>
           </div>
           <p className="mt-4 text-sm text-muted-foreground animate-rise" style={{ animationDelay: "340ms" }}>
             Kein Account nötig. {user ? "Eure Spielstände werden gesichert." : <>Mit <Link to="/auth" search={{ mode: "signup" }} className="underline underline-offset-4 hover:text-foreground">kostenlosem Account</Link> spielt ihr später genau dort weiter.</>}
@@ -195,7 +195,7 @@ function Home() {
           <Reveal>
             <p className="eyebrow">Die Sammlung</p>
             <h2 className="font-display mt-2 text-[clamp(3rem,13vw,6rem)] leading-[0.9]">
-              Acht Spiele. <em className="text-primary">Acht Arten, die Nacht zu spielen.</em>
+              Neun Spiele. <em className="text-primary">Neun Arten, die Nacht zu spielen.</em>
             </h2>
           </Reveal>
 
