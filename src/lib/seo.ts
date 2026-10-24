@@ -4,7 +4,7 @@ export const SITE = "https://nocturne-games-for-two.lovable.app";
 
 /** Public, indexable paths only. Account, auth and session routes are never listed. */
 export function publicPaths(): string[] {
-  return ["/", ...GAMES.map((g) => `/game/${g.slug}`)];
+  return ["/", "/gang", ...GAMES.map((g) => `/game/${g.slug}`)];
 }
 
 export function sitemapXml(): string {
