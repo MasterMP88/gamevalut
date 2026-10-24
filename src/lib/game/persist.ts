@@ -16,7 +16,12 @@ export const STATE_VERSION = 1;
  */
 export function sanitizeForSave(s: SessionState): SessionState {
   const current = s.current && (s.current.source ?? "local") === "local" ? s.current : null;
-  return { ...s, anchors: [], aiQueue: [], current };
+  // PASS//THE AUX choices are personal content too. Cloud resume keeps only the
+  // structural round position; song titles, artists, predictions and tracklist stay local.
+  const music = s.music
+    ? { ...s.music, stage: "pick" as const, picks: [], prediction: null, reaction: null, tracklist: [] }
+    : s.music;
+  return { ...s, anchors: [], aiQueue: [], current, music };
 }
 
 export interface SessionRow {
