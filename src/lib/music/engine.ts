@@ -1,6 +1,5 @@
 import { MUSIC_PROMPTS, promptsFor } from "./prompts";
 import type {
-  MusicAction,
   MusicReaction,
   MusicRound,
   MusicRoundType,
