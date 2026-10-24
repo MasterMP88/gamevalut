@@ -63,3 +63,26 @@ export function clampedBatchSize(capability: AiCapability, requested: number) {
   if (max <= 0) return 0;
   return Math.max(1, Math.min(max, Math.floor(requested)));
 }
+
+
+export interface AiMonthlyPolicy {
+  maxCalls: number;
+  maxUnits: number;
+  reserveMicrousdPerCall: number;
+}
+
+/**
+ * Conservative authenticated-user beta quotas.
+ * reserveMicrousdPerCall is a safety reservation, not a billing statement.
+ * Global spend must also pass the DB cap and NOCTURNE_AI_GLOBAL_MONTHLY_USD_CAP.
+ */
+export const AI_MONTHLY_POLICIES: Record<AiCapability, AiMonthlyPolicy> = {
+  director: { maxCalls: 30, maxUnits: 180, reserveMicrousdPerCall: 40_000 },
+  "personalize-pack": { maxCalls: 6, maxUnits: 240, reserveMicrousdPerCall: 4_000 },
+  judge: { maxCalls: 40, maxUnits: 480, reserveMicrousdPerCall: 1_500 },
+  "adaptive-difficulty": { maxCalls: 0, maxUnits: 0, reserveMicrousdPerCall: 0 },
+  "secret-mission": { maxCalls: 12, maxUnits: 144, reserveMicrousdPerCall: 1_500 },
+  "music-clue": { maxCalls: 40, maxUnits: 320, reserveMicrousdPerCall: 1_000 },
+  narration: { maxCalls: 24, maxUnits: 144, reserveMicrousdPerCall: 1_500 },
+  vision: { maxCalls: 0, maxUnits: 0, reserveMicrousdPerCall: 100_000 },
+};
