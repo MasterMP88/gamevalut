@@ -130,8 +130,16 @@ export function Player({ game }: { game: GameConfig }) {
             </p>
           )}
 
-          {(game.ai || game.id === "roxy-night") && (
-            <GameArt art={game.art} steer={state.steer} status={status} className="mt-5 h-24 rounded-xl opacity-90" />
+          {game.id !== "one-two" && (
+            <GameArt art={game.art} steer={state.steer} status={status} scoreA={game.battle ? state.sparks[0] : undefined} scoreB={game.battle ? state.sparks[1] : undefined}
+              energies={game.coop ? state.energies : undefined} sceneType={game.ai ? scene?.type : undefined} tempo={state.tempo}
+              className="mt-5 h-16 opacity-80 [mask-image:linear-gradient(90deg,transparent,black_12%,black_88%,transparent)]" />
+          )}
+          {state.tempo && (
+            <p className="mt-2 flex items-center gap-3 font-mono text-[0.7rem] tracking-[0.2em] text-[var(--art-02-a)]" aria-live="polite">
+              <span className="h-px flex-1 bg-[var(--art-02-a)]/50" aria-hidden />
+              TEMPO SHIFT · {({ speed: "SPEED", silent: "STILLE", swap: "TAUSCH", rule: "REGEL" } as const)[state.tempo]} · NOCH {state.tempoLeft}
+            </p>
           )}
 
           <div className="mt-8 flex flex-1 flex-col">
@@ -200,20 +208,26 @@ export function Player({ game }: { game: GameConfig }) {
             </nav>
           )}
 
-          {game.battle && state.powerUps[state.turn] > 0 && scene?.type !== "SHOWDOWN" && (
-            <Btn variant="outline" className="mt-4" disabled={state.doubleNext} onClick={() => dispatch({ type: "USE_POWERUP", kind: "double" })}>
-              <Zap className="size-4" /> {state.doubleNext ? "Doppelt aktiv" : `„Doppelt“ · diese Szene ×2 (${state.powerUps[state.turn]})`}
-            </Btn>
-          )}
           {game.battle && state.powerUps[state.turn] > 0 && scene && scene.type !== "SHOWDOWN" && (
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <Btn variant="outline" size="sm" disabled={state.rebound !== null} onClick={() => dispatch({ type: "USE_POWERUP", kind: "rebound" })}>
-                „Zurück“ · an {you}
-              </Btn>
-              <Btn variant="outline" size="sm" disabled={state.read !== null} onClick={() => dispatch({ type: "USE_POWERUP", kind: "read" })}>
-                {state.read !== null ? "Wette läuft" : `„Lesen“ · ${you} macht's`}
-              </Btn>
-            </div>
+            <section aria-label="Edge" className="mt-5 border-y border-line py-3">
+              <p className="flex items-baseline justify-between font-mono text-[0.7rem] tracking-[0.2em] text-muted-foreground">
+                <span>EDGE · {me.toUpperCase()}</span>
+                <span className="text-champagne">{"◆".repeat(state.powerUps[state.turn])} {state.powerUps[state.turn]} {state.powerUps[state.turn] === 1 ? "Ladung" : "Ladungen"}</span>
+              </p>
+              <div className="mt-2 grid grid-cols-3 divide-x divide-line">
+                {([
+                  ["double", "×2", state.doubleNext ? "aktiv" : "diese Szene doppelt", state.doubleNext],
+                  ["rebound", "Rebound", `an ${you}`, state.rebound !== null],
+                  ["read", "Read", state.read !== null ? "Wette läuft" : `wetten: ${you} macht's`, state.read !== null],
+                ] as const).map(([k, t, d, used]) => (
+                  <button key={k} type="button" disabled={used} onClick={() => { haptic([6, 30, 6]); dispatch({ type: "USE_POWERUP", kind: k }); }}
+                    className="tap flex min-h-14 flex-col items-start justify-center px-3 text-left first:pl-0 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <span className={cn("font-display text-2xl leading-none", used && "text-champagne")}>{t}</span>
+                    <span className="mt-1 text-[0.7rem] leading-tight text-muted-foreground">{d}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
           )}
           {game.battle && state.rebound !== null && state.rebound !== state.turn && (
             <p className="mt-2 text-sm italic text-champagne">Zurückgespielt von {state.players[state.rebound]} · Skip bringt {state.players[state.rebound]} +2</p>
