@@ -24,8 +24,6 @@ export const aiSceneSchema = z.object({
 export type AiScene = z.infer<typeof aiSceneSchema>;
 
 export const directorContextSchema = z.object({
-  sessionKey: z.string().min(3).max(80).optional(),
-  gameId: z.string().min(1).max(40).optional(),
   players: z.tuple([z.string().max(40), z.string().max(40)]),
   currentPlayer: z.string().max(40),
   sceneNumber: z.number().int().min(0).max(10000),

@@ -122,4 +122,15 @@ export const PREVIEWS: Record<GameId, Preview> = {
       { tag: "CALLBACK", who: "B", text: "„Hütte ohne Netz“ – plant das erste Wochenende dort.", action: "Gesagt ✓" },
     ],
   },
+  "pass-the-aux": {
+    mechanic: "Statt zu antworten, tippt ihr verdeckt einen Song ein, gebt das Handy weiter und entsiegelt ihn – allein, zu zweit oder mit Vorhersage.",
+    truths: ["für 2", "ohne Musikdienst spielbar", "Tracklist nur in der Session"],
+    idealWhen: "Ideal wenn ihr lieber mit Songs antwortet als mit Sätzen.",
+    frames: [
+      { tag: "DUET · A VERDECKT", who: "A", text: "Euer Roadtrip beginnt jetzt. Nur ein Track darf als Erstes laufen.", action: "Auswahl verstecken" },
+      { tag: "VERSIEGELT", who: "B", text: "Nur für {B}. Jetzt du, zum selben Prompt.", action: "Ich bin B · aufdecken" },
+      { tag: "ENTSIEGELT", who: "both", text: "Zwei Tracks, ein Moment.", options: ["Track von A", "Track von B"], action: "Match" },
+      { tag: "FINALE", who: "both", text: "Tonight’s Tracklist – eure Nacht in Songs.", action: "Tracklist ✓" },
+    ],
+  },
 };
