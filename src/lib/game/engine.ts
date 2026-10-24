@@ -405,7 +405,7 @@ export function advance(state: SessionState): SessionState {
   // Scene 2 is a live standoff; scene 4 is a hidden prediction/reveal.
   if (!scene && game.id === "roxy-after-dark" && next === 2) {
     const signature = candidatePool(s1).find((sc) => sc.mechanic === "standoff" && usable(sc));
-    if (signature) scene = { ...signature, cue: "Spark Check · kein Reden, nur Nerven." };
+    if (signature) scene = { ...signature, phase: 0, cue: "Spark Check · kein Reden, nur Nerven." };
   }
   if (!scene && game.id === "roxy-after-dark" && next === 4) {
     const reveal = candidatePool(s1).find((sc) => sc.type === "PREDICTION" && usable(sc));
