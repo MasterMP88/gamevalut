@@ -24,3 +24,24 @@ jobs:
         run: bunx vitest run
       - name: Production build
         run: bun run build
+      - name: Install browser audit runtime
+        run: |
+          bun add --dev playwright@1.56.1
+          bunx playwright install --with-deps chromium
+      - name: Start NOCTURNE preview
+        run: |
+          bun run dev -- --host 127.0.0.1 --port 4173 > /tmp/nocturne-dev.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/nocturne-dev.log
+          exit 1
+      - name: iPhone visual audit
+        run: bun scripts/visual-audit.mjs
+      - name: Upload visual audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nocturne-visual-audit
+          path: artifacts/nocturne-visual
