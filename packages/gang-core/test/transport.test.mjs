@@ -4,8 +4,10 @@ import { GANG_ROOM_RPC, isGangRoomSnapshot } from "../dist/index.js";
 
 test("secure room transport exposes the complete RPC surface", () => {
   assert.deepEqual(Object.values(GANG_ROOM_RPC).sort(), [
+    "gang_collect_stage_actions",
     "gang_create_room",
     "gang_get_private",
+    "gang_join_display",
     "gang_join_room",
     "gang_leave_room",
     "gang_prepare_private_round",
