@@ -2,7 +2,7 @@ import {GANG_GAMES,buildDirectorPlan,createGangRuntime,getGangGame,getGangPlaybo
 export {GANG_GAMES,buildDirectorPlan,createGangRuntime,privateGangView,publicGangView,requiredPlayerIds,submitGangAction,canAdvanceGangStage,advanceGangStage};
 export const READY_GAMES=GANG_GAMES.filter(g=>g.status==="ready");
 export const app=document.querySelector("#app");
-export const S={screen:"home",mix:false,chosen:[],overlay:null,setup:null,director:null,players:[],playlist:[],pi:0,rt:null,stage:{},history:[]};
+export const S={screen:"home",mix:false,chosen:[],overlay:null,setup:null,director:null,players:[],playlist:[],pi:0,rt:null,stage:{},history:[],photos:{}};
 const H={"the-majority":96,"whos-that":28,"undercover":258,"secret-missions":326,"bad-answers-only":64,"bluff":198,"the-line":146,"hot-seat":18,"team-chaos":42,"photo-hunt":178,"draw-this":82,"music-drop":300,"chain-reaction":118,"one-of-you":238,"panic-button":26,"after-dark":346};
 export const ENERGY={Chill:2,Funny:3,Wild:4,Spicy:4,Chaos:5};
 export const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
