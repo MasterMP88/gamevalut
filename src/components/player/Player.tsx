@@ -157,7 +157,7 @@ export function Player({ game }: { game: GameConfig }) {
             </p>
           )}
 
-          {game.id !== "one-two" && (
+          {game.id !== "one-two" && game.id !== "pass-the-aux" && (
             <GameArt art={game.art} steer={state.steer} status={status} scoreA={game.battle ? state.sparks[0] : undefined} scoreB={game.battle ? state.sparks[1] : undefined}
               energies={game.coop ? state.energies : undefined} sceneType={game.ai ? scene?.type : undefined} tempo={state.tempo}
               className="mt-5 h-16 opacity-80 [mask-image:linear-gradient(90deg,transparent,black_12%,black_88%,transparent)]" />
