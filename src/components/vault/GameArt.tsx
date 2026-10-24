@@ -1,5 +1,5 @@
 import type { GameConfig } from "@/lib/game/games";
-import type { Steer } from "@/lib/game/types";
+import type { SceneType, Steer, Tempo } from "@/lib/game/types";
 
 type Props = {
   art: GameConfig["art"];
@@ -8,13 +8,41 @@ type Props = {
   steer?: Steer;
   /** Director: the orbit reacts to the host status. */
   status?: "idle" | "writing" | "live" | "offline";
+  /** Heatcheck: thermal meeting point follows the score. */
+  scoreA?: number | undefined;
+  scoreB?: number | undefined;
+  /** US//AFTER DARK: [chaos, connection, heat] shape the shared third form. */
+  energies?: { chaos: number; connection: number; heat: number } | undefined;
+  /** Director: cue mark reflects the current scene format. */
+  sceneType?: SceneType | undefined;
+  /** After Dark: active tempo shift. */
+  tempo?: Tempo | null | undefined;
 };
+
+const TEMPO_WORD: Record<Tempo, string> = { speed: "SPEED", silent: "STILLE", swap: "TAUSCH", rule: "REGEL" };
 
 const VB = "0 0 400 300";
 const STEER_TILT: Record<Exclude<Steer, null>, number> = { funnier: -6, flirtier: 4, game: -2, hotter: 8 };
 
 /** Nine bespoke key-art systems — one visual grammar per game, all pure SVG, all token colours. */
-export function GameArt({ art, className = "", steer = null, status = "idle" }: Props) {
+export function GameArt({ art, className = "", steer = null, status = "idle", scoreA, scoreB, energies, sceneType, tempo = null }: Props) {
+  const total = (scoreA ?? 0) + (scoreB ?? 0);
+  const meet = total > 0 ? 130 + ((scoreA ?? 0) / total) * 140 : 200;
+  const e = energies;
+  const avg = e ? (e.chaos + e.connection + e.heat) / 3 : 0;
+  const spread = e ? Math.max(e.chaos, e.connection, e.heat) - Math.min(e.chaos, e.connection, e.heat) : 0;
+  const blob = (() => {
+    // Organic third form: radius grows with the average, wobble grows with imbalance.
+    const r = 30 + Math.min(70, avg) * 0.8;
+    const w = Math.min(18, spread * 0.3);
+    const pts = Array.from({ length: 8 }, (_, i) => {
+      const a = (i / 8) * Math.PI * 2;
+      const rr = r + (i % 2 ? w : -w * 0.6);
+      return [201 + Math.cos(a) * rr * 0.8, 150 + Math.sin(a) * rr];
+    });
+    const mid = (i: number) => { const [x1 = 0, y1 = 0] = pts[i % 8]!; const [x2 = 0, y2 = 0] = pts[(i + 1) % 8]!; return `${((x1 + x2) / 2).toFixed(1)} ${((y1 + y2) / 2).toFixed(1)}`; };
+    return `M ${mid(7)} ` + pts.map(([x = 0, y = 0], i) => `Q ${x.toFixed(1)} ${y.toFixed(1)} ${mid(i)}`).join(" ") + " Z";
+  })();
   const c = "absolute inset-0 h-full w-full";
   return (
     <div className={`relative overflow-hidden bg-[var(--onyx)] ${className}`} aria-hidden>
@@ -35,6 +63,9 @@ export function GameArt({ art, className = "", steer = null, status = "idle" }: 
             <line key={i} x1="248" y1="138" x2={248 + dx! * 1.6} y2={138 + dy! * 1.6} stroke="var(--art-01-b)" strokeOpacity=".6" strokeLinecap="round" />
           ))}
           <circle cx="248" cy="138" r="4" fill="var(--art-01-b)" className="animate-ignite" />
+          {[[230, 120, 0], [262, 112, 1.2], [240, 160, 2.1], [270, 150, 0.6]].map(([x, y, d]) => (
+            <circle key={`${x}`} cx={x} cy={y} r="1.2" fill="var(--art-01-b)" className="animate-ember" style={{ animationDelay: `${d}s` }} />
+          ))}
         </svg>
       )}
       {art === "kinetic" && (
@@ -51,9 +82,10 @@ export function GameArt({ art, className = "", steer = null, status = "idle" }: 
           ))}
           <g transform="translate(330 60)">
             <circle r="34" fill="none" stroke="var(--art-02-a)" strokeOpacity=".6" />
-            <g className="animate-orbit" style={{ animationDuration: "8s" }}>
+            <g className="animate-orbit" style={{ animationDuration: tempo === "speed" ? "2.5s" : tempo ? "5s" : "8s" }}>
               <line x1="0" y1="0" x2="0" y2="-30" stroke="var(--art-02-a)" strokeWidth="2" strokeLinecap="round" />
             </g>
+            {tempo && <text y="52" textAnchor="middle" fontFamily="Geist Mono, monospace" fontSize="10" letterSpacing="2" fill="var(--art-02-a)">{TEMPO_WORD[tempo]}</text>}
           </g>
         </svg>
       )}
@@ -78,7 +110,8 @@ export function GameArt({ art, className = "", steer = null, status = "idle" }: 
         <svg className={c} viewBox={VB} preserveAspectRatio="xMidYMid slice">
           <path d="M0 110 L60 108 L80 80 L100 140 L120 96 L150 112 L190 104" stroke="var(--art-04-a)" strokeWidth="2" fill="none" pathLength={1} className="animate-draw" />
           <path d="M400 190 L340 192 L320 222 L300 160 L280 204 L250 186 L210 196" stroke="var(--art-04-b)" strokeWidth="2" fill="none" pathLength={1} className="animate-draw" style={{ animationDelay: "250ms" }} />
-          <line x1="200" y1="40" x2="200" y2="260" stroke="var(--art-04-a)" strokeOpacity=".25" strokeDasharray="2 5" />
+          <line x1={meet} y1="40" x2={meet} y2="260" stroke="var(--art-04-b)" strokeOpacity={total > 0 ? 0.6 : 0.25} strokeDasharray="2 5" style={{ transition: "all .8s var(--ease-out-expo)" }} />
+          {total > 0 && <circle cx={meet} cy="150" r="10" fill="var(--art-04-b)" opacity=".35" className="animate-slow-pulse" style={{ transformOrigin: `${meet}px 150px` }} />}
           <circle cx="190" cy="104" r="4" fill="var(--art-04-a)" />
           <circle cx="210" cy="196" r="4" fill="var(--art-04-b)" />
           <text x="200" y="285" textAnchor="middle" fontFamily="Geist Mono, monospace" fontSize="10" fill="var(--art-04-a)" opacity=".55" letterSpacing="3">01 — VS — 02</text>
@@ -92,9 +125,13 @@ export function GameArt({ art, className = "", steer = null, status = "idle" }: 
           </defs>
           <circle cx="170" cy="150" r="88" fill="none" stroke="var(--art-05-a)" strokeOpacity=".8" />
           <circle cx="232" cy="150" r="88" fill="none" stroke="var(--art-05-b)" strokeOpacity=".8" />
-          <g clipPath="url(#co-a)">
-            <circle cx="232" cy="150" r="88" fill="var(--art-05-a)" opacity=".5" className="animate-slow-pulse" style={{ transformOrigin: "201px 150px" }} />
-          </g>
+          {e ? (
+            <path d={blob} fill="var(--art-05-a)" opacity={0.25 + Math.min(0.45, avg / 160)} style={{ transition: "d .9s var(--ease-out-expo), opacity .9s" }} />
+          ) : (
+            <g clipPath="url(#co-a)">
+              <circle cx="232" cy="150" r="88" fill="var(--art-05-a)" opacity=".5" className="animate-slow-pulse" style={{ transformOrigin: "201px 150px" }} />
+            </g>
+          )}
           {Array.from({ length: 7 }).map((_, i) => (
             <line key={i} x1="201" x2="201" y1={86 + i * 21} y2={96 + i * 21} stroke="var(--art-05-b)" strokeOpacity=".5" />
           ))}
@@ -162,6 +199,7 @@ export function GameArt({ art, className = "", steer = null, status = "idle" }: 
             <circle cx="310" cy="150" r="3" fill="var(--art-08-a)" />
             <circle cx="130" cy="150" r="2" fill="var(--art-08-b)" />
           </g>
+          {sceneType && <text x="24" y="282" fontFamily="Geist Mono, monospace" fontSize="10" letterSpacing="2" fill="var(--art-08-a)" opacity=".8">CUE · {sceneType}</text>}
         </svg>
       )}
     </div>
