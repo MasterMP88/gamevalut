@@ -63,6 +63,15 @@ export async function runDirector(
     cacheKey,
     AI_POLICIES.director.cacheTtlMs,
     async () => {
+      const persistent = await reservePersistentAiQuota({
+        userId,
+        capability: "director",
+        units: BATCH_SIZE,
+      });
+      if (!persistent.allowed) {
+        return { ok: false as const, reason: "budget" as const };
+      }
+
       const sessionBudget = consumeAiBudget({
         sessionKey,
         capability: "director",
@@ -70,15 +79,11 @@ export async function runDirector(
         sceneNumber: ctx.sceneNumber,
       });
       if (!sessionBudget.allowed) {
-        return { ok: false as const, reason: "budget" as const };
-      }
-
-      const persistent = await reservePersistentAiQuota({
-        userId,
-        capability: "director",
-        units: BATCH_SIZE,
-      });
-      if (!persistent.allowed) {
+        await refundPersistentAiQuota({
+          userId,
+          capability: "director",
+          units: BATCH_SIZE,
+        });
         return { ok: false as const, reason: "budget" as const };
       }
 
