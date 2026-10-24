@@ -16,6 +16,11 @@ import {
   expireGangPresence,
   roomDeviceContext,
   roomReadyForGame,
+  resolveMajorityRound,
+  resolveWhosThatRound,
+  assignUndercoverRoles,
+  assignSecretMissions,
+  resolveSecretMissions,
 } from "../dist/index.js";
 
 const base = {
