@@ -13,7 +13,7 @@ type Props = {
   /** US//AFTER DARK: optional live shared energies. */
   energies?: { chaos: number; connection: number; heat: number };
   /** Director: lets cue marks react to the current interaction. */
-  sceneType?: string;
+  sceneType?: string | undefined;
 };
 
 const VB = "0 0 400 300";
