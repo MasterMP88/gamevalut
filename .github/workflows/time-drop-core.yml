@@ -1,0 +1,27 @@
+name: TIME//DROP core
+
+on:
+  pull_request:
+    paths:
+      - "packages/time-drop-core/**"
+      - ".github/workflows/time-drop-core.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/time-drop-core/**"
+      - ".github/workflows/time-drop-core.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/time-drop-core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
