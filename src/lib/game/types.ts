@@ -109,7 +109,7 @@ export interface LogEntry {
   title: string;
   type: SceneType;
   player: string;
-  outcome: "done" | "skipped";
+  outcome: "done" | "failed" | "skipped";
 }
 
 export interface SessionState {
