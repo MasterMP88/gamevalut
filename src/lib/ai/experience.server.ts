@@ -94,15 +94,9 @@ function promptFor(request: ExperienceRequest) {
 }
 
 function parseOutput(request: ExperienceRequest, raw: unknown) {
-  if (request.kind === "personalize-pack") {
-    return personalizedPackSchema.safeParse(raw);
-  }
-  if (request.kind === "judge") {
-    return judgeResultSchema.safeParse(raw);
-  }
-  if (request.kind === "secret-mission") {
-    return secretMissionResultSchema.safeParse(raw);
-  }
+  if (request.kind === "personalize-pack") return personalizedPackSchema.safeParse(raw);
+  if (request.kind === "judge") return judgeResultSchema.safeParse(raw);
+  if (request.kind === "secret-mission") return secretMissionResultSchema.safeParse(raw);
   return musicClueResultSchema.safeParse(raw);
 }
 
@@ -113,7 +107,7 @@ function normalized(value: string) {
     .trim();
 }
 
-function leaksMusicAnswer(request: ExperienceRequest, raw: unknown) {
+export function musicClueLeaksAnswer(request: ExperienceRequest, raw: unknown) {
   if (request.kind !== "music-clue") return false;
   const parsed = musicClueResultSchema.safeParse(raw);
   if (!parsed.success) return true;
@@ -138,41 +132,48 @@ export async function runExperience(input: unknown): Promise<ExperienceResult> {
   const capability = capabilityFor(request);
   const policy = AI_POLICIES[capability];
   const items = itemCount(request);
-
-  const budget = consumeAiBudget({
-    sessionKey: request.sessionKey,
-    capability,
-    items,
-  });
-
-  if (!budget.allowed) return { ok: false, reason: "budget" };
-
   const cacheKey = aiCacheKey(capability, request);
-  const generated = await withAiCache(cacheKey, policy.cacheTtlMs, async () => {
-    const prompt = promptFor(request);
-    const result = await generateAiText({
-      profile: profileFor(capability),
-      system: prompt.system,
-      user: prompt.user,
-    });
 
-    if (!result.ok) return result;
+  const generated = await withAiCache(
+    cacheKey,
+    policy.cacheTtlMs,
+    async () => {
+      const budget = consumeAiBudget({
+        sessionKey: request.sessionKey,
+        capability,
+        items,
+      });
 
-    const json = extractJsonObject(result.text);
-    if (!json || leaksMusicAnswer(request, json)) {
-      return { ok: false as const, reason: "invalid" as const };
-    }
+      if (!budget.allowed) {
+        return { ok: false as const, reason: "budget" as const };
+      }
 
-    const output = parseOutput(request, json);
-    if (!output.success) {
-      return { ok: false as const, reason: "invalid" as const };
-    }
+      const prompt = promptFor(request);
+      const result = await generateAiText({
+        profile: profileFor(capability),
+        system: prompt.system,
+        user: prompt.user,
+      });
 
-    return {
-      ok: true as const,
-      json: JSON.stringify(output.data),
-    };
-  });
+      if (!result.ok) return result;
+
+      const json = extractJsonObject(result.text);
+      if (!json || musicClueLeaksAnswer(request, json)) {
+        return { ok: false as const, reason: "invalid" as const };
+      }
+
+      const output = parseOutput(request, json);
+      if (!output.success) {
+        return { ok: false as const, reason: "invalid" as const };
+      }
+
+      return {
+        ok: true as const,
+        json: JSON.stringify(output.data),
+      };
+    },
+    (value) => value.ok,
+  );
 
   if (!generated.value.ok) return generated.value;
 
