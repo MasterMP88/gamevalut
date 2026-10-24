@@ -7,10 +7,18 @@ import type { Scene, SessionState } from "./types";
 
 export type DirectorStatus = "idle" | "writing" | "live" | "offline";
 
+export interface DirectorPersonalization {
+  vibe: "chill" | "funny" | "wild" | "flirty" | "mixed" | null;
+  intensity: 1 | 2 | 3 | 4 | 5;
+  insiders: string[];
+  taboo: string[];
+}
+
 export function useDirector(
   state: SessionState | undefined,
   enabled: boolean,
   dispatch: (a: Action) => void,
+  personalization?: DirectorPersonalization | null,
 ) {
   const [status, setStatus] = useState<DirectorStatus>("idle");
   const inflight = useRef(false);
@@ -46,6 +54,7 @@ export function useDirector(
       ...buildDirectorContext(state),
       sessionKey,
       gameId: state.gameId,
+      ...(personalization ? { personalization } : {}),
     };
 
     getDirectorScenes({ data: ctx })
@@ -87,6 +96,7 @@ export function useDirector(
     sessionKey,
     state,
     dispatch,
+    personalization,
   ]);
 
   return status;
