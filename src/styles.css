@@ -127,6 +127,8 @@
   --art-07-b: oklch(0.75 0.05 230);
   --art-08-a: oklch(0.83 0.06 78);
   --art-08-b: oklch(0.62 0.08 295);
+  --art-09-a: oklch(0.84 0.06 82);
+  --art-09-b: oklch(0.62 0.13 18);
 
   --shadow-soft: 0 30px 60px -30px oklch(0 0 0 / 70%);
   --gradient-veil: radial-gradient(120% 80% at 50% 0%, oklch(0.36 0.09 340 / 35%), transparent 60%);
