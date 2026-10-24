@@ -10,6 +10,9 @@
  */
 
 @theme inline {
+  --color-signal: var(--signal);
+  --color-signal-foreground: var(--signal-foreground);
+  --color-room: var(--room);
   --font-display: "Instrument Serif", "Times New Roman", serif;
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
@@ -73,6 +76,10 @@
   --plum: oklch(0.36 0.09 340);
   --violet: oklch(0.62 0.08 295);
   --champagne: oklch(0.83 0.06 78);
+  /* GANG MODE: social signal language */
+  --signal: oklch(0.86 0.15 95);
+  --signal-foreground: oklch(0.17 0.02 95);
+  --room: oklch(0.13 0.012 260);
 
   --background: var(--onyx);
   --foreground: var(--ivory);
@@ -413,3 +420,7 @@ html:has(.snap-home) { scroll-snap-type: y proximity; }
 @keyframes ember { 0% { transform: translateY(0); opacity: 0; } 30% { opacity: .9; } 100% { transform: translateY(-18px); opacity: 0; } }
 @utility animate-ember { animation: ember 3.2s var(--ease-out-expo) infinite; transform-box: fill-box; }
 @media (prefers-reduced-motion: reduce) { .animate-ember { animation: none; opacity: .5; } }
+
+@keyframes gang-pulse { 0%,100% { transform: scaleY(.35) } 50% { transform: scaleY(1) } }
+@utility animate-gang-pulse { animation: gang-pulse 1.6s ease-in-out infinite; transform-origin: bottom; }
+@media (prefers-reduced-motion: reduce) { .animate-gang-pulse { animation: none; transform: scaleY(.7); } }
