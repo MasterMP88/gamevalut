@@ -10,7 +10,10 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
-- Game state lives only in React memory (`src/lib/game/store.tsx`); never persist sessions or free-text to storage or a DB — privacy requirement.
+- Game state lives in React memory (`src/lib/game/store.tsx`); signed-in users get a debounced auto-save of `sanitizeForSave` output (`persist.ts`: no anchors, AI queue or non-local scenes) to `game_sessions` with a monotonically increasing `revision` (DB trigger drops stale writes) — intimate free-text is only stored via explicit Saved Moments.
+- Bump `CONTENT_VERSION`/`STATE_VERSION` in `persist.ts` when scene banks/state shape change; `restore()` rejects incompatible shapes and re-picks the scene on content changes.
+- Account routes live under `src/routes/_authenticated/` (ssr:false, noindex); public SEO routes are listed only via `publicPaths()` in `src/lib/seo.ts` (sitemap).
+- Paid access is decided only by `isUnlocked()` in `src/lib/entitlements.ts`; `entitlements`/`subscriptions` are written server-side only.
 - Game logic is a pure reducer in `src/lib/game/engine.ts`, tested in `src/test/engine.test.ts` — keep rules testable without UI.
 - Scenes live in `src/lib/game/scenes.ts`; games select pools via `types`/`only` in `games.ts` — content is data, not code.
 - Per-game dramaturgy (tempo shifts, steer momentum, detours, Director Cuts, co-op milestones, ONE//TWO return questions, echo spacing) lives in `advance`/`pickLocal` in `engine.ts`, injected scenes in `specials.ts`, rules tested in `src/test/dramaturgy.test.ts` — each game must stay measurably different.
