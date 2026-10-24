@@ -15,6 +15,13 @@
       "when": 1792875941757,
       "tag": "0001_nocturne_security_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792877370000,
+      "tag": "0002_ai_usage_budget",
+      "breakpoints": true
     }
   ]
 }
