@@ -237,7 +237,9 @@ function createRound(
       id: `${gameId}-r${roundNumber}-${Math.abs(nextSeed)}`,
       number: roundNumber,
       prompt,
-      stages: playbook.stages.slice(),
+      stages: playbook.stages.includes("score")
+        ? playbook.stages.slice()
+        : [...playbook.stages, "score"],
       stageIndex: 0,
       stageSubmissions: {},
       privateByPlayer: privateState.privateByPlayer,
@@ -292,7 +294,11 @@ function eligibleForStage(state: GangRuntimeState, stage = stageOf(state)): stri
   const all = state.players.map((player) => player.id);
   const active = state.round.activePlayerId;
 
-  if (stage === "private" || stage === "reveal" || stage === "score") return [];
+  if (stage === "reveal" || stage === "score") return [];
+  if (stage === "private") {
+    if (state.gameId === "hot-seat") return active ? [active] : [];
+    return [];
+  }
   if (state.gameId === "hot-seat") {
     if (stage === "predict") return all.filter((id) => id !== active);
     return active ? [active] : all;
@@ -319,7 +325,7 @@ export function submitGangAction(state: GangRuntimeState, action: GangRuntimeAct
     throw new Error("Unknown player");
   }
   const stage = stageOf(state);
-  if (stage === "private" || stage === "reveal" || stage === "score") {
+  if (stage === "reveal" || stage === "score" || (stage === "private" && state.gameId !== "hot-seat")) {
     throw new Error(`No submissions are accepted during ${stage}`);
   }
   const eligible = new Set(eligibleForStage(state, stage));
@@ -338,7 +344,8 @@ function currentSubmissions(state: GangRuntimeState): Record<string, GangRuntime
 export function canAdvanceGangStage(state: GangRuntimeState): boolean {
   if (state.finished) return false;
   const stage = stageOf(state);
-  if (stage === "private" || stage === "reveal" || stage === "score") return true;
+  if (stage === "reveal" || stage === "score") return true;
+  if (stage === "private" && state.gameId !== "hot-seat") return true;
   if (state.gameId === "secret-missions" && stage === "perform") return true;
   const required = eligibleForStage(state, stage);
   const submissions = currentSubmissions(state);
