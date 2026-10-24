@@ -168,6 +168,8 @@ export interface Track {
   /** Only set when a real provider returned this track. */
   providerId?: string | undefined;
   artworkUrl?: string | undefined;
+  /** Exact Apple Music song URL, only when returned by the catalog. */
+  externalUrl?: string | undefined;
 }
 
 export interface TrackEntry extends Track {
