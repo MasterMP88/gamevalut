@@ -371,6 +371,32 @@ export function submitGangAction(state: GangRuntimeState, action: GangRuntimeAct
   }
   const eligible = new Set(eligibleForStage(state, stage));
   if (!eligible.has(action.playerId)) throw new Error("Player cannot act in this stage");
+
+  const validOptions =
+    stage === "vote" ? dynamicVoteOptions(state) : state.round.prompt.options;
+  if (action.optionId && validOptions?.length && !validOptions.includes(action.optionId)) {
+    throw new Error("Invalid option");
+  }
+
+  if (stage === "vote") {
+    const target = action.targetPlayerId ?? action.optionId ?? action.value;
+    if (target && validOptions?.length && !validOptions.includes(target)) {
+      throw new Error("Invalid vote target");
+    }
+    const noSelfVoteGames: readonly GangGameId[] = [
+      "whos-that",
+      "undercover",
+      "one-of-you",
+      "bad-answers-only",
+      "bluff",
+      "photo-hunt",
+      "music-drop",
+    ];
+    if (target === action.playerId && noSelfVoteGames.includes(state.gameId)) {
+      throw new Error("Self voting is not allowed");
+    }
+  }
+
   const stageSubmissions = { ...state.round.stageSubmissions };
   const submissions = { ...(stageSubmissions[state.round.stageIndex] ?? {}) };
   submissions[action.playerId] = { ...action };
