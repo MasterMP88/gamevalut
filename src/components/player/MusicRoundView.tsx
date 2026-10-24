@@ -293,8 +293,8 @@ export function MusicRoundView({
 }) {
   const skip = () => { haptic(4); onAction({ type: "MUSIC_SKIP" }); };
 
-  if (music.stage === "handoff") return <HandOff music={music} players={players} onAction={onAction} onSkip={skip} />;
-  if (music.stage === "predict") return <Guess music={music} players={players} onAction={onAction} onSkip={skip} />;
-  if (music.stage === "reveal" || music.stage === "reaction") return <Reveal music={music} players={players} onAction={onAction} onSkip={skip} />;
-  return <TrackInput key={[music.roundNumber, music.stage].join("-")} music={music} players={players} onAction={onAction} onSkip={skip} />;
+  if (music.stage === "handoff") return <div data-testid="music-round" className="flex flex-1 flex-col"><HandOff music={music} players={players} onAction={onAction} onSkip={skip} /></div>;
+  if (music.stage === "predict") return <div data-testid="music-round" className="flex flex-1 flex-col"><Guess music={music} players={players} onAction={onAction} onSkip={skip} /></div>;
+  if (music.stage === "reveal" || music.stage === "reaction") return <div data-testid="music-round" className="flex flex-1 flex-col"><Reveal music={music} players={players} onAction={onAction} onSkip={skip} /></div>;
+  return <div data-testid="music-round" className="flex flex-1 flex-col"><TrackInput key={[music.roundNumber, music.stage].join("-")} music={music} players={players} onAction={onAction} onSkip={skip} /></div>;
 }
