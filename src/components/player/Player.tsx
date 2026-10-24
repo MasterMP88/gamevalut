@@ -14,6 +14,7 @@ import { useDirector } from "@/lib/game/use-director";
 import { BATTLE_CHAPTER, COMEBACK_GAP, fill, targetPhase, type Action } from "@/lib/game/engine";
 import { EnergyField } from "./EnergyField";
 import { GameArt } from "@/components/vault/GameArt";
+import { DirectorStatus } from "@/components/ai/AiSurfaces";
 import { PHASE_NAMES } from "@/lib/game/scenes";
 import type { GameConfig } from "@/lib/game/games";
 import type { Steer } from "@/lib/game/types";
@@ -77,12 +78,7 @@ export function Player({ game }: { game: GameConfig }) {
                 <span className="shrink-0 text-sm text-muted-foreground">ist dran</span>
               </p>
             </div>
-            {game.ai && (
-              <span className={cn("eyebrow flex min-w-0 items-center gap-2", status === "offline" ? "text-muted-foreground" : "text-champagne")} aria-live="polite">
-                <span className={cn("size-2 rounded-full", status === "offline" ? "bg-muted-foreground" : "bg-champagne animate-slow-pulse")} />
-                {status === "offline" ? "Regie aus dem Repertoire" : status === "writing" ? "Director schreibt mit …" : status === "live" ? "AI · live" : "Director"}
-              </span>
-            )}
+            {game.ai && <DirectorStatus status={status} />}
           </div>
 
           {game.id === "one-two" && (
@@ -120,6 +116,13 @@ export function Player({ game }: { game: GameConfig }) {
               </div>
             );
           })()}
+
+          {game.battle && state.secretMission && scene?.type !== "SHOWDOWN" && (
+            <p className="mt-4 flex items-center gap-3 font-mono text-[0.65rem] tracking-[0.2em] text-muted-foreground" data-testid="mission-active">
+              <span className="font-display text-sm tracking-normal text-primary">N//</span>
+              EINE GEHEIME MISSION LÄUFT · INHALT VERSIEGELT
+            </p>
+          )}
 
           {game.coop && <EnergyField energies={state.energies} milestones={state.milestones.length} />}
 
@@ -166,6 +169,7 @@ export function Player({ game }: { game: GameConfig }) {
                     ? {
                         players: state.players,
                         missionOwner: state.secretMission ? state.players[state.secretMission.player] : null,
+                        missionText: state.secretMission ? fill(state.secretMission.text, state.players[state.secretMission.player], state.players[1 - state.secretMission.player]!) : null,
                         stakes: state.raise ? 6 : 3,
                         onWin: (w, missionDone) => dispatch({ type: "SHOWDOWN_WIN", winner: w, missionDone }),
                       }
