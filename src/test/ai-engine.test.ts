@@ -69,9 +69,9 @@ describe("zero-cost adaptive difficulty", () => {
       heat: 3.4,
       log: [
         { n: 1, title: "A", type: "MISSION" as const, player: "Ari", outcome: "skipped" as const },
-        { n: 2, title: "B", type: "TIMER" as const, player: "Nova", outcome: "failed" as const },
+        { n: 2, title: "B", type: "TIMER" as const, player: "Nova", outcome: "done" as const },
         { n: 3, title: "C", type: "QUESTION" as const, player: "Ari", outcome: "skipped" as const },
-        { n: 4, title: "D", type: "CHOICE" as const, player: "Nova", outcome: "failed" as const },
+        { n: 4, title: "D", type: "CHOICE" as const, player: "Nova", outcome: "skipped" as const },
       ],
     };
 
