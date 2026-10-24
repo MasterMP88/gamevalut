@@ -1,0 +1,28 @@
+name: NOCTURNE Phase 2 CI
+
+on:
+  push:
+    branches: [ui-phase2-nocturne]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bunx tsc --noEmit
+      - name: Tests
+        run: bun run test
+      - name: Production build
+        run: bun run build
