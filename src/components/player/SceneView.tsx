@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Pause, Play, RotateCcw, Lock } from "lucide-react";
 import { Btn } from "@/components/vault/Btn";
 import { fill, MAX_ANCHOR_CHARS } from "@/lib/game/engine";
-import type { Scene } from "@/lib/game/types";
+import type { MusicRound, Scene } from "@/lib/game/types";
+import { MusicRoundBody } from "./MusicRound";
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 
@@ -13,13 +14,19 @@ export interface SceneProps {
   memory: boolean;
   onDone: (p?: { capture?: { text: string; private: boolean }; syncMatch?: boolean }) => void;
   onSkip: () => void;
+  /** Returned echo: the earlier normal-sensitivity anchor this scene calls back. */
+  echoOf?: { text: string; sceneNumber: number; owner: string } | undefined;
+  /** Director game: Director Cuts get their own interrupt state. */
+  director?: boolean | undefined;
   battle?: | {
     players: [string, string];
     missionOwner: string | null;
+    stakes: number;
     onWin: (w: 0 | 1 | null, missionDone: boolean) => void;
-    onMissionResult: (success: boolean) => void;
   }
     | undefined;
+  /** PASS//THE AUX: round state lives in the session so remounts never re-expose a hidden pick. */
+  music?: { round: MusicRound | null; setRound: (r: MusicRound) => void; sceneNumber: number } | undefined;
 }
 
 const TYPE_LABEL: Record<Scene["type"], string> = {
@@ -35,17 +42,14 @@ const TYPE_LABEL: Record<Scene["type"], string> = {
   PRIVATE_SIGNAL: "Geheimes Zeichen",
   SHOWDOWN: "Showdown",
   PREDICTION: "Vorhersage",
+  MUSIC: "Track",
 };
 
 /** Interaction cue: answers "do I speak, tap, hide or pass the phone?" for every scene. */
-export function interactionCue(scene: Scene, memory: boolean, battle = false): string {
-  if (scene.mechanic === "alternating-rush") return "Abwechselnd sprechen · nach jeder Antwort tippen · die App hält den Puls";
-  if (scene.mechanic === "tap-rush") return "Loslegen · jeder Treffer ist ein Tap";
-  if (scene.mechanic === "standoff") return "Starten · sobald jemand bricht, Namen antippen";
-  if (battle && scene.type === "MISSION" && !scene.duration) return "Tun · danach entscheidet die andere Person";
+export function interactionCue(scene: Scene, memory: boolean): string {
   switch (scene.type) {
     case "QUESTION":
-      return memory && scene.capture ? "Laut antworten · Tippen optional" : "Laut antworten · nichts wird gespeichert";
+      return memory && scene.capture ? "Sag es deinem Gegenüber · Laut antworten, Tippen optional" : "Sag es deinem Gegenüber · Laut antworten, nichts wird gespeichert";
     case "MISSION": return scene.duration ? "Timer starten · dann tun" : "Tun · dann „Gemacht“";
     case "TIMER": return "Timer starten · dann tun";
     case "CHOICE": return "Tippen · eine Option wählen";
@@ -54,6 +58,7 @@ export function interactionCue(scene: Scene, memory: boolean, battle = false): s
     case "PRIVATE_SIGNAL": return "Geheim · nur zwischen euch";
     case "SYNC": return "Beide wählen verdeckt · dann Auflösung";
     case "PREDICTION": return "Heimlich tippen · Handy weitergeben";
+    case "MUSIC": return ({ solo: "Song verdeckt eintippen · Handy rüber", duet: "Beide wählen blind · dann entsiegeln", guess: "Song verstecken · Gegenüber tippt den Vibe", speed: "25 Sekunden · der erste Song zählt" } as const)[scene.music?.mode ?? "solo"];
     case "ECHO": return "Callback · laut antworten";
     case "GLITCH": return "Neue Regel · gilt sofort";
     case "SHOWDOWN": return "Gemeinsam · Gewinner antippen";
@@ -62,13 +67,13 @@ export function interactionCue(scene: Scene, memory: boolean, battle = false): s
 
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-function Prompt({ children, className }: { children: ReactNode; className?: string }) {
+export function Prompt({ children, className }: { children: ReactNode; className?: string }) {
   return <p className={cn("font-display text-[2.1rem] leading-[1.08] text-foreground text-balance sm:text-5xl", className)}>{children}</p>;
 }
 
-function Footer({ primary, onPrimary, disabled, onSkip }: { primary: string; onPrimary: () => void; disabled?: boolean; onSkip: () => void }) {
+export function Footer({ primary, onPrimary, disabled, onSkip }: { primary: string; onPrimary: () => void; disabled?: boolean; onSkip: () => void }) {
   return (
-    <div className="mt-auto flex items-center gap-3 pt-8">
+    <div className="action-dock mt-auto flex items-center gap-3">
       <Btn variant="ghost" size="lg" className="px-5" onClick={onSkip}>Skip</Btn>
       <Btn size="lg" className="flex-1" onClick={onPrimary} disabled={disabled}>{primary}</Btn>
     </div>
@@ -80,15 +85,24 @@ export function SceneView(props: SceneProps) {
   const text = fill(scene.prompt, me, you);
   const helper = scene.helper ? fill(scene.helper, me, you) : undefined;
   const glitch = scene.type === "GLITCH";
+  const cut = props.director && scene.id.startsWith("cut-");
   return (
-    <div className="flex flex-1 flex-col animate-rise">
+    <div className={cn("flex flex-1 flex-col animate-rise", cut && "director-cut")} data-cut={cut || undefined}>
+      {cut && (
+        <div className="-mx-1 mb-4 flex items-center gap-3 border-y border-champagne/60 py-2" aria-label="Director Cut">
+          <span className="font-mono text-xs tracking-[0.3em] text-champagne">CUT</span>
+          <span className="h-px flex-1 bg-champagne/40" aria-hidden />
+          <span className="eyebrow text-champagne">Formatwechsel</span>
+        </div>
+      )}
       <div className="flex items-center gap-3">
         <span className={cn("eyebrow", glitch && "text-primary", scene.type === "ECHO" && "text-violet")}>{TYPE_LABEL[scene.type]}</span>
-        {scene.source === "ai" && <span className="eyebrow text-champagne">· Director</span>}
+        {props.director && scene.source === "ai" && <span className="eyebrow text-champagne">· neu geschrieben</span>}
+        {props.director && scene.source !== "ai" && scene.type !== "ECHO" && !cut && <span className="eyebrow text-muted-foreground/70">· aus dem Repertoire</span>}
       </div>
       <p data-testid="scene-cue" className="mt-1.5 flex items-center gap-2 text-[0.8rem] tracking-wide text-muted-foreground">
         <span className="h-px w-4 bg-current opacity-60" aria-hidden />
-        {interactionCue(scene, props.memory, !!props.battle)}
+        {interactionCue(scene, props.memory)}
       </p>
       {glitch ? (
         <h2 className="glitch-title font-display mt-3 text-4xl leading-none" data-text={scene.title}>{scene.title}</h2>
@@ -104,10 +118,6 @@ export function SceneView(props: SceneProps) {
 }
 
 function Body(p: SceneProps & { text: string; helper?: string | undefined }) {
-  if (p.scene.mechanic === "alternating-rush") return <AlternatingRushBody {...p} />;
-  if (p.scene.mechanic === "tap-rush") return <TapRushBody {...p} />;
-  if (p.scene.mechanic === "standoff") return <StandoffBody {...p} />;
-  if (p.battle && p.scene.type === "MISSION" && !p.scene.duration) return <BattleMissionBody {...p} />;
   switch (p.scene.type) {
     case "TIMER":
       return <TimerBody {...p} />;
@@ -129,6 +139,8 @@ function Body(p: SceneProps & { text: string; helper?: string | undefined }) {
       return <ShowdownBody {...p} />;
     case "PREDICTION":
       return <PredictionBody {...p} />;
+    case "MUSIC":
+      return <MusicRoundBody {...p} />;
     case "MISSION":
       return p.scene.duration ? <TimerBody {...p} /> : <TextBody {...p} />;
     default:
@@ -140,13 +152,14 @@ function Helper({ text }: { text?: string | undefined }) {
   return text ? <p className="mt-4 text-muted-foreground">{text}</p> : null;
 }
 
-/** Memory capture: a quiet ruled line that feels like writing in the margin. */
+/** Memory capture: a private notebook margin. Stays in this session on this device. */
 function Capture({ label, value, onChange, priv, onPriv }: { label: string; value: string; onChange: (v: string) => void; priv: boolean; onPriv: (v: boolean) => void }) {
+  const kept = value.trim().length > 0;
   return (
-    <div className="relative mt-10">
+    <div className={cn("relative mt-10 border-l pl-4 transition-colors", kept ? "border-violet" : "border-line")} data-testid="memory-note">
       <div className="flex items-center gap-2">
-        <EchoGlyph className="size-5 text-violet" />
-        <label className="eyebrow text-violet" htmlFor="capture">Für das Echo merken · {label}</label>
+        <EchoGlyph className={cn("size-5 text-violet", kept && "motion-safe:animate-slow-pulse")} />
+        <label className="eyebrow text-violet" htmlFor="capture">Notiz für später · {label}</label>
       </div>
       <textarea
         id="capture"
@@ -154,12 +167,13 @@ function Capture({ label, value, onChange, priv, onPriv }: { label: string; valu
         maxLength={MAX_ANCHOR_CHARS}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Optional. Laut antworten reicht auch."
-        className="font-display mt-3 w-full resize-none border-b border-line bg-transparent pb-2 text-[1.35rem] leading-snug text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-violet"
+        placeholder="Ein paar Worte – oder einfach laut antworten."
+        className="font-display mt-3 w-full resize-none border-b border-dashed border-line bg-transparent pb-2 text-[1.35rem] italic leading-snug text-foreground outline-none transition-colors placeholder:not-italic placeholder:text-muted-foreground/50 focus:border-violet"
       />
+      <p className="mt-2 text-xs text-muted-foreground">{priv ? "Privat: bleibt hier und kommt nicht zurück." : "Bleibt nur in dieser Session auf diesem Gerät. Kommt später als Echo zurück."}</p>
       <div className="flex items-center justify-between gap-3">
         <button type="button" onClick={() => { haptic(4); onPriv(!priv); }} className="tap flex min-h-11 items-center gap-2 text-sm text-muted-foreground" aria-pressed={priv}>
-          <Lock className={cn("size-4", priv && "text-primary")} /> {priv ? "Privat · kein Rückblick, nie an den Director" : "Als privat markieren"}
+          <Lock className={cn("size-4", priv && "text-primary")} /> {priv ? "Privat · nie an den Director" : "Als privat markieren"}
         </button>
         <span className="font-mono text-xs tabular-nums text-muted-foreground">{value.length}/{MAX_ANCHOR_CHARS}</span>
       </div>
@@ -189,7 +203,7 @@ function TextBody({ text, helper, scene, memory, onDone, onSkip }: SceneProps & 
         {capture && <Capture label={scene.capture!.label} value={val} onChange={setVal} priv={priv} onPriv={setPriv} />}
       </div>
       <Footer
-        primary={capture && val.trim() ? "Merken & weiter" : scene.type === "MISSION" ? "Gemacht" : "Gesagt →"}
+        primary={capture && val.trim() ? "Merken & weiter" : scene.type === "MISSION" ? "Gemacht" : "Gesagt ✓"}
         onPrimary={() => onDone(capture && val.trim() ? { capture: { text: val, private: priv } } : undefined)}
         onSkip={onSkip}
       />
@@ -197,182 +211,7 @@ function TextBody({ text, helper, scene, memory, onDone, onSkip }: SceneProps & 
   );
 }
 
-
-type MicroPhase = "ready" | "count" | "play" | "result";
-
-function AlternatingRushBody({ text, helper, scene, me, you, onDone, onSkip }: SceneProps & { text: string; helper?: string | undefined }) {
-  const totalMs = (scene.duration ?? 60) * 1000;
-  const baseBeat = (scene.beatSeconds ?? 3) * 1000;
-  const [phase, setPhase] = useState<MicroPhase>("ready");
-  const [countIn, setCountIn] = useState(3);
-  const [overall, setOverall] = useState(totalMs);
-  const [beat, setBeat] = useState(baseBeat);
-  const [speaker, setSpeaker] = useState<0 | 1>(0);
-  const [turns, setTurns] = useState<[number, number]>([0, 0]);
-  const [streak, setStreak] = useState(0);
-  const [loser, setLoser] = useState<0 | 1 | null>(null);
-
-  const names: [string, string] = [me, you];
-  const beatFor = (n: number) => baseBeat * (n >= 12 ? 0.67 : n >= 6 ? 0.83 : 1);
-  const rule = streak >= 12 ? "NO REPEATS · keine Wiederholung" : streak >= 6 ? "SPEED UP · weniger Zeit pro Antwort" : "KEEP THE PULSE";
-
-  useEffect(() => {
-    if (phase !== "count") return;
-    const id = setInterval(() => {
-      setCountIn((n) => {
-        if (n <= 1) {
-          clearInterval(id);
-          setPhase("play");
-          haptic([8, 45, 16]);
-          return 0;
-        }
-        haptic(5);
-        return n - 1;
-      });
-    }, reduced() ? 120 : 650);
-    return () => clearInterval(id);
-  }, [phase]);
-
-  useEffect(() => {
-    if (phase !== "play") return;
-    const id = setInterval(() => {
-      setOverall((v) => Math.max(0, v - 100));
-      setBeat((v) => Math.max(0, v - 100));
-    }, 100);
-    return () => clearInterval(id);
-  }, [phase]);
-
-  useEffect(() => {
-    if (phase !== "play") return;
-    if (overall <= 0) {
-      haptic([12, 35, 12]);
-      setPhase("result");
-      return;
-    }
-    if (beat <= 0) {
-      haptic(180);
-      setLoser(speaker);
-      setPhase("result");
-    }
-  }, [overall, beat, phase, speaker]);
-
-  const hit = () => {
-    if (phase !== "play") return;
-    haptic(5);
-    const next = streak + 1;
-    setTurns((v) => {
-      const n: [number, number] = [...v];
-      n[speaker] += 1;
-      return n;
-    });
-    setStreak(next);
-    setSpeaker((speaker === 0 ? 1 : 0) as 0 | 1);
-    setBeat(beatFor(next));
-  };
-
-  const time = Math.ceil(overall / 1000);
-  const beatPct = Math.max(0, Math.min(100, (beat / beatFor(streak)) * 100));
-
-  return (
-    <>
-      <div className="mt-6">
-        <Prompt className="text-[1.75rem] sm:text-4xl">{text}</Prompt>
-        <Helper text={helper} />
-      </div>
-      {phase === "ready" && (
-        <div className="mt-auto pt-10">
-          <p className="eyebrow text-champagne">Microgame · Reaktionspuls</p>
-          <p className="font-display mt-2 text-[4rem] leading-none">{scene.beatSeconds ?? 3}s</p>
-          <p className="mt-2 max-w-sm text-sm text-muted-foreground">Nach jeder Antwort sofort irgendwo auf die Spielfläche tippen. Dann ist die andere Person dran.</p>
-          <div className="mt-7 flex gap-3">
-            <Btn variant="ghost" size="lg" onClick={onSkip}>Skip</Btn>
-            <Btn variant="accent" size="lg" className="flex-1" onClick={() => { setCountIn(3); setPhase("count"); haptic(); }}>3 · 2 · 1</Btn>
-          </div>
-        </div>
-      )}
-      {phase === "count" && (
-        <button type="button" className="tap mt-auto flex flex-1 flex-col items-center justify-center py-12" aria-label="Countdown läuft">
-          <span className="eyebrow">Ready</span>
-          <span className="font-display mt-3 text-[9rem] leading-none text-primary tabular-nums">{countIn || "GO"}</span>
-        </button>
-      )}
-      {phase === "play" && (
-        <button type="button" onClick={hit} className="tap mt-8 flex min-h-[22rem] flex-1 flex-col rounded-[2rem] border border-line bg-surface-1/40 p-6 text-left" aria-label={`${names[speaker]} hat geantwortet`}>
-          <div className="flex w-full items-center justify-between gap-4">
-            <span className="eyebrow text-champagne">{rule}</span>
-            <span className="font-mono text-xs tabular-nums text-muted-foreground">{time}s</span>
-          </div>
-          <div className="my-auto">
-            <p className="eyebrow">Jetzt</p>
-            <p key={`${speaker}-${streak}`} className="font-display mt-2 text-[4.5rem] leading-[0.88] animate-rise">{names[speaker]}</p>
-            <p className="mt-4 text-sm text-muted-foreground">Sagen → tippen → weitergeben</p>
-          </div>
-          <div className="w-full">
-            <div className="flex items-end justify-between gap-3"><span className="font-display text-4xl">×{streak}</span><span className="eyebrow">{turns[0]} · {turns[1]}</span></div>
-            <div className="mt-3 h-1 overflow-hidden rounded-full bg-line"><div className="h-full bg-primary transition-[width] duration-100" style={{ width: `${beatPct}%` }} /></div>
-          </div>
-        </button>
-      )}
-      {phase === "result" && (
-        <div className="mt-auto pt-10 animate-rise">
-          <p className="eyebrow text-primary">{loser === null ? "Pulse survived" : "Pulse missed"}</p>
-          <p className="font-display mt-3 text-[3.8rem] leading-[0.92]">{loser === null ? `${streak} Antworten.` : `${names[(1 - loser) as 0 | 1]} gewinnt.`}</p>
-          <p className="mt-4 text-muted-foreground">{loser === null ? "Kein Zögern. Verdächtig eingespielt." : `${names[loser]} hat den Antwort-Puls verpasst. ${streak} erfolgreiche Wechsel davor.`}</p>
-          <dl className="mt-7 grid grid-cols-2 gap-3 border-y border-line py-4"><div><dt className="eyebrow">{me}</dt><dd className="font-display mt-1 text-3xl">{turns[0]}</dd></div><div className="text-right"><dt className="eyebrow">{you}</dt><dd className="font-display mt-1 text-3xl">{turns[1]}</dd></div></dl>
-          <Footer primary="Nächste Szene →" onPrimary={() => onDone()} onSkip={onSkip} />
-        </div>
-      )}
-    </>
-  );
-}
-
-function TapRushBody({ text, helper, scene, onDone, onSkip }: SceneProps & { text: string; helper?: string | undefined }) {
-  const total = scene.duration ?? 30;
-  const [phase, setPhase] = useState<"ready" | "play" | "result">("ready");
-  const [left, setLeft] = useState(total);
-  const [hits, setHits] = useState(0);
-  const goal = scene.goal ?? null;
-  useEffect(() => { if (phase !== "play") return; const id = setInterval(() => setLeft((v) => Math.max(0, v - 1)), 1000); return () => clearInterval(id); }, [phase]);
-  useEffect(() => { if (phase === "play" && left === 0) { haptic(120); setPhase("result"); } }, [left, phase]);
-  const register = () => { if (phase !== "play") return; const next = hits + 1; setHits(next); haptic(next % 5 === 0 ? [5, 30, 10] : 4); if (goal && next >= goal) setPhase("result"); };
-  return (
-    <>
-      <div className="mt-6"><Prompt className="text-[1.75rem] sm:text-4xl">{text}</Prompt><Helper text={helper} /></div>
-      {phase === "ready" ? (
-        <div className="mt-auto pt-10"><p className="eyebrow text-champagne">Microgame · Trefferjagd</p><p className="font-display mt-2 text-[4rem] leading-none">{goal ? `0/${goal}` : "0"}</p><p className="mt-2 text-sm text-muted-foreground">Jede gültige Antwort zählt erst nach einem Tap. Die App hält Zeit und Treffer fest.</p><div className="mt-7 flex gap-3"><Btn variant="ghost" size="lg" onClick={onSkip}>Skip</Btn><Btn variant="accent" size="lg" className="flex-1" onClick={() => { haptic(); setPhase("play"); }}>Start · {total}s</Btn></div></div>
-      ) : phase === "play" ? (
-        <button type="button" onClick={register} className="tap mt-8 flex min-h-[22rem] flex-1 flex-col rounded-[2rem] border border-line bg-surface-1/40 p-6 text-left" aria-label="Treffer zählen"><div className="flex items-center justify-between"><span className="eyebrow text-champagne">Tap = Treffer</span><span className="font-mono text-sm tabular-nums">{left}s</span></div><div className="my-auto"><p className="font-display text-[7rem] leading-none tabular-nums text-primary">{hits}</p><p className="mt-2 text-muted-foreground">{goal ? `von ${goal} · ` : ""}weitermachen</p></div><div className="h-1 w-full overflow-hidden rounded-full bg-line"><div className="h-full bg-primary transition-all duration-700" style={{ width: `${goal ? Math.min(100, hits / goal * 100) : (1 - left / total) * 100}%` }} /></div></button>
-      ) : (
-        <div className="mt-auto pt-10 animate-rise"><p className="eyebrow text-primary">{goal && hits >= goal ? "Goal crushed" : "Time"}</p><p className="font-display mt-2 text-[5rem] leading-none">{goal ? `${hits}/${goal}` : hits}</p><p className="mt-3 text-muted-foreground">{goal && hits >= goal ? "Vor der Zeit. Das zählt." : `${hits} Treffer in ${total - left || total} Sekunden.`}</p><Footer primary="Nächste Szene →" onPrimary={() => onDone()} onSkip={onSkip} /></div>
-      )}
-    </>
-  );
-}
-
-function StandoffBody({ text, helper, scene, me, you, onDone, onSkip }: SceneProps & { text: string; helper?: string | undefined }) {
-  const total = scene.duration ?? 20;
-  const [phase, setPhase] = useState<"ready" | "play" | "result">("ready");
-  const [left, setLeft] = useState(total);
-  const [loser, setLoser] = useState<0 | 1 | null>(null);
-  const names: [string, string] = [me, you];
-  useEffect(() => { if (phase !== "play") return; const id = setInterval(() => setLeft((v) => Math.max(0, v - 1)), 1000); return () => clearInterval(id); }, [phase]);
-  useEffect(() => { if (phase === "play" && left === 0) { haptic([10, 30, 10]); setPhase("result"); } }, [left, phase]);
-  const breaks = (who: 0 | 1) => { setLoser(who); setPhase("result"); haptic(120); };
-  return (
-    <>
-      <div className="mt-6"><Prompt className="text-[1.8rem] sm:text-4xl">{text}</Prompt><Helper text={helper} /></div>
-      {phase === "ready" ? (
-        <div className="mt-auto pt-10"><p className="eyebrow text-champagne">Standoff</p><p className="font-display mt-2 text-[4rem] leading-none">{total}s</p><p className="mt-2 text-sm text-muted-foreground">Start drücken. Sobald jemand bricht, sofort den Namen antippen. Kein Diskutieren danach.</p><div className="mt-7 flex gap-3"><Btn variant="ghost" size="lg" onClick={onSkip}>Skip</Btn><Btn variant="accent" size="lg" className="flex-1" onClick={() => { haptic(); setPhase("play"); }}>Start</Btn></div></div>
-      ) : phase === "play" ? (
-        <div className="mt-auto pt-8"><div className="text-center"><span className="font-display text-[7rem] leading-none tabular-nums">{left}</span><p className="eyebrow mt-2 text-primary">Wer bricht?</p></div><div className="mt-8 grid grid-cols-2 gap-3"><Btn variant="outline" className="min-h-24 whitespace-normal text-xl" onClick={() => breaks(0)}>{me}<br/><span className="text-xs opacity-60">bricht</span></Btn><Btn variant="accent" className="min-h-24 whitespace-normal text-xl" onClick={() => breaks(1)}>{you}<br/><span className="text-xs opacity-60">bricht</span></Btn></div></div>
-      ) : (
-        <div className="mt-auto pt-10 animate-rise"><p className="eyebrow text-primary">{loser === null ? "Dead heat" : "Standoff entschieden"}</p><p className="font-display mt-3 text-[3.8rem] leading-[0.92]">{loser === null ? "Niemand gebrochen." : `${names[(1 - loser) as 0 | 1]} gewinnt.`}</p><p className="mt-4 text-muted-foreground">{loser === null ? `${total} Sekunden. Das war unangenehm stabil.` : `${names[loser]} war zuerst raus.`}</p><Footer primary="Nächste Szene →" onPrimary={() => onDone()} onSkip={onSkip} /></div>
-      )}
-    </>
-  );
-}
-
-/** Timer: editorial numerals over a single hairline that drains. */
+/** Timer: editorial numerals inside a hairline ring that drains with the real countdown. ready → live → final → done. */
 function TimerBody({ text, helper, scene, onDone, onSkip }: SceneProps & { text: string; helper?: string | undefined }) {
   const total = scene.duration ?? 30;
   const [left, setLeft] = useState(total);
@@ -388,81 +227,63 @@ function TimerBody({ text, helper, scene, onDone, onSkip }: SceneProps & { text:
   useEffect(() => {
     if (left === 0) {
       setRunning(false);
-      haptic(160);
-    } else if (running && left <= 3) haptic(6);
-  }, [left, running]);
-  const pct = left / total;
+      haptic([60, 80, 160]);
+    } else if (running && left <= 5) haptic(6);
+    else if (running && left === Math.floor(total / 2)) haptic([4, 40, 4]);
+  }, [left, running, total]);
   const over = left === 0;
+  const final = running && left <= 5 && !over;
+  const phase = over ? "done" : final ? "final" : running ? "live" : left === total ? "ready" : "paused";
+  const label = { ready: "Bereit", live: "Läuft", final: "Gleich vorbei", paused: "Pausiert", done: "Zeit ist um" }[phase];
+  const R = 52;
+  const C = 2 * Math.PI * R;
   return (
     <>
       <div className="mt-6">
         <Prompt className="text-[1.75rem] sm:text-4xl">{text}</Prompt>
         <Helper text={helper} />
       </div>
-      <div className="mt-10" role="timer" aria-live="polite">
-        <div className="flex items-end justify-between gap-4">
-          <span className={cn("font-display text-[6.5rem] leading-[0.8] tabular-nums tracking-tight transition-colors", over ? "text-primary" : running ? "text-foreground" : "text-foreground/70")}>
-            {over ? "Zeit." : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`}
+      <div className="mt-8 flex items-center gap-6" role="timer" aria-live="polite" aria-label={`${label}: noch ${left} Sekunden`} data-phase={phase}>
+        <button
+          type="button"
+          onClick={() => { haptic(); setRunning((r) => !r); }}
+          disabled={over}
+          aria-label={running ? "Pause" : "Start"}
+          className="tap relative size-44 shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default"
+        >
+          <svg viewBox="0 0 120 120" className="absolute inset-0 -rotate-90" aria-hidden>
+            <circle cx="60" cy="60" r={R} fill="none" stroke="var(--line)" strokeWidth="1" />
+            <circle
+              cx="60" cy="60" r={R} fill="none"
+              stroke={over || final ? "var(--primary)" : "var(--champagne)"}
+              strokeWidth={final ? 2.5 : 1.5}
+              strokeLinecap="round"
+              strokeDasharray={C}
+              strokeDashoffset={C * (1 - left / total)}
+              style={{ transition: "stroke-dashoffset 1s linear, stroke-width .3s, stroke .3s" }}
+            />
+          </svg>
+          <span className={cn("absolute inset-0 flex flex-col items-center justify-center", final && "motion-safe:animate-slow-pulse")}>
+            <span key={over ? "x" : left} className={cn("font-display text-6xl leading-none tabular-nums tracking-tight transition-colors", over || final ? "text-primary" : running ? "text-foreground" : "text-foreground/70", running && "motion-safe:animate-rise")}>
+              {over ? "Zeit." : left >= 60 ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` : left}
+            </span>
+            <span className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+              {over ? null : running ? <Pause className="size-3" /> : <Play className="size-3" />}
+              {over ? "" : running ? "Pause" : left === total ? "Antippen" : "Weiter"}
+            </span>
           </span>
-          <span className="eyebrow pb-2">{over ? "vorbei" : running ? "läuft" : left === total ? "bereit" : "pausiert"}</span>
-        </div>
-        <div className="relative mt-5 h-px w-full bg-line">
-          <div className="absolute inset-y-0 left-0 h-[2px] -translate-y-[0.5px] bg-primary" style={{ width: `${pct * 100}%`, transition: "width 1s linear" }} />
-        </div>
-        <div className="mt-6 flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => { haptic(); setRunning((r) => !r); }}
-            disabled={over}
-            aria-label={running ? "Pause" : "Start"}
-            className="tap flex size-16 items-center justify-center rounded-full border border-foreground/80 text-foreground disabled:opacity-30"
-          >
-            {running ? <Pause className="size-6" /> : <Play className="ml-0.5 size-6" />}
-          </button>
-          <span className="text-sm text-muted-foreground">{running ? "Pause" : left === total ? "Start" : over ? "" : "Weiter"}</span>
-          <button type="button" onClick={() => { haptic(4); setRunning(false); setLeft(total); }} className="tap ml-auto flex min-h-11 items-center gap-2 px-2 text-sm text-muted-foreground" aria-label="Reset">
-            <RotateCcw className="size-4" /> Reset
-          </button>
+        </button>
+        <div className="min-w-0">
+          <p className={cn("eyebrow", (over || final) && "text-primary", phase === "live" && "text-champagne")}>{label}</p>
+          <p className="mt-2 text-sm text-muted-foreground">von {total} Sekunden</p>
+          {left !== total && (
+            <button type="button" onClick={() => { haptic(4); setRunning(false); setLeft(total); }} className="tap -ml-2 mt-3 flex min-h-11 items-center gap-2 px-2 text-sm text-muted-foreground" aria-label="Reset">
+              <RotateCcw className="size-4" /> Von vorn
+            </button>
+          )}
         </div>
       </div>
-      <Footer primary="Fertig" onPrimary={() => onDone()} onSkip={onSkip} />
-    </>
-  );
-}
-
-
-function BattleMissionBody({ text, helper, scene, me, you, battle, onSkip }: SceneProps & { text: string; helper?: string | undefined }) {
-  const [judge, setJudge] = useState(false);
-  const stake = scene.sparks ?? 1;
-  if (!judge) {
-    return (
-      <>
-        <div className="mt-6">
-          <p className="eyebrow text-champagne">Heatcheck · {stake} {stake === 1 ? "Spark" : "Sparks"}</p>
-          <Prompt>{text}</Prompt>
-          <Helper text={helper} />
-        </div>
-        <div className="mt-auto pt-8">
-          <p className="text-sm text-muted-foreground">{you} entscheidet, ob es zählt. Keine Selbstbedienung bei Punkten.</p>
-          <div className="mt-4 flex gap-3">
-            <Btn variant="ghost" size="lg" onClick={onSkip}>Passen</Btn>
-            <Btn size="lg" className="flex-1" onClick={() => { haptic(8); setJudge(true); }}>Bewertung →</Btn>
-          </div>
-        </div>
-      </>
-    );
-  }
-  return (
-    <>
-      <div className="mt-10 animate-rise">
-        <p className="eyebrow text-primary">{you} ist Referee</p>
-        <p className="font-display mt-3 text-[3rem] leading-[0.96]">Zählt der Versuch von {me}?</p>
-        <p className="mt-4 text-muted-foreground">Nur das Ergebnis antippen. Diskussionen kosten Würde, aber keine Sparks.</p>
-      </div>
-      <div className="mt-auto grid grid-cols-2 gap-3 pt-8">
-        <Btn variant="outline" className="min-h-20 text-lg" onClick={() => { haptic(60); battle?.onMissionResult(false); }}>Daneben</Btn>
-        <Btn variant="accent" className="min-h-20 text-lg" onClick={() => { haptic([8, 30, 14]); battle?.onMissionResult(true); }}>Treffer · +{stake}</Btn>
-      </div>
+      <Footer primary={over ? "Geschafft ✓" : "Fertig"} onPrimary={() => onDone()} onSkip={onSkip} />
     </>
   );
 }
@@ -558,7 +379,7 @@ function RouletteBody({ text, scene, me, you, onDone, onSkip }: SceneProps & { t
         </div>
       </div>
       {done && <p className="eyebrow mt-4 text-primary animate-rise">Der Zufall hat gesprochen</p>}
-      <div className="mt-auto flex items-center gap-3 pt-8">
+      <div className="action-dock mt-auto flex items-center gap-3">
         <Btn variant="ghost" size="lg" className="px-5" onClick={onSkip}>Skip</Btn>
         {done ? (
           <Btn size="lg" className="flex-1" onClick={() => onDone()}>Gemacht</Btn>
@@ -571,24 +392,18 @@ function RouletteBody({ text, scene, me, you, onDone, onSkip }: SceneProps & { t
 }
 
 /** Full-bleed privacy veil for passing the phone. */
-function HandOver({ to, onReady, note, onSkip }: { to: string; onReady: () => void; note: string; onSkip: () => void }) {
+export function HandOver({ to, onReady, note, onSkip }: { to: string; onReady: () => void; note: string; onSkip: () => void }) {
   return (
     <div className="mt-6 flex flex-1 flex-col">
-      <div className="relative flex flex-1 flex-col justify-center overflow-hidden border-y border-line bg-surface/45 px-5 py-12">
+      <div className="relative flex flex-1 flex-col justify-center overflow-hidden rounded-[2rem] border border-line bg-surface px-6 py-12">
         <svg viewBox="0 0 200 200" className="pointer-events-none absolute -right-16 -top-16 size-72 text-primary/30 animate-slow-pulse" fill="none" stroke="currentColor" aria-hidden>
           <circle cx="100" cy="100" r="40" />
           <circle cx="100" cy="100" r="70" opacity=".5" />
           <circle cx="100" cy="100" r="98" opacity=".25" />
         </svg>
-        <div className="mb-8 flex items-center gap-3 text-primary/70" aria-hidden>
-          <span className="font-display text-xl tracking-[0.16em]">N//</span>
-          <span className="h-px flex-1 bg-gradient-to-r from-primary/60 to-transparent" />
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em]">sealed</span>
-        </div>
         <p className="eyebrow">Handy weitergeben</p>
         <p className="font-display mt-4 text-[3.2rem] leading-[0.95] text-balance break-words">Nur für<br /><em className="text-primary not-italic">{to}</em>.</p>
-        <p className="mt-5 max-w-[30ch] leading-relaxed text-muted-foreground">{note}</p>
-        <p className="mt-8 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground/55">Vorherige Auswahl ist verdeckt</p>
+        <p className="mt-5 max-w-[28ch] text-muted-foreground">{note}</p>
       </div>
       <Btn size="lg" className="mt-6 w-full" onClick={() => { haptic(12); onReady(); }}>Ich bin {to} · aufdecken</Btn>
       <Btn variant="ghost" size="lg" className="mt-2 w-full" onClick={onSkip}>Skip</Btn>
@@ -710,7 +525,7 @@ function SyncBody({ text, scene, me, you, onDone, onSkip }: SceneProps & { text:
 }
 
 /** Echo: the callback arrives inside a widening trace of rings. */
-function EchoBody({ text, onDone, onSkip }: SceneProps & { text: string }) {
+function EchoBody({ text, echoOf, onDone, onSkip }: SceneProps & { text: string }) {
   useEffect(() => { haptic([6, 60, 6]); }, []);
   return (
     <>
@@ -720,10 +535,16 @@ function EchoBody({ text, onDone, onSkip }: SceneProps & { text: string }) {
             <circle key={r} cx="150" cy="150" r={r} strokeWidth="0.8" className="animate-ripple" style={{ animationDelay: `${i * 900}ms`, transformOrigin: "150px 150px" }} />
           ))}
         </svg>
-        <p className="eyebrow relative text-violet">Die Nacht erinnert sich</p>
+        {echoOf && (
+          <figure className="relative border-l border-dashed border-violet/70 pl-4" data-testid="echo-trace">
+            <figcaption className="eyebrow text-violet/80">Gemerkt in Szene {echoOf.sceneNumber} · von {echoOf.owner}</figcaption>
+          </figure>
+        )}
+        <div className={cn("relative", echoOf && "mt-2 ml-[0.2rem] h-8 w-px bg-gradient-to-b from-violet/70 to-transparent")} aria-hidden />
+        <p className="eyebrow relative text-violet">{echoOf ? "Kommt zurück" : "Die Nacht erinnert sich"}</p>
         <Prompt className="relative mt-4">{text}</Prompt>
       </div>
-      <Footer primary="Gesagt →" onPrimary={() => onDone()} onSkip={onSkip} />
+      <Footer primary="Gesagt ✓" onPrimary={() => onDone()} onSkip={onSkip} />
     </>
   );
 }
@@ -747,12 +568,17 @@ function GlitchBody({ text, helper, onDone, onSkip }: SceneProps & { text: strin
 
 function ShowdownBody({ text, battle, onSkip }: SceneProps & { text: string }) {
   const [mission, setMission] = useState(false);
+  useEffect(() => { haptic([10, 50, 10]); }, []);
   if (!battle) return null;
   return (
     <>
-      <div className="mt-6">
-        <Prompt>{text}</Prompt>
-        <p className="eyebrow mt-5 text-champagne">Gewinner · +3 Sparks</p>
+      <div className="mt-6 border-y border-primary/50 py-5" data-testid="showdown">
+        <p className="flex items-center justify-between">
+          <span className="font-mono text-xs tracking-[0.3em] text-primary">EINSATZ</span>
+          <span key={battle.stakes} className={cn("font-display text-3xl leading-none tabular-nums text-champagne", battle.stakes > 3 && "motion-safe:animate-rise")} aria-label={`Einsatz ${battle.stakes} Sparks`}>+{battle.stakes}</span>
+        </p>
+        <Prompt className="mt-4">{text}</Prompt>
+        <p className="mt-4 text-sm text-muted-foreground">Ihr entscheidet gemeinsam, wer gewonnen hat.{battle.stakes > 3 && " Erhöht – doppelter Einsatz."}</p>
       </div>
       {battle.missionOwner && (
         <button type="button" onClick={() => { haptic(4); setMission(!mission); }} aria-pressed={mission} className="tap mt-8 flex min-h-12 items-center gap-3 border-y border-line py-3 text-left">
@@ -810,7 +636,7 @@ function PredictionBody({ text, helper, scene, me, you, onDone, onSkip }: SceneP
           <p className="font-display mt-2 text-[2.2rem] leading-[1.05]" data-testid="prediction-question">{cfg.q}</p>
           <EditorialOptions options={opts} me={me} you={you} value={cfg.val} onPick={cfg.set} />
           {stage === "own" ? (
-            <div className="mt-auto flex items-center gap-3 pt-8">
+            <div className="action-dock mt-auto flex items-center gap-3">
               <Btn variant="ghost" size="lg" className="px-4" onClick={() => { setOwn(null); setStage("pass"); }}>Nicht verraten</Btn>
               <Btn size="lg" className="flex-1" disabled={own === null} onClick={() => { haptic(10); setStage("pass"); }}>{own === null ? "Erst wählen" : cfg.cta}</Btn>
             </div>
