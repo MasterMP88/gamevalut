@@ -20,6 +20,7 @@ export async function generateAiText(input: {
   system: string;
   user: string;
   signal?: AbortSignal;
+  maxOutputTokens?: number;
 }): Promise<AiProviderResult> {
   if (process.env["NOCTURNE_AI_ENABLED"] !== "true") {
     return { ok: false, reason: "unavailable" };
@@ -38,6 +39,8 @@ export async function generateAiText(input: {
       system: input.system,
       messages: [{ role: "user", content: input.user }],
       maxRetries: 0,
+      maxOutputTokens:
+        input.maxOutputTokens ?? (input.profile === "lite" ? 3_600 : 2_000),
       ...(input.signal ? { abortSignal: input.signal } : {}),
       providerOptions:
         input.profile === "premium"
