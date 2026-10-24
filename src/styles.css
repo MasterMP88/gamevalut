@@ -127,6 +127,8 @@
   --art-07-b: oklch(0.75 0.05 230);
   --art-08-a: oklch(0.83 0.06 78);
   --art-08-b: oklch(0.62 0.08 295);
+  --art-09-a: oklch(0.8 0.07 70);
+  --art-09-b: oklch(0.6 0.13 15);
 
   --shadow-soft: 0 30px 60px -30px oklch(0 0 0 / 70%);
   --gradient-veil: radial-gradient(120% 80% at 50% 0%, oklch(0.36 0.09 340 / 35%), transparent 60%);
@@ -251,6 +253,23 @@
   animation: glitch 900ms steps(2) infinite;
 }
 
+@keyframes unseal {
+  0% { opacity: 0; transform: translateY(14px) scale(0.98); clip-path: inset(48% 0 48% 0); }
+  60% { opacity: 1; clip-path: inset(0 0 0 0); }
+  100% { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
+}
+@utility animate-unseal {
+  animation: unseal 900ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+@keyframes aux-wave {
+  from { transform: translateX(0); }
+  to { transform: translateX(-80px); }
+}
+
+@utility animate-aux-wave {
+  animation: aux-wave 9s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -372,4 +391,21 @@
 }
 @utility animate-beat {
   animation: beat 2.4s ease-in-out infinite;
+}
+
+/* Sticky action dock: primary scene action never falls below the fold */
+@utility action-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  margin-inline: -0.25rem;
+  padding: 1.25rem 0.25rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--background) 70%, color-mix(in oklab, var(--background) 0%, transparent));
+}
+
+/* Collection: gentle proximity snap, never trapping */
+html:has(.snap-home) { scroll-snap-type: y proximity; }
+@media (prefers-reduced-motion: reduce) {
+  html:has(.snap-home) { scroll-snap-type: none; }
+  .stage * { transition-duration: 0ms !important; animation: none !important; }
 }
