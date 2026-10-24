@@ -401,6 +401,17 @@ export function advance(state: SessionState): SessionState {
   let milestones = state.milestones;
   const usable = (sc: Scene) => allowedByConsent(sc, state.settings) && !state.usedIds.includes(sc.id);
 
+  // 0) FIRST SPARK signature beats: the opening must feel like a game, not a deck.
+  // Scene 2 is a live standoff; scene 4 is a hidden prediction/reveal.
+  if (!scene && game.id === "roxy-after-dark" && next === 2) {
+    const signature = candidatePool(s1).find((sc) => sc.mechanic === "standoff" && usable(sc));
+    if (signature) scene = { ...signature, cue: "Spark Check · kein Reden, nur Nerven." };
+  }
+  if (!scene && game.id === "roxy-after-dark" && next === 4) {
+    const reveal = candidatePool(s1).find((sc) => sc.type === "PREDICTION" && usable(sc));
+    if (reveal) scene = { ...reveal, cue: "Read Me · erst tippen, dann auflösen." };
+  }
+
   // 1) US//AFTER DARK milestones
   if (game.coop) {
     const ms = MILESTONES.find((m) => !milestones.includes(m.id) && m.when(state.energies));
