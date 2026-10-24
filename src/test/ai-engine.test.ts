@@ -225,9 +225,22 @@ describe("AI cache", () => {
 });
 
 describe("AI experience contracts", () => {
+  it("rejects AI experience requests without explicit opt-in", () => {
+    const result = experienceRequestSchema.safeParse({
+      kind: "music-clue",
+      sessionKey: "music-consent",
+      locale: "de",
+      track: { title: "Test", artist: "Artist" },
+      difficulty: 2,
+      count: 3,
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("supports 2–99 player personalization while keeping generation bounded", () => {
     const base = {
       kind: "personalize-pack" as const,
+      aiConsent: true as const,
       sessionKey: "gang-99",
       locale: "de" as const,
       playerCount: 99,
