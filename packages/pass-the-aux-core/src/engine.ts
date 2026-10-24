@@ -59,6 +59,16 @@ function nextAfterPick(state: AuxRoundState, player: 0 | 1): AuxRoundState["stag
   return "HANDOFF_A";
 }
 
+function norm(s?: string): string {
+  return (s ?? "").normalize("NFKC").trim().toLocaleLowerCase().replace(/\s+/g, " ");
+}
+
+export function sameSong(a: SongPick | null | undefined, b: SongPick | null | undefined): boolean {
+  if (!a || !b) return false;
+  if (a.providerId && b.providerId) return a.providerId === b.providerId;
+  return Boolean(norm(a.title) && norm(a.title) === norm(b.title) && norm(a.artist) === norm(b.artist));
+}
+
 function toTracklist(round: AuxRound, picks: HiddenPick[]): TracklistEntry[] {
   return [...picks]
     .sort((a, b) => a.player - b.player)
@@ -157,11 +167,17 @@ export function auxReducer(state: AuxSession, action: AuxAction): AuxSession {
       if (!hasPick(c, c.round.activePlayer)) return state;
       if (c.round.type === "DUET_PICK" && c.picks.length < 2) return state;
       const additions = toTracklist(c.round, c.picks);
+      const ordered = [...c.picks].sort((a, b) => a.player - b.player);
+      const autoReaction =
+        c.round.type === "DUET_PICK" && sameSong(ordered[0]?.pick, ordered[1]?.pick)
+          ? "MATCH"
+          : null;
+      const reaction = c.reaction ?? autoReaction;
       return {
         ...state,
-        current: { ...c, stage: "COMPLETE" },
+        current: { ...c, stage: "COMPLETE", reaction },
         tracklist: [...state.tracklist, ...additions],
-        reactions: c.reaction ? [...state.reactions, c.reaction] : state.reactions,
+        reactions: reaction ? [...state.reactions, reaction] : state.reactions,
       };
     }
 
