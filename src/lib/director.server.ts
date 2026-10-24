@@ -83,6 +83,7 @@ export async function runDirector(
           "\nSchreibe die nächsten " +
           BATCH_SIZE +
           " Szenen.",
+        maxOutputTokens: 1_800,
         ...(signal ? { signal } : {}),
       });
 
