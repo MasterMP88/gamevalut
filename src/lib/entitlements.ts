@@ -5,7 +5,7 @@ import type { GameId } from "./game/types";
  * catalogue. When a payment provider is connected, add product keys here and grant
  * them via the `entitlements` table (written only server-side by the webhook).
  */
-export const FREE_GAMES: readonly GameId[] = ["roxy-after-dark", "after-dark-2", "roxy-night", "battle", "coop", "one-two", "night-echo", "ai-director"];
+export const FREE_GAMES: readonly GameId[] = ["roxy-after-dark", "after-dark-2", "roxy-night", "battle", "coop", "one-two", "night-echo", "ai-director", "pass-the-aux"];
 
 /** Product key that would unlock a game when it is not free. */
 export const GAME_PRODUCT: Partial<Record<GameId, string>> = {};
