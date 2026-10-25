@@ -123,7 +123,7 @@ export const PREVIEWS: Record<GameId, Preview> = {
     ],
   },
   "pass-the-aux": {
-    mechanic: "Statt zu antworten, tippt ihr verdeckt einen Song ein, gebt das Handy weiter und entsiegelt ihn – allein, zu zweit oder mit Vorhersage.",
+    mechanic: "Statt zu antworten, wählt ihr verdeckt Songs und entsiegelt sie gemeinsam – auf einem Gerät nacheinander oder auf zwei gleichzeitig.",
     truths: ["für 2", "ohne Musikdienst spielbar", "Tracklist nur in der Session"],
     idealWhen: "Ideal wenn ihr lieber mit Songs antwortet als mit Sätzen.",
     frames: [
