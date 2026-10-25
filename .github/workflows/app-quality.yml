@@ -28,6 +28,7 @@ jobs:
           cache: npm
       - name: Install app dependencies
         run: |
+          npm install --global npm@11 --no-audit --no-fund
           rm -f package-lock.json
           npm install --include=dev --package-lock=false --no-audit --no-fund
       - name: Tests
