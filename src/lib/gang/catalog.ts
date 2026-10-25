@@ -20,6 +20,7 @@ export interface GangGame {
   energy: number;
   tags: string[];
   capabilities: string[];
+  interactionModes: readonly string[];
   motif: Motif;
   signature: Signature;
   hue: number;
@@ -61,6 +62,7 @@ export const GANG_GAMES: GangGame[] = CORE_GAMES.filter((g) => g.status === "rea
     energy: g.energy,
     tags: look.tags,
     capabilities: [...g.capabilities],
+    interactionModes: [...g.interactionModes],
     motif: look.motif,
     signature: look.signature,
     hue: look.hue,
