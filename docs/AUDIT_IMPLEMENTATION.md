@@ -60,3 +60,14 @@ Fortschritt und durchgeführte Prüfungen werden mit der Implementierung ergänz
 - Website: SEO-Detailseiten, OG-Assets, Navigation/Overlays/A11y, deutsche Texte, Vertrauen/Kauf-/Account-Flows, Preisempfehlung des Audits.
 - Sicherheits- und Lastprüfung inklusive transportbezogener Missbrauchsgrenzen, Reconnect, effizientem Polling, Migrationstests, aktuellen Abhängigkeiten.
 - Vollständige Quellcode-/UI-Integration in Lovable und Review/Veröffentlichung. Aktuelle Website bleibt für diesen Zwischenstand unverändert; die fünf genannten DB-Migrationen sind aktiv.
+
+
+### Validierter Zwischenstand — Paar-Handys und spontaner Host-Zugang
+- Eigener Einstieg `/together` für alle neun Paarspiele, persönliche 18+-Bestätigung und gemeinsame Schnittmenge der Grenzen. Sync/Vorhersagen und Duette werden gleichzeitig verdeckt abgegeben und gemeinsam aufgelöst.
+- Dieselbe kanonische Paar-Engine entscheidet weiterhin Rhythmus, Heatcheck-Punkte/Power-ups, Co-op-Energien, Rückfragen, Tempo, Director-Richtungen und Abschlüsse. Roulette ist auf beiden Geräten identisch; Showdown-Ergebnisse und Missionserfüllung erfordern Übereinstimmung. Ein beiderseitiges Unentschieden vergibt keine Gewinnpunkte.
+- Eigener sicherer Steuerkanal ermöglicht Überspringen/Pause/Abschluss unabhängig vom eigenen Zug. Antworten sind versiegelt; Sicherheitswünsche werden vor einer Auflösung verarbeitet. Erneute Zustimmung nach Pause und nur gemeinsam gewählte After Hours.
+- Intime Echo-Notizen bleiben ausschließlich im Host-Tab. Runtime-Recovery enthält weder Notizen, Echo-Text, AI-Queue noch persönliche Tracklist. Nach Geräteübernahme sind diese Notizen nicht wiederherstellbar. Ausdrücklich eingegebene Songtitel reisen für die Runde durch den kurzlebigen privaten Raum; diese Übertragung wird vor dem Einstieg erklärt.
+- Night Pass erweitert ohne Preisänderung auf GANG-Hosting. Unlimited-Mitglieder können keinen redundanten Night Pass kaufen; unbekannte Produkte und ungültige Zeitfenster gewähren keinen Zugang.
+- Zwei weitere Migrationen live: `20261025112320_audit_host_pass_retention.sql` (fünf offene Räume pro Host; 12h Raumlaufzeit, automatische Löschung mit FK-Kaskaden alle fünf Minuten) und `20261025112558_audit_pair_controls.sql` (persönliche Steueranfragen). Transaktionales Fixture prüft Host-Pass, Raumgrenze, Steuerrechte, alte Phasen und Löschkaskade.
+- Vollständiger App-Lauf nach dieser Integration: **231/231 Tests**, Commerce-Core **7/7**, TypeScript und Build erfolgreich. Die anschließende Erweiterung auf 22/22 Paar-Tests prüft auch Abschlusswahl/After-Hours-Zustimmung und Musikreaktion (damit 233 App-Tests insgesamt). Das ist weiterhin keine reale Mobilgeräte- oder Lastabnahme.
+- Noch offen: Zahlungsereignis-Reihenfolge/Erstattungen/Streitfälle, Website-/Anleitungs-/SEO-/A11y-Finalisierung, Visual-QA und Integration/Veröffentlichung. Die Website ist noch auf dem ursprünglichen Stand; sieben additive DB-Migrationen sind aktiv.

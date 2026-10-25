@@ -52,10 +52,11 @@ describe("access matrix", () => {
     expect(coupleSceneAccess(6, [ent("night_pass_72h", NOW + H)], NOW).allowed).toBe(true);
     expect(coupleSceneAccess(6, [ent("night_pass_72h", NOW - 1)], NOW).allowed).toBe(false);
   });
-  it("Unlimited unlocks GANG hosting; Night Pass does not", () => {
+  it("Every active paid offer unlocks GANG hosting", () => {
     expect(canHostGang([ent("unlimited_monthly", NOW + H)], NOW)).toBe(true);
     expect(canHostGang([ent("unlimited_annual", NOW + H)], NOW)).toBe(true);
-    expect(canHostGang([ent("night_pass_72h", NOW + H)], NOW)).toBe(false);
+    expect(canHostGang([ent("night_pass_72h", NOW + H)], NOW)).toBe(true);
+    expect(canHostGang([ent("night_pass_72h", NOW - 1)], NOW)).toBe(false);
     expect(canHostGang([ent("unlimited_monthly", NOW + H, "revoked")], NOW)).toBe(false);
   });
   it("GANG guests need neither account nor payment", () => {
@@ -173,7 +174,7 @@ describe("couple player gate", () => {
 });
 
 describe("GANG host gate", () => {
-  it("without Unlimited the host sees Monthly/Annual only and cannot open a room", async () => {
+  it("without access the host sees the 72h pass and subscriptions and cannot open a room", async () => {
     const { fireEvent } = await import("@testing-library/react");
     const { GangMode } = await import("@/components/gang/GangMode");
     const r = render(<GangMode hostAllowed={false} />);
@@ -181,7 +182,7 @@ describe("GANG host gate", () => {
     fireEvent.click(screen.getByRole("button", { name: "Spiel starten" }));
     expect(screen.getByTestId("host-access").textContent).toContain("Ein Host zahlt · alle anderen treten kostenlos bei.");
     expect(screen.queryByRole("button", { name: "Raum öffnen" })).toBeNull();
-    expect(r.container.querySelector('[data-offer="night_pass_72h"]')).toBeNull();
+    expect(r.container.querySelector('[data-offer="night_pass_72h"]')).not.toBeNull();
     expect(r.container.querySelector('[data-offer="unlimited_annual"]')).not.toBeNull();
   });
 });
@@ -234,4 +235,21 @@ describe("payment edges", () => {
     expect((await runCheckout("unlimited_annual", user, "https://x.app", d, NOW)).status).toBe("checkout");
     expect(create).toHaveBeenCalledOnce();
   });
+});
+
+
+describe("equivalent access protection", () => {
+ it("blocks a redundant pass for active Unlimited before creating Stripe Checkout", async () => {
+   const create = vi.fn();
+   const result = await runCheckout("night_pass_72h", {id:UID,email:null}, "https://x.app", {
+     snapshot: async () => ({entitlements: [ent("unlimited_annual",NOW+H)],subscriptions: []}),
+     customer: async () => null, create,
+   }, NOW);
+   expect(result).toEqual({status:"already_active",reason:"subscription_active"});
+   expect(create).not.toHaveBeenCalled();
+ });
+ it("does not grant access for an unknown offer or an invalid time window", () => {
+   expect(coupleSceneAccess(6,[ent("unknown",NOW+H)],NOW).allowed).toBe(false);
+   expect(coupleSceneAccess(6,[{...ent("night_pass_72h",NOW+H),ends_at:"invalid"}],NOW).allowed).toBe(false);
+ });
 });

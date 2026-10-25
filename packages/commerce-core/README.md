@@ -7,7 +7,7 @@ Canonical, provider-light commercial rules for NOCTURNE.
 | Offer | Price | Rule |
 | --- | ---: | --- |
 | Free Preview | €0 | playable through scene 5; gate before scene 6 |
-| Night Pass | €6.99 once | 72 hours of paid access for the approved two-player scope |
+| Night Pass | €6.99 once | 72 hours of all couple games and GANG hosting; guests free |
 | Unlimited | €9.99/month | recurring |
 | Unlimited Year | €49.99/year | recommended offer |
 

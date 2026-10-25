@@ -47,7 +47,7 @@ export async function adminCommerceDb(): Promise<CommerceDb> {
 export async function accessSnapshot(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [e, s] = await Promise.all([
-    supabaseAdmin.from("entitlements").select("product_key,status,ends_at").eq("user_id", userId),
+    supabaseAdmin.from("entitlements").select("product_key,status,starts_at,ends_at").eq("user_id", userId),
     supabaseAdmin.from("subscriptions").select("plan_key,status,current_period_end,provider").eq("user_id", userId).eq("provider", "stripe"),
   ]);
   if (e.error || s.error) throw new Error("Zugang konnte nicht geprüft werden");

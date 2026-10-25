@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as GangRouteImport } from './routes/gang'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as TogetherRouteImport } from './routes/together'
 import { Route as AuthenticatedTonightRouteImport } from './routes/_authenticated/tonight'
 import { Route as CheckoutStartRouteImport } from './routes/checkout.start'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
@@ -50,6 +51,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TogetherRoute = TogetherRouteImport.update({
+  id: '/together',
+  path: '/together',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedTonightRoute = AuthenticatedTonightRouteImport.update({
   id: '/tonight',
   path: '/tonight',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/gang': typeof GangRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/together': typeof TogetherRoute
   '/tonight': typeof AuthenticatedTonightRoute
   '/checkout/start': typeof CheckoutStartRoute
   '/checkout/success': typeof CheckoutSuccessRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/gang': typeof GangRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/together': typeof TogetherRoute
   '/tonight': typeof AuthenticatedTonightRoute
   '/checkout/start': typeof CheckoutStartRoute
   '/checkout/success': typeof CheckoutSuccessRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/gang': typeof GangRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/together': typeof TogetherRoute
   '/_authenticated/tonight': typeof AuthenticatedTonightRoute
   '/checkout/start': typeof CheckoutStartRoute
   '/checkout/success': typeof CheckoutSuccessRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/gang'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/together'
     | '/tonight'
     | '/checkout/start'
     | '/checkout/success'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/gang'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/together'
     | '/tonight'
     | '/checkout/start'
     | '/checkout/success'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/gang'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/together'
     | '/_authenticated/tonight'
     | '/checkout/start'
     | '/checkout/success'
@@ -161,6 +173,7 @@ export interface RootRouteChildren {
   GangRoute: typeof GangRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  TogetherRoute: typeof TogetherRoute
   CheckoutStartRoute: typeof CheckoutStartRoute
   CheckoutSuccessRoute: typeof CheckoutSuccessRoute
   GameSlugRoute: typeof GameSlugRoute
@@ -209,6 +222,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/together': {
+      id: '/together'
+      path: '/together'
+      fullPath: '/together'
+      preLoaderRoute: typeof TogetherRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/tonight': {
@@ -267,6 +287,7 @@ const rootRouteChildren: RootRouteChildren = {
   GangRoute: GangRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  TogetherRoute: TogetherRoute,
   CheckoutStartRoute: CheckoutStartRoute,
   CheckoutSuccessRoute: CheckoutSuccessRoute,
   GameSlugRoute: GameSlugRoute,

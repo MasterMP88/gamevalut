@@ -32,8 +32,8 @@ export function isActiveEntitlement(
   nowMs = Date.now(),
 ): boolean {
   if (entitlement.status !== "active") return false;
-  if (entitlement.startsAt && Date.parse(entitlement.startsAt) > nowMs) return false;
-  if (entitlement.endsAt && Date.parse(entitlement.endsAt) <= nowMs) return false;
+  if (entitlement.startsAt && (!Number.isFinite(Date.parse(entitlement.startsAt)) || Date.parse(entitlement.startsAt) > nowMs)) return false;
+  if (entitlement.endsAt && (!Number.isFinite(Date.parse(entitlement.endsAt)) || Date.parse(entitlement.endsAt) <= nowMs)) return false;
   return true;
 }
 
@@ -41,7 +41,7 @@ export function hasPaidAccess(
   entitlements: readonly Entitlement[],
   nowMs = Date.now(),
 ): boolean {
-  return entitlements.some((entitlement) => isActiveEntitlement(entitlement, nowMs));
+  return entitlements.some((entitlement) => ["night_pass_72h", "unlimited_monthly", "unlimited_annual"].includes(entitlement.productKey) && isActiveEntitlement(entitlement, nowMs));
 }
 
 /**

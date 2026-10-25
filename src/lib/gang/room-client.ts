@@ -48,7 +48,7 @@ export interface CollectedAction {
   at?: string;
 }
 
-export type SessionRole = "player" | "display";
+export type SessionRole = "player" | "display" | "couple";
 export interface StoredSession {
   code: string;
   token: string;
@@ -70,6 +70,7 @@ export type Rpc = (
 
 const KEY: Record<SessionRole, string> = {
   player: "nocturne.gang.player",
+  couple: "nocturne.couple.player",
   display: "nocturne.gang.display",
 };
 
@@ -160,6 +161,7 @@ export function createRoomClient(rpc: Rpc) {
       displayName: string,
       entryMode: "director" | "catalog" | "mix",
       maxPlayers: number,
+      role: SessionRole = "player",
     ) =>
       enter(
         "gang_create_room",
@@ -169,9 +171,9 @@ export function createRoomClient(rpc: Rpc) {
           p_max_players: Math.max(2, Math.min(99, maxPlayers)),
           p_device_kind: "phone",
         },
-        "player",
+        role,
       ),
-    join: (code: string, displayName: string) =>
+    join: (code: string, displayName: string, role: SessionRole = "player") =>
       enter(
         "gang_join_room",
         {
@@ -179,7 +181,7 @@ export function createRoomClient(rpc: Rpc) {
           p_display_name: displayName.trim(),
           p_device_kind: "phone",
         },
-        "player",
+        role,
       ),
     joinDisplay: (code: string) =>
       enter(
@@ -359,6 +361,8 @@ export function createRoomClient(rpc: Rpc) {
         p_player_token: token,
         p_photo_ids: ids,
       }),
+    pairControl: (token: string, roundKey: string, stage: string, kind?: "skip" | "pause" | "finish") =>
+      call<string[] | { accepted: boolean }>("couple_control", { p_player_token: token, p_round_key: roundKey, p_stage: stage, p_kind: kind ?? null }),
     loadRuntime: (token: string) =>
       call<Record<string, unknown> | null>("gang_load_runtime", {
         p_player_token: token,
@@ -392,6 +396,7 @@ export const ROOM_ERROR_COPY: Record<string, string> = {
   stale_stage:
     "Die Zeit oder diese Phase ist vorbei. Der Spielstand wird aktualisiert.",
   room_full: "Der Raum ist voll.",
+  room_limit_reached: "Du hast bereits fünf offene Räume. Beende erst einen bestehenden Abend.",
   display_name_invalid: "Bitte einen Namen mit 1–32 Zeichen.",
   invalid_player_token: "Deine Sitzung ist abgelaufen. Tritt neu bei.",
 };

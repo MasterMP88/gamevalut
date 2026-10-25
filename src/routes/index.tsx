@@ -25,7 +25,7 @@ export const FAQ: [string, string][] = [
   ["Ist NOCTURNE nur für Paare?", "Nein. Es gibt zwei Welten: neun Spiele für zwei Erwachsene und GANG MODE für Freunde, Partys und Gruppen von 2 bis 99 Personen."],
   ["Wie funktioniert GANG MODE?", "Der Host öffnet einen Raum. Alle anderen treten per QR-Code oder Raumcode mit dem eigenen Handy bei – geheime Antworten bleiben so auf dem eigenen Gerät. Optional läuft eine Big-Screen-Ansicht auf dem Fernseher. Wenn nötig, geht es auch mit nur einem Handy zum Weitergeben. Der Party Director plant die Nacht, oder ihr wählt Spiele selbst."],
   ["Braucht jeder einen Account?", "Nein. Gäste im GANG MODE treten ohne Account bei. Ein Account ist für den Host bzw. für euch zu zweit sinnvoll, um Zugang zu verwalten und Spielstände auf jedem Gerät fortzusetzen."],
-  ["Was kostet NOCTURNE?", "Die Free Preview ist kostenlos und lässt euch in ein Spiel bis Szene 5 hineinspielen – ohne Karte. Danach gibt es den Night Pass für 6,99 € einmalig (72 Stunden voller Zugang zu zweit), Unlimited für 9,99 € pro Monat oder Unlimited Year für 49,99 € pro Jahr."],
+  ["Was kostet NOCTURNE?", "Die Free Preview ist kostenlos und lässt euch in ein Spiel bis Szene 5 hineinspielen – ohne Karte. Danach gibt es den Night Pass für 6,99 € einmalig (72 Stunden alle Paarspiele und GANG-Hosting), Unlimited für 9,99 € pro Monat oder Unlimited Year für 49,99 € pro Jahr."],
   ["Zahlt im GANG MODE jeder?", "Nein. Ein Host zahlt, alle spielen. Gäste treten kostenlos per QR-Code oder Raumcode bei und brauchen weder Account noch Abo."],
   ["Brauchen wir mehrere Handys?", "Zu zweit reicht ein Handy. Im GANG MODE ist jedes eigene Handy der empfohlene Weg; wenn nötig, spielt ihr auch mit einem Handy, das herumgereicht wird."],
   ["Was wird gespeichert?", "Mit Account nur der Spielstand: Spiel, Szene, Punkte und Einstellungen. Was ihr euch sagt oder eintippt, wird nicht automatisch gespeichert – außer du sicherst einen Moment ausdrücklich."],
@@ -35,7 +35,7 @@ export const FAQ: [string, string][] = [
 
 const OFFERS = [
   { name: "Free Preview", price: "0 €", per: "", note: "Spielt in ein Spiel hinein – bis Szene 5. Keine Karte nötig.", tag: "" },
-  { name: "Night Pass", key: "night_pass_72h" as const, price: "6,99 €", per: "einmalig", note: "72 Stunden voller Zugang zu zweit. Kein Abo.", tag: "Für heute Nacht" },
+  { name: "Night Pass", key: "night_pass_72h" as const, price: "6,99 €", per: "einmalig", note: "72 Stunden alle Paarspiele und GANG-Hosting. Kein Abo.", tag: "Für heute Nacht" },
   { name: "Unlimited", key: "unlimited_monthly" as const, price: "9,99 €", per: "pro Monat", note: "Alle Spiele, jede Nacht, monatlich kündbar.", tag: "" },
   { name: "Unlimited Year", key: "unlimited_annual" as const, price: "49,99 €", per: "pro Jahr", note: "Alle Spiele, ein Jahr lang. Entspricht 4,17 €/Monat, jährlich abgerechnet.", tag: "Best Value" },
 ] as const;

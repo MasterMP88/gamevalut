@@ -207,6 +207,11 @@ function GamePage() {
 
         {game.id === "pass-the-aux" && <MusicSetup />}
 
+        <section className="mt-8 border-y border-line py-5">
+          <h2 className="font-display text-2xl">Ein Handy oder zwei?</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Ein Handy liegt zwischen euch. Mit zwei Handys wählt ihr gleichzeitig und verdeckt; euer Host lädt per QR-Code ein.</p>
+          <Link to="/together" search={{game:game.id}} className="tap mt-3 inline-flex min-h-12 items-center text-primary">Mit zwei Handys spielen →</Link>
+        </section>
         <div className="sticky bottom-0 -mx-5 mt-10 bg-gradient-to-t from-background via-background to-transparent px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6">
           {session && !session.finished ? (
             <div className="flex flex-col gap-2">

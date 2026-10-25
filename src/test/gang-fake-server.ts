@@ -44,6 +44,7 @@ export function fakeServer() {
       payload: Record<string, unknown>;
     }
   >();
+  const controls = new Map<string, string[]>();
   const privates = new Map<string, Record<string, unknown>>();
   const attempts: Array<{
     roomId: string;
@@ -173,6 +174,14 @@ export function fakeServer() {
       const p = addPlayer(r, "BIG SCREEN", false, "desktop");
       r.version++;
       return { playerToken: p.token, snapshot: snapshot(p) };
+    },
+    couple_control: (a) => {
+      const p=byToken(a["p_player_token"]),r=roomOf(p);
+      if(r.roundKey!==a["p_round_key"] || r.stage!==a["p_stage"]) throw new Error("stale_stage");
+      const k=`${r.id}:${r.roundKey}:${r.stage}`,kind=a["p_kind"];
+      if(kind) {controls.set(k,[...(controls.get(k)??[]),String(kind)]);r.version++;return {accepted:true};}
+      if(r.facilitator!==p.id) throw new Error("facilitator_required");
+      return controls.get(k)??[];
     },
     gang_poll: (a) => ({
       snapshot: handlers["gang_room_snapshot"]!(a),
