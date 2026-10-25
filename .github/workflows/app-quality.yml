@@ -26,7 +26,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm install --include=dev --no-audit --no-fund
+      - name: Install app dependencies
+        run: |
+          rm -f package-lock.json
+          npm install --include=dev --package-lock=false --no-audit --no-fund
       - name: Tests
         run: npm test
       - name: TypeScript
