@@ -323,7 +323,7 @@ export function Player({ game }: { game: GameConfig }) {
         <AlertDialogContent className="rounded-3xl border-line bg-popover">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-display text-3xl font-normal">Nacht wirklich beenden?</AlertDialogTitle>
-            <AlertDialogDescription>Der laufende Spielstand und alle Memory-Anker werden aus dieser Session gelöscht. Gesicherte Nächte bleiben in deinem Verlauf.</AlertDialogDescription>
+            <AlertDialogDescription>Der laufende Spielstand und alle gemerkten Momente dieser Session werden gelöscht. Gesicherte Nächte bleiben in deinem Verlauf.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="min-h-12 rounded-full">Weiterspielen</AlertDialogCancel>
