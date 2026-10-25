@@ -14,7 +14,7 @@ const HOST_COPY: Record<HostStatus, string> = {
   idle: "Director",
   live: "Director · live",
   writing: "Director schreibt mit …",
-  offline: "Aus dem Repertoire",
+  offline: "Director · lokal",
 };
 export function DirectorStatus({ status, className }: { status: HostStatus; className?: string }) {
   const local = status === "offline";
