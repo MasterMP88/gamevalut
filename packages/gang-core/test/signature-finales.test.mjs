@@ -1,16 +1,40 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { advanceGangStage, createGangRuntime, getGangPlaybook, publicGangView, submitGangAction, requiredPlayerIds } from "../dist/index.js";
+import {
+  advanceGangStage,
+  createGangRuntime,
+  getGangPlaybook,
+  publicGangView,
+  submitGangAction,
+  requiredPlayerIds,
+} from "../dist/index.js";
 
 function players(n) {
-  return Array.from({ length: n }, (_, i) => ({ id: "p" + (i + 1), name: "P" + (i + 1) }));
+  return Array.from({ length: n }, (_, i) => ({
+    id: "p" + (i + 1),
+    name: "P" + (i + 1),
+  }));
 }
 function toFinal(gameId, count) {
   const pb = getGangPlaybook(gameId);
-  let s = createGangRuntime({ id: "final-" + gameId, gameId, players: players(count), seed: 41, targetRounds: pb.rounds[0] });
-  if (gameId === "after-dark") { for (const playerId of requiredPlayerIds(s)) s = submitGangAction(s, {playerId,success:true}); s = advanceGangStage(s); }
+  let s = createGangRuntime({
+    id: "final-" + gameId,
+    gameId,
+    players: players(count),
+    seed: 41,
+    targetRounds: pb.rounds[0],
+  });
+  if (gameId === "after-dark") {
+    for (const playerId of requiredPlayerIds(s))
+      s = submitGangAction(s, { playerId, success: true });
+    s = advanceGangStage(s);
+  }
   let guard = 0;
-  while (s.roundNumber < s.targetRounds && guard++ < s.targetRounds * (count * 6 + 12)) s = advanceGangStage(s, { force: true });
+  while (
+    s.roundNumber < s.targetRounds &&
+    guard++ < s.targetRounds * (count * 6 + 12)
+  )
+    s = advanceGangStage(s, { force: true });
   assert.equal(s.roundNumber, s.targetRounds);
   return s;
 }
@@ -30,7 +54,8 @@ test("signature final rounds are material runtime states", () => {
   for (const [id, count, category, seconds] of cases) {
     const s = toFinal(id, count);
     assert.equal(s.round.prompt.category, category, id + " finale category");
-    if (seconds !== undefined) assert.equal(s.round.prompt.seconds, seconds, id + " finale seconds");
+    if (seconds !== undefined)
+      assert.equal(s.round.prompt.seconds, seconds, id + " finale seconds");
   }
 });
 
@@ -44,7 +69,7 @@ test("Blind Majority hides the final question during prediction", () => {
 
 test("After Dark finale is a consent-respecting group ending vote", () => {
   const s = toFinal("after-dark", 4);
-  assert.deepEqual(s.round.stages, ["vote", "reveal", "score"]);
+  assert.deepEqual(s.round.stages, ["vote", "perform", "reveal", "score"]);
   assert.deepEqual(s.round.prompt.options, ["Soft", "Bold", "Stop"]);
   assert.match(s.round.prompt.subline ?? "", /valide/);
 });

@@ -40,12 +40,23 @@ Fortschritt und durchgeführte Prüfungen werden mit der Implementierung ergänz
 - CHAIN/PANIC mit Bereitschaft, tatsächlichen Zügen und Deadline; PANIC drei Durchgänge pro Runde. Große Everyone-In-Gruppen laufen in parallelen Spuren mit höchstens sechs Personen. 99-Personen-Simulation prüft exakt drei Züge pro Person.
 - Stand nach diesen Änderungen: **208/208 App-Tests, 73/73 GANG-Core-Tests, TypeScript und Produktionsbuild bestanden.** Das ist eine technische Zwischenprüfung, keine menschliche Spielspaß- oder Geräteabnahme.
 
+### Validierter Zwischenstand — vollständige Gruppenabläufe
+- SECRET MISSIONS laufen als Nebenaufgabe durch die ganze Nacht: eindeutige private Zuteilung, versiegelte Erfüllung, einmaliger Verdacht, serverseitige Ereignisreihenfolge und Abschluss-Timeline. Im Director optional zubuchbar.
+- PHOTO HUNT überträgt verkleinerte JPEGs mit entfernten Metadaten. Galerie auf Handys und Big Screen; eigene Bilder bleiben vor der Abstimmung verborgen. Anhänge sind serverseitig an Raum, Runde und Eigentümer gebunden. Kein öffentliches Medien-Bucket.
+- DRAW THIS: gleichzeitiges Zeichnen auf Papier und bis zu 24 Rateversuche pro Person am Handy. Erster richtiger, vom Server zeitlich geordneter Tipp zählt. Auf einem Handy wird gemeinsam laut geraten und die zuerst richtige Person ausgewählt. Echte Deadline, kein Warten auf eine bereits fertige Zeichnung.
+- TEAM CHAOS: 31 Aufgaben, zwei private Captain-Karten, rotierende Captains, gleiche aktive Teamgröße und tatsächliche quantitative Ergebnisse statt Ja/Nein. Tabu-Wörter und Zeichenvorlagen erscheinen nicht öffentlich.
+- AFTER DARK: passende Frage-, Abstimmungs- und Aktionsphasen, Antworten ohne Namen, freiwillige Aufgaben und echte Soft-/Bold-Abschlüsse. Stop oder fehlende Abschlusswahl entfernt die letzte Aktion.
+- WHO'S THAT zeigt die gesammelte Titelgalerie. MUSIC DROP übernimmt bei Gruppen nur Crowd-Picks in die Tracklist. Identische Textantworten teilen sich eine Abstimmungsoption und erhalten gemeinsam Punkte; semantische Selbstwahl ist ausgeschlossen.
+- BLUFF: 30 neu redigierte Fakten mit verlinkten NASA-/Museumsquellen und Themenwechsel. Unpräzise alte Trivia ersetzt. Unicode-Normalisierung bewahrt internationale Songtitel.
+- Manuelle Auswahl und Mix bieten 15/30/60/Open End mit realer Rundenplanung; One Phone berücksichtigt Übergabezeit. Paar-Replay behält das gewählte Zeitformat.
+- Polling bündelt Snapshot und Fortschritt in einem RPC, passt Intervalle an, streut Anfragen und verwendet Fehler-Backoff. Private Karten, Runtime und öffentliche Phase werden atomar veröffentlicht, damit niemand veraltete Geheimkarten erhält.
+- Weitere live migrierte, transaktional getestete Änderungen: `20261025103440_audit_missions_and_media.sql`, `20261025105258_audit_live_attempts.sql`, `20261025110553_audit_atomic_publish.sql`. Zugehörige SQL-Fixtures prüfen Datenschutz, eigene Fotoanhänge, Deadlines, Versuchslimits-Zugriff und Rollback bei fehlerhaftem Publish.
+- Stand: **209/209 App-Tests, 85/85 GANG-Core-Tests, TypeScript und Produktionsbuild bestanden.** Der neue App-Test spielt Zeichnen mit drei Handys, falschem Tipp und erfolgreichem zweiten Versuch durch. Die Website selbst ist weiterhin unverändert; die fünf genannten DB-Migrationen sind aktiv.
+
 ### Noch umzusetzen (keine Abnahme vor Abschluss)
-- SECRET MISSIONS als dauerhafte Nebenaufgabe, echte Verdachtsmeldungen und Timeline.
-- Fotoübertragung, anonyme Galerie und Bild-Lebenszyklus; DRAW THIS gleichzeitig, mehrere Tipps und erster richtiger Servertimestamp.
-- TEAM CHAOS vollständige private Aufgaben und quantitative Resultate; AFTER-DARK-Abstimmungen/individuelle Aufgaben auflösen; WHO'S THAT Titelgalerie; Tracklist nur tatsächliche Crowd-Picks.
-- Manuelle Mix-Länge, Wiederspiel-Auswahl und Abschlussdetails; keine starren Durchschnittsangaben bei sehr großen One-Phone-Runden.
+- Explizite automatische Löschfrist für Medien/ephemere Raumdaten und Foto-UX auf echten Mobilgeräten prüfen.
+- Neue Gruppenabläufe visuell vollständig durchspielen; Anleitungen/Katalogtexte mit den fertigen Regeln abgleichen.
 - Paar-Mehrgeräte-Unterstützung; Musik-Provider bzw. FIRST BEAT/TIME DROP nur mit realen Audio-Voraussetzungen.
 - Website: SEO-Detailseiten, OG-Assets, Navigation/Overlays/A11y, deutsche Texte, Vertrauen/Kauf-/Account-Flows, Preisempfehlung des Audits.
 - Sicherheits- und Lastprüfung inklusive transportbezogener Missbrauchsgrenzen, Reconnect, effizientem Polling, Migrationstests, aktuellen Abhängigkeiten.
-- Vollständige Quellcode-/UI-Integration in Lovable und Review/Veröffentlichung. Aktuelle Website bleibt für diesen Zwischenstand unverändert; nur die zwei genannten DB-Migrationen sind aktiv.
+- Vollständige Quellcode-/UI-Integration in Lovable und Review/Veröffentlichung. Aktuelle Website bleibt für diesen Zwischenstand unverändert; die fünf genannten DB-Migrationen sind aktiv.
