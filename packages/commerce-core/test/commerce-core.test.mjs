@@ -17,7 +17,7 @@ test("catalog keeps the approved four offers and exact prices", () => {
   assert.equal(OFFER_BY_KEY.free_preview.amountCents, 0);
   assert.equal(OFFER_BY_KEY.night_pass_72h.amountCents, 699);
   assert.equal(OFFER_BY_KEY.unlimited_monthly.amountCents, 999);
-  assert.equal(OFFER_BY_KEY.unlimited_annual.amountCents, 4999);
+  assert.equal(OFFER_BY_KEY.unlimited_annual.amountCents, 5999);
   assert.equal(OFFER_BY_KEY.unlimited_annual.recommended, true);
 });
 
@@ -60,6 +60,14 @@ test("live Stripe price IDs map only to approved grants", () => {
     productKey: "night_pass_72h",
     source: "stripe",
     durationHours: 72,
+  });
+  assert.deepEqual(grantForStripePrice("price_1UUPekRGuzgtZTcBS2itbNWR"), {
+    productKey: "unlimited_annual",
+    source: "stripe",
+  });
+  assert.deepEqual(grantForStripePrice("price_1UUDZtRGuzgtZTcBkcwhCg10"), {
+    productKey: "unlimited_annual",
+    source: "stripe",
   });
   assert.equal(grantForStripePrice("price_unknown"), null);
 });
