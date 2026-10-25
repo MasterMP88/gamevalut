@@ -21,7 +21,7 @@ export const DETOURS: Scene[] = [
   { ...base, id: "detour-2", type: "MISSION", flavor: "game", phase: 0, title: "Umweg: Küche", emoji: "🍳", prompt: "Ihr habt 3 Zutaten aus dem Kühlschrank. Erfindet daraus einen Snack mit absurdem Namen." },
   { ...base, id: "detour-3", type: "MISSION", flavor: "funny", phase: 1, title: "Umweg: Plattenladen", emoji: "💿", prompt: "{me} legt einen Song auf, {you} muss in 10 Sekunden sagen, in welchem Film er läuft." },
   { ...base, id: "detour-4", type: "MISSION", flavor: "cheeky", phase: 1, title: "Umweg: Spätkauf", emoji: "🛒", prompt: "Spielt in einer Minute: zwei Fremde treffen sich nachts um drei beim Spätkauf. Einer hat nur Kleingeld." },
-  { ...base, id: "detour-5", type: "MISSION", flavor: "deep", phase: 1, title: "Umweg: Dachkante", emoji: "🌃", prompt: "Stellt euch ans Fenster. Jeder zeigt auf ein Licht da draußen und erfindet, wer dort gerade wach ist." },
+  { ...base, id: "detour-5", type: "MISSION", flavor: "deep", phase: 1, title: "Umweg: Skyline", emoji: "🌃", prompt: "Stellt euch ans Fenster. Jeder zeigt auf ein Licht da draußen und erfindet, wer dort gerade wach ist." },
   { ...base, id: "detour-6", type: "MISSION", flavor: "game", phase: 0, title: "Umweg: Sitzplatz", emoji: "🪑", prompt: "Tauscht die Plätze. Die nächste Szene spielt ihr aus der Perspektive des anderen." },
 ];
 

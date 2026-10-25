@@ -291,7 +291,7 @@ function PlayerSetup({
   );
   const ok = count >= range[0] && count <= range[1] && pacing.fits;
   return (
-    <Overlay label="PLAYER SETUP" onClose={onClose}>
+    <Overlay label="WER SPIELT?" onClose={onClose}>
       <div className="flex flex-1 flex-col">
         <p className="mt-4 text-sm text-muted-foreground">
           {queue.map((id) => gangGame(id)?.title).join(" → ")}
@@ -697,8 +697,7 @@ function NightSetup({
           </ol>
           {queue.length === 0 && (
             <p className="mt-4 text-sm text-muted-foreground">
-              Für diese Kombination passt kein Spiel. Ändere Gruppengröße oder
-              Extras.
+              Diese Kombi passt noch nicht. Ändere Gruppengröße oder Extras.
             </p>
           )}
           <button

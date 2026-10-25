@@ -80,7 +80,7 @@ describe("GANG MODE integration", () => {
     click("THE MAJORITY zum Mix");
     expect(screen.getByTestId("mix-order").textContent).toBe("WHO'S THAT? → THE MAJORITY");
     click("Mix starten");
-    expect(screen.getByRole("dialog", { name: "PLAYER SETUP" }).textContent).toContain("WHO'S THAT? → THE MAJORITY");
+    expect(screen.getByRole("dialog", { name: "WER SPIELT?" }).textContent).toContain("WHO'S THAT? → THE MAJORITY");
   });
 
   it("a mix transitions from game 1 to game 2 via intermission", () => {

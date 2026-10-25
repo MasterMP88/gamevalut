@@ -25,7 +25,7 @@ describe("AI surfaces render only real data", () => {
   });
   it("local fallback never reads like an error", () => {
     render(<DirectorStatus status="offline" />);
-    expect(document.body.textContent).toMatch(/Repertoire/);
+    expect(document.body.textContent).toMatch(/Director · lokal/);
     expect(document.body.textContent).not.toMatch(/error|fehler|offline|API/i);
   });
 });

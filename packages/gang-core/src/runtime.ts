@@ -831,7 +831,7 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
       headline:
         winners.length > 1
           ? "Der Raum ist gespalten."
-          : "Das ist die Mehrheit.",
+          : "Der Raum hat entschieden.",
       detail: correct.length
         ? `${correct.length} Personen haben den Raum richtig gelesen.`
         : "Niemand hat diese Mehrheit kommen sehen.",
@@ -973,14 +973,14 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
     return {
       headline:
         targets.length === 0
-          ? "Diese Runde bleibt ohne Crowd-Pick."
+          ? "Kein Favorit. Der Raum bleibt gespalten."
           : targets.length > 1
             ? "Der Raum kann sich nicht entscheiden."
             : `${playerName(targets[0] ?? "")} nimmt die Runde.`,
       detail:
         gameId === "music-drop"
-          ? "Der Crowd-Pick wandert in die Tracklist."
-          : "Crowd-Vote abgeschlossen.",
+          ? "Der Favorit wandert in die Tracklist."
+          : "Der Raum hat entschieden.",
       winners: targets,
       scoreDelta: delta,
       revealItems: Object.values(answers).map((action) => ({
@@ -1101,7 +1101,7 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
         ? "ONE OF YOU wurde gefunden."
         : "ONE OF YOU bleibt unsichtbar.",
       detail: round.oddPlayerId
-        ? `Odd Player: ${playerName(round.oddPlayerId)}.`
+        ? `Die andere Frage hatte: ${playerName(round.oddPlayerId)}.`
         : "",
       winners: caught
         ? [round.oddPlayerId!].filter(Boolean)
@@ -1159,7 +1159,7 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
     return {
       headline: winningTeam
         ? `Team ${winningTeam} nimmt ${round.number === state.targetRounds ? "das Finale" : "die Runde"}.`
-        : "Dead heat.",
+        : "Unentschieden. Natürlich.",
       detail: `Team A ${rateA} · Team B ${rateB} ${round.prompt.teamChallenge?.metric ?? "Erfolgsquote"}${comeback ? ` · Comeback-Chip ${winningTeam}: +1` : ""}`,
       winners,
       scoreDelta: delta,
@@ -1217,7 +1217,7 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
           ? players
               .map((p) => `${p.name}: ${strikes[p.id] ?? 0}/3 Strikes`)
               .join(" · ") + ". In der nächsten Runde sind alle wieder dabei."
-          : "Wiederholungen und Zeitüberschreitungen brechen den gemeinsamen Streak. Die Verbindung zwischen Wörtern beurteilt ihr im Raum.",
+          : "Wiederholung oder zu spät: Die Kette reißt. Ob eine Verbindung zählt, entscheidet ihr im Raum.",
       winners: Object.keys(delta).filter((id) => delta[id]! > 0),
       scoreDelta: delta,
       revealItems: items,
@@ -1290,8 +1290,8 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
   }
 
   return {
-    headline: "Runde beendet.",
-    detail: "Weiter zur nächsten Runde.",
+    headline: "Runde durch.",
+    detail: "Nächste? Natürlich.",
     winners: [],
     scoreDelta: delta,
   };

@@ -17,15 +17,15 @@ import { PriceAction } from "@/components/commerce/PriceAction";
 
 const URL = "https://nocturne-games-for-two.lovable.app/";
 
-const TITLE = "NOCTURNE — Spiele für Paare & Partyspiele für Gruppen · Game Night online";
-const DESC = "Interaktive Game Night im Browser: neun Date-Night-Spiele für Paare und GANG MODE mit Gruppenspielen für 2–99 Leute. Sofort spielbar, kein Download. Im GANG MODE zahlt nur der Host.";
+const TITLE = "NOCTURNE — Spiele für Paare & GANG MODE · Game Night online";
+const DESC = "Digitale Date-Night- und Partyspiele im Browser: neun Games für zwei und GANG MODE für 2–99 Leute. Kein Download, keine Regelhürde. Ein Host zahlt, alle spielen.";
 
 export const FAQ: [string, string][] = [
   ["Was ist NOCTURNE?", "NOCTURNE ist eine Plattform für interaktive Spieleabende im Browser. Zu zweit spielt ihr neun Date-Night-Spiele mit Fragen, Timern, geheimen Wahlen, Duellen und einem Director. Im GANG MODE spielen 2 bis 99 Leute Partyspiele gemeinsam."],
   ["Ist NOCTURNE nur für Paare?", "Nein. Es gibt zwei Welten: neun Spiele für zwei Erwachsene und GANG MODE für Freunde, Partys und Gruppen von 2 bis 99 Personen."],
   ["Wie funktioniert GANG MODE?", "GANG MODE passt die Spielweise an das Game und eure Runde an: gemeinsam auf TV oder Laptop, mit nur einem Handy oder – wenn geheime Antworten, Buzzer oder persönliche Entscheidungen davon profitieren – mit allen Geräten per QR-Code oder Raumcode. Der Party Director empfiehlt den passenden Aufbau, oder ihr wählt ein Spiel selbst."],
   ["Braucht jeder einen Account?", "Nein. Gäste im GANG MODE treten ohne Account bei. Ein Account ist für den Host bzw. für euch zu zweit sinnvoll, um Zugang zu verwalten und Spielstände auf jedem Gerät fortzusetzen."],
-  ["Was kostet NOCTURNE?", "Die Free Preview ist kostenlos und lässt euch in ein Spiel bis Szene 5 hineinspielen – ohne Karte. Danach gibt es den Night Pass für 6,99 € einmalig (72 Stunden alle Paarspiele und GANG-Hosting), Unlimited für 9,99 € pro Monat oder Unlimited Year für 49,99 € pro Jahr."],
+  ["Was kostet NOCTURNE?", "Die Free Preview ist kostenlos und lässt euch bis Szene 5 hineinspielen – ohne Karte. Danach gibt es den Night Pass für 6,99 € einmalig (72 Stunden alle Games inklusive GANG-Hosting), Unlimited für 9,99 € pro Monat oder Unlimited Year für 59,99 € pro Jahr."],
   ["Zahlt im GANG MODE jeder?", "Nein. Ein Host zahlt, alle spielen. Gäste brauchen weder Account noch Abo. Wenn ein Game Everyone In nutzt, treten sie kostenlos per QR-Code oder Raumcode bei."],
   ["Brauchen wir mehrere Handys?", "Nein. Im GANG MODE reicht für viele Games ein einziges Gerät, andere funktionieren am besten gemeinsam auf TV oder Laptop. Eigene Handys kommen nur dort ins Spiel, wo Everyone In das Erlebnis wirklich besser macht."],
   ["Was wird gespeichert?", "Mit Account nur der Spielstand: Spiel, Szene, Punkte und Einstellungen. Was ihr euch sagt oder eintippt, wird nicht automatisch gespeichert – außer du sicherst einen Moment ausdrücklich."],
@@ -37,7 +37,7 @@ const OFFERS = [
   { name: "Free Preview", price: "0 €", per: "", note: "Spielt in ein Spiel hinein – bis Szene 5. Keine Karte nötig.", tag: "" },
   { name: "Night Pass", key: "night_pass_72h" as const, price: "6,99 €", per: "einmalig", note: "72 Stunden alle Paarspiele und GANG-Hosting. Kein Abo.", tag: "Für heute Nacht" },
   { name: "Unlimited", key: "unlimited_monthly" as const, price: "9,99 €", per: "pro Monat", note: "Alle Spiele, jede Nacht, monatlich kündbar.", tag: "" },
-  { name: "Unlimited Year", key: "unlimited_annual" as const, price: "49,99 €", per: "pro Jahr", note: "Alle Spiele, ein Jahr lang. Entspricht 4,17 €/Monat, jährlich abgerechnet.", tag: "Best Value" },
+  { name: "Unlimited Year", key: "unlimited_annual" as const, price: "59,99 €", per: "pro Jahr", note: "Ein Jahr NOCTURNE für rund 5 € pro Monat. Alle Drops und neuen Games inklusive.", tag: "Best Value" },
 ] as const;
 
 export const Route = createFileRoute("/")({
@@ -105,7 +105,7 @@ function Home() {
             Eine Nacht. Zwei Menschen. <em className="text-primary">Oder der ganze Raum.</em>
           </h1>
           <p className="mt-4 max-w-xl text-base leading-snug text-foreground/80 animate-rise sm:text-lg" style={{ animationDelay: "200ms" }}>
-            Interaktive Spiele für Paare und Gruppen – direkt im Browser, ohne Download. Neun Date-Night-Spiele zu zweit oder GANG MODE für 2–99 Leute.
+            Keine Karten. Kein Download. Kein Regelvortrag. Neun Games für zwei oder GANG MODE für 2–99 – plus neue Drops, damit die nächste Nacht nicht dieselbe wird.
           </p>
           <div className="mt-7 flex flex-col gap-3 animate-rise sm:flex-row" style={{ animationDelay: "280ms" }}>
             <a href="#zu-zweit" onClick={() => haptic()} className={btn({ size: "lg" })}>Zu zweit spielen <ArrowRight className="size-5" /></a>
@@ -139,7 +139,7 @@ function Home() {
             <a href="#zu-zweit" className="tap group flex flex-col bg-background p-6 sm:p-8">
               <span className="font-mono text-xs tracking-[0.25em] text-champagne">FOR TWO · 9 SPIELE · AB 18</span>
               <span className="font-display mt-3 text-[clamp(2.4rem,9vw,3.6rem)] leading-[0.9]">Zu zweit. <em className="text-primary">Ganz nah.</em></span>
-              <span className="mt-3 text-foreground/80">Date-Night-Spiele für Paare: intim, verspielt, kooperativ oder im Duell. Ein Handy liegt zwischen euch, der Director spielt mit.</span>
+              <span className="mt-3 text-foreground/80">Date-Night-Spiele für Paare: intim, verspielt, kooperativ oder im Duell. Ein Gerät reicht. Mit zwei Handys bleiben geheime Entscheidungen wirklich geheim.</span>
               <span className="eyebrow mt-6 inline-flex items-center gap-2 text-foreground">Spiele zu zweit <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
             </a>
             <Link to="/gang" className="tap group relative flex flex-col overflow-hidden bg-room p-6 sm:p-8">
@@ -207,7 +207,7 @@ function Home() {
           </div>
           <p className="relative mt-8 font-mono text-xs tracking-[0.25em] text-signal">GANG MODE · 2–99 PLAYER</p>
           <h2 id="gang-h" className="font-display relative mt-2 text-[clamp(2.6rem,11vw,5rem)] leading-[0.9]">Der ganze Raum <em className="text-signal">wird zum Spiel.</em></h2>
-          <p className="relative mt-3 max-w-xl text-foreground/85">Gruppenspiele für Freunde, Partys und Game Nights – ohne Vorbereitung und ohne Geräte-Zwang. Der Party Director kombiniert passende Games und berücksichtigt, ob TV, ein gemeinsames Handy oder Everyone In das stärkste Erlebnis liefert.</p>
+          <p className="relative mt-3 max-w-xl text-foreground/85">Gruppenspiele für Freunde, Partys und Game Nights – ohne Vorbereitung und ohne Geräte-Zwang. Der Party Director baut den Abend; ihr spielt auf TV, mit einem Handy oder alle gleichzeitig. Was gerade besser ist.</p>
           <ol className="relative mt-8 grid gap-6 sm:grid-cols-3">
             {[
               ["Big Screen", "Für den ganzen Raum", "TV oder Laptop wird zur gemeinsamen Bühne: Fragen, Countdowns, Musik und Ergebnisse gehören allen – eigene Handys sind nicht automatisch nötig."],
@@ -233,11 +233,11 @@ function Home() {
             <h2 id="how-h" className="font-display mt-2 text-[clamp(2.4rem,10vw,4rem)] leading-[0.95]">Browser auf, Spiel an. Kein Download.</h2>
             <div className="mt-10 grid gap-12 lg:grid-cols-2">
               <div>
-                <h3 className="eyebrow text-champagne">Zu zweit · ein Handy</h3>
+                <h3 className="eyebrow text-champagne">Zu zweit · ein oder zwei Handys</h3>
                 <ol className="mt-4 space-y-6">
                   {[
-                    ["Wer dran ist, steht oben", "Der Name ist groß. Die Aufgabe darunter sagt genau, was jetzt zu tun ist: laut antworten, tippen, Timer starten."],
-                    ["Handy weitergeben", "Bei geheimen Wahlen sagt das Spiel, wann ihr übergebt und wer kurz wegschaut."],
+                    ["Sofort starten", "Ein Gerät reicht. Die Aufgabe sagt klar, was jetzt zu tun ist: reden, wählen, Timer starten."],
+                    ["Geheim bleibt geheim", "Für Sync, Vorhersagen und verdeckte Wahlen könnt ihr ein zweites Handy per QR dazunehmen. Kein Herumreichen nötig."],
                     ["Euer Rahmen", "Berührung, Sinnliches, Drinks: jederzeit an oder aus. Skip ist immer sichtbar und kostet nie etwas."],
                   ].map(([t, d], i) => (
                     <li key={t} className="flex gap-4"><span className="font-mono text-sm text-champagne">0{i + 1}</span><div><p className="font-display text-2xl leading-tight">{t}</p><p className="mt-1 text-muted-foreground">{d}</p></div></li>
@@ -250,7 +250,7 @@ function Home() {
                   {[
                     ["Game wählen oder Director starten", "Der Host startet eine Director-Nacht, ein einzelnes Spiel oder einen eigenen Mix."],
                     ["Passender Aufbau statt Geräte-Zwang", "Je nach Game spielt ihr gemeinsam auf TV oder Laptop, mit einem Handy oder tretet für private Mechaniken per QR-Code bei."],
-                    ["Spielen, reagieren, lachen", "Der Bildschirm tritt in den Hintergrund: reden, rufen, bluffen, buzzern, abstimmen oder gemeinsam entscheiden – so, wie das Game es braucht."],
+                    ["Spielen, reagieren, lachen", "Reden, rufen, bluffen, buzzern, abstimmen. Der Bildschirm macht nur so viel mit, wie das Game wirklich braucht."],
                   ].map(([t, d], i) => (
                     <li key={t} className="flex gap-4"><span className="font-mono text-sm text-signal">0{i + 1}</span><div><p className="font-display text-2xl leading-tight">{t}</p><p className="mt-1 text-muted-foreground">{d}</p></div></li>
                   ))}
@@ -263,7 +263,7 @@ function Home() {
         {/* PRICING */}
         <section id="preise" aria-labelledby="price-h" className="mt-24 scroll-mt-4">
           <p className="eyebrow">Zugang</p>
-          <h2 id="price-h" className="font-display mt-2 text-[clamp(2.4rem,10vw,4rem)] leading-[0.95]">Erst reinspielen. <em className="text-primary">Dann entscheiden.</em></h2>
+          <h2 id="price-h" className="font-display mt-2 text-[clamp(2.4rem,10vw,4rem)] leading-[0.95]">Erst spielen. <em className="text-primary">Dann entscheiden.</em></h2>
           <p className="mt-3 max-w-xl text-muted-foreground">Die Free Preview führt euch bis Szene 5. Keine Unterbrechung mitten in einer Runde: Erst wenn die Vorschau endet, erscheint die Wahl, wie ihr weiterspielen wollt.</p>
           <ul className="mt-10 divide-y divide-line border-y border-line">
             {OFFERS.map((o) => {
@@ -344,9 +344,9 @@ function Home() {
         {/* FINAL CTA */}
         <section aria-labelledby="cta-h" className="mt-24 text-center">
           <Mark className="mx-auto size-12 text-champagne" />
-          <h2 id="cta-h" className="font-display mx-auto mt-6 max-w-2xl text-[clamp(2.6rem,11vw,5rem)] leading-[0.92]">Heute Nacht spielt ihr.</h2>
+          <h2 id="cta-h" className="font-display mx-auto mt-6 max-w-2xl text-[clamp(2.6rem,11vw,5rem)] leading-[0.92]">Heute Abend wird interessant.</h2>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link to="/game/$slug" params={{ slug: DIRECTOR_SLUG }} onClick={() => haptic()} className={btn({ size: "lg" })}>Zu zweit <ArrowRight className="size-5" /></Link>
+            <Link to="/game/$slug" params={{ slug: DIRECTOR_SLUG }} onClick={() => haptic()} className={btn({ size: "lg" })}>Zu zweit starten <ArrowRight className="size-5" /></Link>
             <Link to="/gang" onClick={() => haptic()} className={cn(btn({ size: "lg" }), "bg-signal text-signal-foreground hover:bg-signal/90")}>GANG MODE <ArrowRight className="size-5" /></Link>
           </div>
         </section>

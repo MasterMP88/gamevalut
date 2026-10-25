@@ -167,7 +167,7 @@ function GamePage() {
                   maxLength={24}
                   onChange={(e) => { const pl = [...players] as [string, string]; pl[i] = e.target.value; setPlayers(pl); }}
                   autoComplete="off"
-                  placeholder={i === 0 ? "Name · sonst Ari" : "Name · sonst Nova"}
+                  placeholder={i === 0 ? "z. B. Alex" : "z. B. Sam"}
                   className="mt-1 block w-full bg-transparent text-lg text-foreground outline-none placeholder:text-muted-foreground/60"
                 />
               </label>
@@ -224,7 +224,7 @@ function GamePage() {
               <Btn variant="ghost" onClick={() => { end(game.id); setRemote(null); begin(); }}>Neu beginnen</Btn>
             </div>
           ) : (
-            <Btn size="lg" className="w-full" onClick={begin}>{game.ai ? "Director starten →" : "Die Nacht beginnt →"}</Btn>
+            <Btn size="lg" className="w-full" onClick={begin}>{game.ai ? "Director starten →" : "Los geht’s →"}</Btn>
           )}
         </div>
       </main>

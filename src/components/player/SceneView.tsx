@@ -99,8 +99,7 @@ export function SceneView(props: SceneProps) {
       )}
       <div className="flex items-center gap-3">
         <span className={cn("eyebrow", glitch && "text-primary", scene.type === "ECHO" && "text-violet")}>{TYPE_LABEL[scene.type]}</span>
-        {props.director && scene.source === "ai" && <span className="eyebrow text-champagne">· neu geschrieben</span>}
-        {props.director && scene.source !== "ai" && scene.type !== "ECHO" && !cut && <span className="eyebrow text-muted-foreground/70">· aus dem Repertoire</span>}
+        {props.director && scene.source === "ai" && <span className="eyebrow text-champagne">· nur für heute</span>}
       </div>
       <p data-testid="scene-cue" className="mt-1.5 flex items-center gap-2 text-[0.8rem] tracking-wide text-muted-foreground">
         <span className="h-px w-4 bg-current opacity-60" aria-hidden />
