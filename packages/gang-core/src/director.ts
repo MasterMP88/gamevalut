@@ -1,8 +1,9 @@
+import { getGangPlaybook } from "./playbooks.js";
 import { eligibleGangGames } from "./catalog.js";
 import {
   estimatedGameMinutes,
   preferredInteractionMode,
-  targetGameCount,
+
 } from "./session.js";
 import type {
   DirectorContext,
@@ -22,6 +23,9 @@ function scoreCandidate(game: GangGameDefinition, context: DirectorContext): num
   score -= Math.abs(game.energy - context.preferences.energyTarget) * 8;
 
   if (recentIds.has(game.id)) score -= 45;
+  if (context.history.some((h) => h.gameId === game.id)) score -= 18;
+  const moodTags: Record<string, string[]> = { chill: ["social-vote", "prediction"], funny: ["story", "bluff"], wild: ["physical", "photo"], spicy: ["after-dark"], chaos: ["reaction", "team"] };
+  for (const mood of context.preferences.moods) if (game.mechanics.some((m) => moodTags[mood]?.includes(m))) score += 10;
   if (last && game.mechanics.includes(last.primaryMechanic)) score -= 32;
 
   const unseenMechanics = game.mechanics.filter((mechanic) => !recentMechanics.has(mechanic));
@@ -42,7 +46,7 @@ export function pickNextGangGame(context: DirectorContext): DirectorPick | null 
   if (!candidates.length) return null;
 
   const ranked = candidates
-    .map((game) => ({ game, score: scoreCandidate(game, context) }))
+    .map((game) => ({ game, score: scoreCandidate(game, context) + jitter(game.id, context.seed ?? 1) * 14 }))
     .sort((a, b) => b.score - a.score || a.game.id.localeCompare(b.game.id));
 
   const game = ranked[0]!.game;
@@ -60,36 +64,57 @@ export function pickNextGangGame(context: DirectorContext): DirectorPick | null 
   return { game, interactionMode, reason };
 }
 
+/** Conservative pacing model, including reveal time and onboarding. Physical play can run longer. */
+export function roundSeconds(gameId: string, playerCount: number, devices = playerCount): number {
+  const base: Record<string, number> = {
+    "the-majority": 65, "whos-that": 50, undercover: 145, "secret-missions": 600,
+    "bad-answers-only": 95, bluff: 100, "the-line": 75, "hot-seat": 60,
+    "team-chaos": 110, "photo-hunt": 100, "draw-this": 85, "music-drop": 110,
+    "chain-reaction": 30 + (devices >= playerCount && playerCount > 8 ? 6 : playerCount) * 8, "one-of-you": 110, "panic-button": 25 + (devices >= playerCount && playerCount > 8 ? 6 : playerCount) * 3 * 7, "after-dark": 80,
+  };
+  const pass = devices < playerCount ? Math.max(0, playerCount - 2) * 7 : 0;
+  return (base[gameId] ?? 90) + pass;
+}
+function jitter(id: string, seed: number): number {
+  let h = seed | 0;
+  for (const c of id) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  h = Math.imul(h ^ (h >>> 16), 2246822507);
+  return (h >>> 0) / 4294967296;
+}
 export function buildDirectorPlan(context: DirectorContext): GangPlan {
-  const count = targetGameCount(context.preferences.durationMinutes);
+  const budget = context.preferences.durationMinutes;
+  const seconds = (budget ?? 60) * 60;
+  const available = eligibleGangGames(context.preferences, { directorOnly: true, includePlanned: false })
+    .filter((g) => g.id !== "secret-missions"); // background side quest, never a blocking slot
   const history = [...context.history];
   const gameIds: string[] = [];
-  let estimatedMinutes = 0;
-
-  for (let i = 0; i < count; i += 1) {
-    const pick = pickNextGangGame({ ...context, history });
-    if (!pick) break;
-
-    gameIds.push(pick.game.id);
-    estimatedMinutes += estimatedGameMinutes(pick.game);
-    history.push({
-      gameId: pick.game.id,
-      primaryMechanic: pick.game.mechanics[0]!,
-      energy: pick.game.energy,
-    });
-
-    const available = eligibleGangGames(context.preferences, {
-      directorOnly: true,
-      includePlanned: false,
-    });
-    if (new Set(gameIds).size >= available.length) break;
+  const roundsByGame: Record<string, number> = {};
+  let spent = 0;
+  const maxTitles = budget === 15 ? 2 : budget === 30 ? 3 : 5;
+  while (gameIds.length < maxTitles) {
+    const remaining = available.filter((g) => !gameIds.includes(g.id));
+    const energy = gameIds.length === 0 ? Math.min(3, context.preferences.energyTarget) : context.preferences.energyTarget;
+    const ranked = remaining.map((game) => ({ game, score: scoreCandidate(game, { ...context, history, preferences: { ...context.preferences, energyTarget: energy as 1 | 2 | 3 | 4 | 5 } }) + jitter(game.id, context.seed ?? 1) * 14 }))
+      .sort((a,b) => b.score - a.score || a.game.id.localeCompare(b.game.id));
+    const candidate = ranked.find(({game}) => spent + 45 + 2 * roundSeconds(game.id, context.preferences.playerCount, context.deviceContext.connectedDevices) <= seconds);
+    if (!candidate) break;
+    const game = candidate.game;
+    gameIds.push(game.id);
+    roundsByGame[game.id] = 2;
+    spent += 45 + 2 * roundSeconds(game.id, context.preferences.playerCount, context.deviceContext.connectedDevices);
+    history.push({ gameId: game.id, primaryMechanic: game.mechanics[0]!, energy: game.energy });
   }
-
-  return {
-    entryMode: "director",
-    gameIds,
-    estimatedMinutes,
-  };
+  // Fill the remaining budget evenly, without adding repetitive titles.
+  let added = true;
+  while (added) {
+    added = false;
+    for (const id of gameIds) {
+      const cost = roundSeconds(id, context.preferences.playerCount, context.deviceContext.connectedDevices);
+      const max = getGangPlaybook(id)?.rounds[1] ?? 12;
+      if (roundsByGame[id]! < max && spent + cost <= seconds) { roundsByGame[id]!++; spent += cost; added = true; }
+    }
+  }
+  return { entryMode: "director", gameIds, roundsByGame, estimatedMinutes: Math.ceil(spent / 60), budgetMinutes: budget };
 }
 
 export function buildMixPlan(games: readonly GangGameDefinition[]): GangPlan {

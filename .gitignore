@@ -1,0 +1,16 @@
+node_modules/
+.output/
+.tanstack/
+.nitro/
+dist/
+dist-test/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+
+
+node_modules
+.wrangler/
+supabase/.temp/

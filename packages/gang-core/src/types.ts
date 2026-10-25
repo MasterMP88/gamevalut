@@ -73,6 +73,7 @@ export interface DirectorContext {
   preferences: GangPreferences;
   history: DirectorHistoryItem[];
   deviceContext: DeviceContext;
+  seed?: number;
 }
 
 export interface DirectorPick {
@@ -91,6 +92,9 @@ export interface GangPlan {
   entryMode: GangEntryMode;
   gameIds: string[];
   estimatedMinutes: number;
+  /** Actual round limits consumed by every runtime adapter. */
+  roundsByGame?: Record<string, number>;
+  budgetMinutes?: number | null;
 }
 
 

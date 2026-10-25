@@ -1,3 +1,4 @@
+import { EXTRA_PROMPTS } from "./extra-prompts.js";
 import type { GameCapability, GameMechanic } from "./types.js";
 
 export type GangGameId =
@@ -35,6 +36,7 @@ export interface GangPrompt {
   subline?: string;
   options?: string[];
   answer?: string;
+  aliases?: string[];
   altPrompt?: string;
   seconds?: number;
   category?: string;
@@ -222,8 +224,8 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     minPlayers: 3,
     maxPlayers: 20,
     rounds: [5, 9],
-    stages: ["answer", "vote", "reveal", "score"],
-    scoring: "2 Punkte für die Wahrheit, 1 Punkt pro Person, die auf deine Lüge fällt.",
+    stages: ["private", "answer", "vote", "reveal", "score"],
+    scoring: "Die wechselnde Wahrheitsperson pausiert. 2 Punkte für die Wahrheit, 1 Punkt pro Person, die auf deine Lüge fällt.",
     finale: "Finale: Treffer auf die Wahrheit zählen doppelt — gute Lügen bleiben trotzdem gefährlich.",
     capabilities: [],
     prompts: prompts("bluff", [
@@ -248,7 +250,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     minPlayers: 4,
     maxPlayers: 99,
     rounds: [4, 9],
-    stages: ["private", "perform", "reveal"],
+    stages: ["perform", "reveal"],
     scoring: "Optional 1 Punkt für exakte Nachbarschaften; standardmäßig spielt ihr um den Reveal, nicht um Tabellen.",
     finale: "Silent Line: komplett ohne Sprechen, erst danach darf diskutiert werden.",
     capabilities: [],
@@ -301,18 +303,18 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     maxPlayers: 99,
     rounds: [6, 12],
     stages: ["perform", "react", "reveal", "score"],
-    scoring: "Rundensieg = 2 Punkte; Underdog-Team bekommt nach zwei Niederlagen einen 1-Punkt-Comeback-Chip.",
+    scoring: "Rundensieg = 2 Punkte; Underdog-Team bekommt nach zwei Niederlagen einen 1-Punkt-Comeback-Chip, automatisch beim nächsten Sieg nach zwei Niederlagen (einmal je Team).",
     finale: "Finale: Die letzte Team-Challenge zählt doppelt.",
     capabilities: [],
     prompts: prompts("team", [
       { prompt: "Nennt abwechselnd Dinge, die man im Hotelzimmer findet. 5 Sekunden pro Antwort.", seconds: 5, category: "Kette" },
-      { prompt: "Eine Person pro Team beschreibt denselben Begriff ohne die drei offensichtlichen Wörter.", answer: "Urlaub", category: "Tabu" },
+      { prompt: "Eine Person pro Team beschreibt denselben Begriff ohne die drei offensichtlichen Wörter.", answer: "Urlaub", subline: "Begriff: Urlaub. Tabu: Reise, frei, Ferien. Je Team beschreibt eine Person, die anderen raten. Nur die Beschreibenden schauen aufs Display.", category: "Tabu" },
       { prompt: "Beide Teams wählen geheim 0–5 Finger. Welches Team trifft die Gesamtsumme besser?", category: "Prediction" },
       { prompt: "30 Sekunden: Baut aus Gegenständen am Tisch den höchsten freistehenden Turm.", seconds: 30, category: "Build" },
-      { prompt: "Eine Person mimt drei Begriffe. Wie viele schafft das Team in 30 Sekunden?", seconds: 30, category: "Mime" },
+      { prompt: "Eine Person mimt drei Begriffe. Wie viele schafft das Team in 30 Sekunden?", seconds: 30, subline: "Begriffe für die Darstellenden: Zahnarzt · Pinguin · Waschmaschine. Alle anderen schauen weg. Pro erkanntem Begriff ein Treffer.", category: "Mime" },
       { prompt: "Nennt Songs mit einer Farbe im Titel. Kein Titel doppelt.", seconds: 5, category: "Music" },
       { prompt: "Schätzt gemeinsam: Wie viele ungelesene Nachrichten hat euer Team zusammen?", category: "Estimate" },
-      { prompt: "Eine Person zeichnet mit geschlossenen Augen einen Gegenstand, Team muss ihn erkennen.", seconds: 25, category: "Draw" },
+      { prompt: "Eine Person zeichnet mit geschlossenen Augen einen Gegenstand, Team muss ihn erkennen.", seconds: 25, subline: "Begriff für die Zeichnenden: Gießkanne. Ratende schauen weg.", category: "Draw" },
       { prompt: "Findet in 20 Sekunden fünf Gegenstände, die mit demselben Buchstaben beginnen.", seconds: 20, category: "Hunt" },
       { prompt: "Sagt abwechselnd Städte. Wer länger als 4 Sekunden braucht, verliert die Runde.", seconds: 4, category: "Chain" },
     ]),
@@ -506,7 +508,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     minPlayers: 2,
     maxPlayers: 20,
     rounds: [6, 12],
-    stages: ["private", "vote", "perform", "reveal"],
+    stages: ["vote", "perform", "reveal"],
     scoring: "Standardmäßig ohne Punkte. Optional kann die Gruppe Reactions sammeln.",
     finale: "Die Runde wählt gemeinsam zwischen Soft, Bold oder Stop – jede Option ist ein valides Ende.",
     capabilities: ["spicy"],
@@ -524,7 +526,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
       { prompt: "Final Choice: Soft, Bold oder Stop?", options: ["Soft", "Bold", "Stop"] },
     ]),
   },
-] as const;
+].map((p) => ({ ...p, prompts: [...p.prompts, ...(EXTRA_PROMPTS[p.id as GangGameId] ?? [])] })) as GangPlaybook[];
 
 export function getGangPlaybook(id: string): GangPlaybook | undefined {
   return GANG_PLAYBOOKS.find((playbook) => playbook.id === id);

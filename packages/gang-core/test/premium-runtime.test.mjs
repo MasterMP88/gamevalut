@@ -66,6 +66,7 @@ test("hot seat accepts exactly the spotlight player in the private choice stage"
 });
 
 function genericAction(state, playerId, index) {
+  if (state.gameId === "after-dark" && publicGangView(state).stage === "private") return {playerId, success:true};
   const view = publicGangView(state);
   const firstOption = view.options?.[0];
   if (view.stage === "vote") {
@@ -113,7 +114,7 @@ test("every generic Gang game can complete a full round without a dead-end", () 
     const firstRound = state.roundNumber;
     let guard = 0;
 
-    while (!state.finished && state.roundNumber === firstRound && guard < 20) {
+    while (!state.finished && state.roundNumber === firstRound && guard < state.players.length * 6 + 12) {
       guard += 1;
       const view = publicGangView(state);
       for (const [index, playerId] of requiredPlayerIds(state).entries()) {
@@ -165,7 +166,7 @@ test("generic Gang sessions do not repeat prompts before the authored pool is ex
 
       const roundNumber = state.roundNumber;
       let guard = 0;
-      while (!state.finished && state.roundNumber === roundNumber && guard < 20) {
+      while (!state.finished && state.roundNumber === roundNumber && guard < state.players.length * 6 + 12) {
         guard += 1;
         for (const [index, playerId] of requiredPlayerIds(state).entries()) {
           state = submitGangAction(state, genericAction(state, playerId, index));
@@ -186,6 +187,8 @@ test("majority runtime resolves tied room votes and scores only matching predict
     players: players(4),
     seed: 91,
   });
+  // Deliberate three-option fixture: tie scoring must not depend on a random content card.
+  state = { ...state, round: { ...state.round, prompt: { ...state.round.prompt, options: ["X","Y","Z"] } } };
   const options = state.round.prompt.options;
   assert.ok(options && options.length >= 3);
   const [x, y, z] = options;

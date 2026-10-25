@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { advanceGangStage, createGangRuntime, getGangPlaybook, publicGangView } from "../dist/index.js";
+import { advanceGangStage, createGangRuntime, getGangPlaybook, publicGangView, submitGangAction, requiredPlayerIds } from "../dist/index.js";
 
 function players(n) {
   return Array.from({ length: n }, (_, i) => ({ id: "p" + (i + 1), name: "P" + (i + 1) }));
@@ -8,8 +8,9 @@ function players(n) {
 function toFinal(gameId, count) {
   const pb = getGangPlaybook(gameId);
   let s = createGangRuntime({ id: "final-" + gameId, gameId, players: players(count), seed: 41, targetRounds: pb.rounds[0] });
+  if (gameId === "after-dark") { for (const playerId of requiredPlayerIds(s)) s = submitGangAction(s, {playerId,success:true}); s = advanceGangStage(s); }
   let guard = 0;
-  while (s.roundNumber < s.targetRounds && guard++ < 200) s = advanceGangStage(s, { force: true });
+  while (s.roundNumber < s.targetRounds && guard++ < s.targetRounds * (count * 6 + 12)) s = advanceGangStage(s, { force: true });
   assert.equal(s.roundNumber, s.targetRounds);
   return s;
 }
@@ -50,7 +51,8 @@ test("After Dark finale is a consent-respecting group ending vote", () => {
 
 test("One Of You finale differs in exactly one semantic pivot", () => {
   const s = toFinal("one-of-you", 4);
-  assert.match(s.round.prompt.prompt, /BESTE/);
-  assert.match(s.round.prompt.altPrompt ?? "", /SCHLIMMSTE/);
-  assert.equal(s.round.prompt.prompt.replace("BESTE", "X"), (s.round.prompt.altPrompt ?? "").replace("SCHLIMMSTE", "X"));
+  const normal = s.round.prompt.prompt.split(" ");
+  const odd = (s.round.prompt.altPrompt ?? "").split(" ");
+  assert.equal(normal.length, odd.length);
+  assert.equal(normal.filter((word, i) => word !== odd[i]).length, 1);
 });
