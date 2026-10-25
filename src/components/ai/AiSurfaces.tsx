@@ -12,8 +12,8 @@ import { cn } from "@/lib/utils";
 export type HostStatus = "idle" | "writing" | "live" | "offline";
 const HOST_COPY: Record<HostStatus, string> = {
   idle: "Director",
-  live: "Director · live",
-  writing: "Director schreibt mit …",
+  live: "Director · dabei",
+  writing: "Director baut weiter …",
   offline: "Director · lokal",
 };
 export function DirectorStatus({ status, className }: { status: HostStatus; className?: string }) {
@@ -38,7 +38,7 @@ export function DirectorStatus({ status, className }: { status: HostStatus; clas
 /* ───────── Optional night setup (UI state → callback) ───────── */
 export type Vibe = "chill" | "funny" | "wild" | "flirty" | "mixed";
 export interface NightSetupValue { vibe: Vibe | null; intensity: 1 | 2 | 3 | 4 | 5; insiders: string[]; taboo: string[] }
-const VIBES: [Vibe, string][] = [["chill", "Chill"], ["funny", "Funny"], ["wild", "Wild"], ["flirty", "Flirty"], ["mixed", "Mixed"]];
+const VIBES: [Vibe, string][] = [["chill", "Chill"], ["funny", "Lustig"], ["wild", "Wild"], ["flirty", "Flirty"], ["mixed", "Mix"]];
 
 function ChipInput({ label, hint, values, onChange, max = 6 }: { label: string; hint: string; values: string[]; onChange: (v: string[]) => void; max?: number }) {
   const [draft, setDraft] = useState("");
@@ -75,7 +75,7 @@ export function NightSetup({ onSubmit, onSkip, initial }: { onSubmit: (v: NightS
   return (
     <section aria-labelledby="setup-h" className="flex flex-col">
       <div className="flex items-baseline justify-between">
-        <p className="font-mono text-[0.7rem] tracking-[0.22em] text-champagne">N// SETUP · OPTIONAL</p>
+        <p className="font-mono text-[0.7rem] tracking-[0.22em] text-champagne">N// VIBE · OPTIONAL</p>
         <button type="button" onClick={() => { haptic(4); onSkip(); }} className="tap min-h-11 px-1 text-sm text-foreground underline-offset-4 hover:underline">Überspringen</button>
       </div>
       <h2 id="setup-h" className="font-display mt-3 text-[2.6rem] leading-[0.95]">Wie soll die Nacht klingen?</h2>
