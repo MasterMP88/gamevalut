@@ -10,7 +10,7 @@ import { defaultRoomClient, normalizeCode, sessionStore, type RoomSnapshot, type
 
 const URL = "https://nocturne-games-for-two.lovable.app/gang";
 const TITLE = "GANG MODE — Partyspiele für 2–99 Leute · NOCTURNE";
-const DESC = "GANG MODE von NOCTURNE: Partyspiele und Gruppenspiele online für 2–99 Leute. Alle treten per QR-Code bei, optional Big Screen. Host zahlt, Gäste spielen kostenlos mit.";
+const DESC = "GANG MODE von NOCTURNE: Partyspiele und Gruppenspiele für 2–99 Leute. Gemeinsam auf TV oder Laptop, mit einem Handy oder – wenn das Game davon profitiert – per QR-Code auf allen Geräten. Host zahlt, Gäste spielen kostenlos mit.";
 
 export const Route = createFileRoute("/gang")({
   validateSearch: (s: Record<string, unknown>): { join?: string; screen?: string } => ({
