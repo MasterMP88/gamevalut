@@ -23,11 +23,11 @@ const DESC = "Interaktive Game Night im Browser: neun Date-Night-Spiele für Paa
 export const FAQ: [string, string][] = [
   ["Was ist NOCTURNE?", "NOCTURNE ist eine Plattform für interaktive Spieleabende im Browser. Zu zweit spielt ihr neun Date-Night-Spiele mit Fragen, Timern, geheimen Wahlen, Duellen und einem Director. Im GANG MODE spielen 2 bis 99 Leute Partyspiele gemeinsam."],
   ["Ist NOCTURNE nur für Paare?", "Nein. Es gibt zwei Welten: neun Spiele für zwei Erwachsene und GANG MODE für Freunde, Partys und Gruppen von 2 bis 99 Personen."],
-  ["Wie funktioniert GANG MODE?", "Der Host öffnet einen Raum. Alle anderen treten per QR-Code oder Raumcode mit dem eigenen Handy bei – geheime Antworten bleiben so auf dem eigenen Gerät. Optional läuft eine Big-Screen-Ansicht auf dem Fernseher. Wenn nötig, geht es auch mit nur einem Handy zum Weitergeben. Der Party Director plant die Nacht, oder ihr wählt Spiele selbst."],
+  ["Wie funktioniert GANG MODE?", "GANG MODE passt die Spielweise an das Game und eure Runde an: gemeinsam auf TV oder Laptop, mit nur einem Handy oder – wenn geheime Antworten, Buzzer oder persönliche Entscheidungen davon profitieren – mit allen Geräten per QR-Code oder Raumcode. Der Party Director empfiehlt den passenden Aufbau, oder ihr wählt ein Spiel selbst."],
   ["Braucht jeder einen Account?", "Nein. Gäste im GANG MODE treten ohne Account bei. Ein Account ist für den Host bzw. für euch zu zweit sinnvoll, um Zugang zu verwalten und Spielstände auf jedem Gerät fortzusetzen."],
   ["Was kostet NOCTURNE?", "Die Free Preview ist kostenlos und lässt euch in ein Spiel bis Szene 5 hineinspielen – ohne Karte. Danach gibt es den Night Pass für 6,99 € einmalig (72 Stunden alle Paarspiele und GANG-Hosting), Unlimited für 9,99 € pro Monat oder Unlimited Year für 49,99 € pro Jahr."],
-  ["Zahlt im GANG MODE jeder?", "Nein. Ein Host zahlt, alle spielen. Gäste treten kostenlos per QR-Code oder Raumcode bei und brauchen weder Account noch Abo."],
-  ["Brauchen wir mehrere Handys?", "Zu zweit reicht ein Handy. Im GANG MODE ist jedes eigene Handy der empfohlene Weg; wenn nötig, spielt ihr auch mit einem Handy, das herumgereicht wird."],
+  ["Zahlt im GANG MODE jeder?", "Nein. Ein Host zahlt, alle spielen. Gäste brauchen weder Account noch Abo. Wenn ein Game Everyone In nutzt, treten sie kostenlos per QR-Code oder Raumcode bei."],
+  ["Brauchen wir mehrere Handys?", "Nein. Im GANG MODE reicht für viele Games ein einziges Gerät, andere funktionieren am besten gemeinsam auf TV oder Laptop. Eigene Handys kommen nur dort ins Spiel, wo Everyone In das Erlebnis wirklich besser macht."],
   ["Was wird gespeichert?", "Mit Account nur der Spielstand: Spiel, Szene, Punkte und Einstellungen. Was ihr euch sagt oder eintippt, wird nicht automatisch gespeichert – außer du sicherst einen Moment ausdrücklich."],
   ["Können wir später fortsetzen?", "Ja, mit Account. NOCTURNE sichert nach jeder Szene automatisch und bringt euch beim nächsten Mal zur selben Szene zurück – auch auf einem anderen Gerät."],
   ["Sind Aufgaben überspringbar?", "Immer. Skip ist auf jedem Bildschirm sichtbar und kostet nie etwas. Berührung, Sinnliches und Drinks lassen sich jederzeit ausschalten."],
@@ -147,8 +147,10 @@ function Home() {
                 {Array.from({ length: 18 }, (_, i) => <span key={i} className="animate-gang-pulse w-full bg-signal" style={{ height: `${25 + ((i * 41) % 75)}%`, animationDelay: `${(i * 113) % 1500}ms` }} />)}
               </span>
               <span className="relative mt-4 font-mono text-xs tracking-[0.25em] text-signal">GANG MODE · 2–99 PLAYER</span>
-              <span className="font-display relative mt-3 text-[clamp(2.4rem,9vw,3.6rem)] leading-[0.9]">Der ganze Raum. <em className="text-signal">Jedes Handy.</em></span>
-              <span className="relative mt-3 text-foreground/85">Partyspiele für Freunde und Gruppen. Alle treten per QR-Code bei, der Party Director plant die Nacht. Host zahlt · Gäste spielen kostenlos mit.</span>
+              <span className="font-display relative mt-3 text-[clamp(2.4rem,9vw,3.6rem)] leading-[0.9]">Der ganze Raum <em className="text-signal">wird zum Spiel.</em></span>
+              <span className="relative mt-3 text-foreground/85">Auf dem TV. Mit einem Handy. Oder mit allen. GANG MODE passt die Spielweise ans Game an – ohne Setup-Stress.</span>
+              <span className="relative mt-5 flex flex-wrap gap-2" aria-label="Spielweisen"><span className="border border-signal/35 px-2.5 py-1 font-mono text-[0.65rem] tracking-[0.16em] text-signal">TV</span><span className="border border-signal/35 px-2.5 py-1 font-mono text-[0.65rem] tracking-[0.16em] text-signal">ONE PHONE</span><span className="border border-signal/35 px-2.5 py-1 font-mono text-[0.65rem] tracking-[0.16em] text-signal">EVERYONE IN</span></span>
+              <span className="relative mt-4 text-sm text-foreground/70">Host zahlt · Gäste spielen kostenlos mit.</span>
               <span className="eyebrow relative mt-6 inline-flex items-center gap-2 text-foreground">GANG MODE öffnen <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
             </Link>
           </div>
@@ -204,13 +206,13 @@ function Home() {
             {Array.from({ length: 24 }, (_, i) => <span key={i} className="animate-gang-pulse w-full bg-signal" style={{ height: `${25 + ((i * 41) % 75)}%`, animationDelay: `${(i * 113) % 1500}ms` }} />)}
           </div>
           <p className="relative mt-8 font-mono text-xs tracking-[0.25em] text-signal">GANG MODE · 2–99 PLAYER</p>
-          <h2 id="gang-h" className="font-display relative mt-2 text-[clamp(2.6rem,11vw,5rem)] leading-[0.9]">Mehr als zwei? <em className="text-signal">Der ganze Raum.</em></h2>
-          <p className="relative mt-3 max-w-xl text-foreground/85">Gruppenspiele online für Freunde, Partys und Game Nights – ohne Vorbereitung. Lass den Party Director die Nacht planen, wähl ein Spiel aus dem Katalog oder bau deinen eigenen Mix.</p>
+          <h2 id="gang-h" className="font-display relative mt-2 text-[clamp(2.6rem,11vw,5rem)] leading-[0.9]">Der ganze Raum <em className="text-signal">wird zum Spiel.</em></h2>
+          <p className="relative mt-3 max-w-xl text-foreground/85">Gruppenspiele für Freunde, Partys und Game Nights – ohne Vorbereitung und ohne Geräte-Zwang. Der Party Director kombiniert passende Games und berücksichtigt, ob TV, ein gemeinsames Handy oder Everyone In das stärkste Erlebnis liefert.</p>
           <ol className="relative mt-8 grid gap-6 sm:grid-cols-3">
             {[
-              ["Everyone In", "Empfohlen", "Jeder tritt per QR-Code oder Raumcode mit dem eigenen Handy bei. Geheime Rollen und Stimmen bleiben auf dem eigenen Gerät."],
-              ["Big Screen", "Optional", "Ein Fernseher oder Laptop zeigt die Bühne für alle: Fragen, Countdowns, Ergebnisse. Er belegt keinen Spielerplatz."],
-              ["Ein Handy", "Wenn nötig", "Kein Netz, keine Lust auf Beitritt? Dann wandert ein Handy durch die Runde – mit Sichtschutz bei geheimen Zügen."],
+              ["Big Screen", "Für den ganzen Raum", "TV oder Laptop wird zur gemeinsamen Bühne: Fragen, Countdowns, Musik und Ergebnisse gehören allen – eigene Handys sind nicht automatisch nötig."],
+              ["One Phone", "Ein Gerät reicht", "Ein Handy liegt in der Mitte oder führt durch die Runde. Ideal für Games, die von Gesprächen, Zurufen, Schätzen und gemeinsamen Entscheidungen leben."],
+              ["Everyone In", "Wenn es mehr bringt", "Bei geheimen Rollen, Buzzern oder privaten Antworten treten alle per QR-Code oder Raumcode bei. Das eigene Handy wird dann Teil der Mechanik – nicht zur Pflicht."],
             ].map(([t, tag, d], i) => (
               <li key={t} className="border-t border-signal/40 pt-4">
                 <span className="font-mono text-xs text-signal">0{i + 1} · {tag!.toUpperCase()}</span>
@@ -243,12 +245,12 @@ function Home() {
                 </ol>
               </div>
               <div>
-                <h3 className="eyebrow text-signal">GANG MODE · jedes Handy</h3>
+                <h3 className="eyebrow text-signal">GANG MODE · TV · ONE PHONE · EVERYONE IN</h3>
                 <ol className="mt-4 space-y-6">
                   {[
-                    ["Host öffnet den Raum", "Director-Nacht, einzelnes Spiel oder eigener Mix – der Host wählt und öffnet einen Raum."],
-                    ["Alle scannen den QR-Code", "Gäste treten mit dem eigenen Handy bei, ohne Account. Optional läuft die Bühne auf dem Fernseher."],
-                    ["Spielen, abstimmen, lachen", "Geheime Wahlen bleiben privat, Ergebnisse kommen für alle gleichzeitig. Skip gibt es auch hier."],
+                    ["Game wählen oder Director starten", "Der Host startet eine Director-Nacht, ein einzelnes Spiel oder einen eigenen Mix."],
+                    ["Passender Aufbau statt Geräte-Zwang", "Je nach Game spielt ihr gemeinsam auf TV oder Laptop, mit einem Handy oder tretet für private Mechaniken per QR-Code bei."],
+                    ["Spielen, reagieren, lachen", "Der Bildschirm tritt in den Hintergrund: reden, rufen, bluffen, buzzern, abstimmen oder gemeinsam entscheiden – so, wie das Game es braucht."],
                   ].map(([t, d], i) => (
                     <li key={t} className="flex gap-4"><span className="font-mono text-sm text-signal">0{i + 1}</span><div><p className="font-display text-2xl leading-tight">{t}</p><p className="mt-1 text-muted-foreground">{d}</p></div></li>
                   ))}
