@@ -64,10 +64,12 @@ test("live Stripe price IDs map only to approved grants", () => {
   assert.deepEqual(grantForStripePrice("price_1UUPekRGuzgtZTcBS2itbNWR"), {
     productKey: "unlimited_annual",
     source: "stripe",
+    durationHours: null,
   });
   assert.deepEqual(grantForStripePrice("price_1UUDZtRGuzgtZTcBkcwhCg10"), {
     productKey: "unlimited_annual",
     source: "stripe",
+    durationHours: null,
   });
   assert.equal(grantForStripePrice("price_unknown"), null);
 });
