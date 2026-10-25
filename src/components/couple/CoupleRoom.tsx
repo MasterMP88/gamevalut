@@ -467,7 +467,7 @@ export function CoupleRoom({
           </>
         ) : pub.phase === "end" ? (
           <>
-            <p className="eyebrow mt-8">Eure Night Signature</p>
+            <p className="eyebrow mt-8">Eure Nacht-Signatur</p>
             <h1 className="font-display mt-3 text-5xl">
               {pub.signature?.name ?? "Diese Nacht gehört euch."}
             </h1>
@@ -850,7 +850,7 @@ function Ready({
               disabled={disabled}
               className="mt-2 min-h-12 w-full rounded-xl bg-surface p-3"
             >
-              <option value="">Aufheben</option>
+              <option value="">Kein Power-up</option>
               {(pub.scene?.type === "SHOWDOWN"
                 ? [["raise", "Einsatz verdoppeln"]]
                 : [
