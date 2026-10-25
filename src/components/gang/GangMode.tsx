@@ -172,9 +172,16 @@ function Stepper({
   );
 }
 
-const PlayableBadge = () => (
+const modeLabel = (g: GangGame) => {
+  const preferred = g.interactionModes[0];
+  if (preferred === "everyone-in") return "EVERYONE IN · PER QR";
+  if (preferred === "big-screen") return "BIG SCREEN · GEMEINSAM";
+  return "ONE PHONE · EIN GERÄT REICHT";
+};
+
+const PlayableBadge = ({ g }: { g: GangGame }) => (
   <span className="font-mono text-[0.65rem] tracking-[0.2em] text-signal">
-    ALLE DRIN · PER QR
+    {modeLabel(g)}
   </span>
 );
 
@@ -194,7 +201,7 @@ function GameSheet({
         className="flex flex-1 flex-col motion-safe:animate-rise"
       >
         <MotifArt motif={g.motif} className="mt-6 w-32" />
-        <PlayableBadge />
+        <PlayableBadge g={g} />
         <h2 className="font-display mt-3 text-[clamp(3rem,15vw,5.5rem)] leading-[0.85] tracking-tight">
           {g.title}
         </h2>
@@ -264,9 +271,10 @@ function PlayerSetup({
   onRoom: (s: StoredSession, snap: RoomSnapshot, bigScreen: boolean) => void;
   onClose: () => void;
 }) {
-  // EVERYONE IN is the default whenever a room client exists; ONE PHONE is a fallback.
-  const [solo, setSolo] = useState(false);
-  const [stage, setStage] = useState(false);
+  const recommendedMode = useMemo(() => recommendPlayMode(queue), [queue]);
+  // Start with the mode the authored game contract prefers instead of forcing every player onto a phone.
+  const [solo, setSolo] = useState(recommendedMode === "one-phone");
+  const [stage, setStage] = useState(recommendedMode === "big-screen");
   const onePhone = solo || !client;
   const [count, setCount] = useState(
     Math.min(Math.max(initial, range[0]), range[1]),
@@ -335,7 +343,7 @@ function PlayerSetup({
               className="mt-5 border-l-2 border-signal pl-4"
             >
               <p className="font-mono text-[0.65rem] tracking-[0.2em] text-signal">
-                EMPFOHLEN · ALLE DRIN
+                {recommendedMode === "everyone-in" ? "PASST ZU DIESEM GAME · EVERYONE IN" : "EVERYONE IN · OPTIONAL"}
               </p>
               <h2 className="font-display mt-2 text-[clamp(2.4rem,10vw,3.8rem)] leading-[0.9]">
                 Alle mit eigenem Handy.
@@ -400,7 +408,7 @@ function PlayerSetup({
               }}
               className="tap mx-auto mt-3 flex min-h-11 items-center px-3 text-sm text-muted-foreground underline-offset-4 hover:underline"
             >
-              Nur ein Handy? Reihum spielen
+              Mit einem Handy spielen
             </button>
           </>
         ) : (
@@ -411,16 +419,22 @@ function PlayerSetup({
                 onClick={() => setSolo(false)}
                 className="tap mt-3 flex min-h-11 items-center text-left text-sm text-signal underline-offset-4 hover:underline"
               >
-                Lieber alle mit eigenem Handy? Raum öffnen
+                Everyone In aktivieren
               </button>
             )}
-            <p className="mt-3 font-mono text-[0.65rem] tracking-[0.2em] text-muted-foreground">
-              EIN HANDY · REIHUM
+            <p className="mt-3 font-mono text-[0.65rem] tracking-[0.2em] text-signal">
+              {recommendedMode === "one-phone" ? "PASST ZU DIESEM GAME · ONE PHONE" : "ONE PHONE · ALTERNATIVE"}
             </p>
 
-            <h2 className="font-display mt-6 text-[clamp(2.8rem,12vw,4.5rem)] leading-[0.9]">
-              Wer spielt mit?
+            <h2 className="font-display mt-3 text-[clamp(2.8rem,12vw,4.5rem)] leading-[0.9]">
+              Ein Gerät reicht.
             </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Legt das Handy in die Mitte oder gebt es nur dann weiter, wenn eine geheime Phase es braucht.
+            </p>
+            <h3 className="font-display mt-8 text-3xl leading-[0.95]">
+              Wer spielt mit?
+            </h3>
             <div className="mt-6">
               <Stepper
                 value={count}
@@ -751,7 +765,7 @@ function GameCard({
         className={cn("absolute right-3 top-8", big ? "w-40 sm:w-52" : "w-24")}
       />
       <div className="relative flex items-center justify-between gap-2">
-        <PlayableBadge />
+        <PlayableBadge g={g} />
         <span className="font-mono text-xs text-muted-foreground">
           {g.min}–{g.max} · {g.minutes[0]}–{g.minutes[1]} min
         </span>
@@ -820,21 +834,43 @@ function GameCard({
   );
 }
 
+function recommendPlayMode(queue: GangGameId[]): PlayMode {
+  const games = queue.map((id) => gangGame(id)).filter((g): g is GangGame => Boolean(g));
+  if (!games.length) return "one-phone";
+  const preferred = games.map((g) => g.interactionModes[0]);
+  if (preferred.every((mode) => mode === "one-phone")) return "one-phone";
+  if (
+    preferred.some((mode) => mode === "everyone-in") &&
+    games.every((g) => g.interactionModes.includes("everyone-in"))
+  ) {
+    return "everyone-in";
+  }
+  if (
+    preferred.some((mode) => mode === "big-screen") &&
+    games.every((g) => g.interactionModes.includes("big-screen"))
+  ) {
+    return "big-screen";
+  }
+  if (games.every((g) => g.interactionModes.includes("one-phone"))) return "one-phone";
+  if (games.every((g) => g.interactionModes.includes("everyone-in"))) return "everyone-in";
+  return "one-phone";
+}
+
 const MODES = [
   [
-    "ALLE DRIN",
-    "EMPFOHLEN",
-    "Raum öffnen, QR-Code zeigen – in Sekunden ist jede:r mit dem eigenen Handy drin. Geheimes bleibt nur auf deinem Handy.",
+    "BIG SCREEN",
+    "DER RAUM SPIELT",
+    "TV oder Laptop wird zur gemeinsamen Bühne für Fragen, Musik, Countdowns und Ergebnisse. Perfekt für Games, die vom ganzen Raum leben.",
   ],
   [
-    "TV ALS BÜHNE",
-    "OPTIONAL",
-    "Dazuschalten: TV oder Laptop zeigt Frage, Fortschritt und Punkte. Die Handys bleiben Controller.",
+    "ONE PHONE",
+    "EIN GERÄT REICHT",
+    "Ein Handy liegt in der Mitte oder führt durch die Runde. Ideal für Zurufen, Schätzen, Diskutieren, Bluffen und gemeinsame Entscheidungen.",
   ],
   [
-    "NUR EIN HANDY",
-    "WENN NÖTIG",
-    "Kein Netz, nur ein Gerät? Dann geht ein Handy reihum – mit Sichtschutz für geheime Phasen.",
+    "EVERYONE IN",
+    "WENN ES MEHR BRINGT",
+    "Bei geheimen Rollen, Buzzern oder privaten Antworten treten alle per QR-Code bei. Das eigene Handy wird Teil der Mechanik – nicht zur Pflicht.",
   ],
 ] as const;
 
@@ -946,15 +982,14 @@ export function GangMode({
             GANG MODE · 2–99 PLAYERS · 16 SPIELE
           </p>
           <h1 className="font-display mt-3 text-[clamp(3.6rem,17vw,9rem)] leading-[0.82] tracking-tight">
-            Ein Raum.
+            Der ganze Raum
             <br />
-            <em className="text-signal">Alle drin.</em>
+            <em className="text-signal">wird zum Spiel.</em>
           </h1>
           <p className="mt-5 max-w-xl text-lg text-foreground/85">
-            Partyspiele für 2 bis 99 Leute – jede:r mit dem eigenen Handy, per
-            QR in Sekunden drin, optional mit TV als Bühne. Null Vorbereitung,
-            keine Regeln vorlesen: antippen, Namen rein, und der Raum wird
-            lebendig.
+            Auf dem TV. Mit einem Handy. Oder mit allen. GANG MODE nutzt die
+            Spielweise, die zum Game passt – ohne Setup-Stress, ohne Regelrunde,
+            ohne dass automatisch jede:r auf einen eigenen Bildschirm muss.
           </p>
         </div>
       </header>
@@ -998,7 +1033,7 @@ export function GangMode({
           id="modes-h"
           className="font-display mt-2 text-[clamp(2.4rem,10vw,4rem)] leading-[0.95]"
         >
-          Alle drin. Jede:r am eigenen Handy.
+          Drei Spielweisen. Eine Game Night.
         </h2>
         <ol className="mt-8 grid gap-6 sm:grid-cols-3">
           {MODES.map(([t, tag, d]) => (
