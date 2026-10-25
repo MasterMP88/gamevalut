@@ -1,4 +1,4 @@
-# GameNights Masterplan — Living Game Library & Pricing 2026
+# NOCTURNE Masterplan — Living Game Library & Pricing 2026
 
 Status: **verbindlich beschlossen und in Umsetzung**
 Datum: 2026-10-25
@@ -7,7 +7,7 @@ Datum: 2026-10-25
 
 **Never play the same night twice.**
 
-GameNights ist kein statisches Kartenspiel und keine Sammlung, die nach wenigen Abenden „durchgespielt“ ist. Das Produkt wird als **Living Game-Night Membership** positioniert: Couple + GANG, laufend verbessert, monatlich erweitert und mit Replay-Mechaniken, die Wiederholungen aktiv reduzieren.
+NOCTURNE ist kein statisches Kartenspiel und keine Sammlung, die nach wenigen Abenden „durchgespielt“ ist. Das Produkt wird als **Living Game-Night Membership** positioniert: Couple + GANG, laufend verbessert, monatlich erweitert und mit Replay-Mechaniken, die Wiederholungen aktiv reduzieren.
 
 
 ## Brand Voice Contract
