@@ -34,18 +34,18 @@ export const OFFER_COPY: Record<
     name: "Night Pass",
     price: "6,99 €",
     per: "einmalig",
-    note: "72 Stunden alle Paarspiele und GANG-Hosting. Kein Abo.",
+    note: "72 Stunden alles offen – Games für zwei plus GANG-Hosting. Kein Abo.",
   },
   unlimited_monthly: {
     name: "Unlimited",
     price: "9,99 €",
     per: "pro Monat",
-    note: "Alle Spiele, jede Nacht, inklusive GANG MODE als Host. Monatlich kündbar.",
+    note: "Alle Games, alle neuen Drops und GANG MODE als Host. Monatlich kündbar.",
   },
   unlimited_annual: {
     name: "Unlimited Year",
-    price: "49,99 €",
+    price: "59,99 €",
     per: "pro Jahr",
-    note: "Alles, ein Jahr lang – auch GANG MODE als Host. Entspricht 4,17 €/Monat.",
+    note: "Ein Jahr NOCTURNE für rund 5 € pro Monat – inklusive neuer Drops und GANG MODE als Host.",
   },
 };
