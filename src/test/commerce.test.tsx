@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { OFFER_BY_STRIPE_PRICE_ID, GANG_GUESTS_REQUIRE_ACCOUNT, GANG_GUESTS_REQUIRE_PAYMENT } from "@/lib/commerce/core";
+import { OFFER_BY_STRIPE_PRICE_ID, GANG_GUESTS_REQUIRE_ACCOUNT, GANG_GUESTS_REQUIRE_PAYMENT, LEGACY_STRIPE_PRICE_IDS } from "@/lib/commerce/core";
 import { isPaidOfferKey, priceIdFor, PAID_OFFER_KEYS } from "@/lib/commerce/offers";
 import { canHostGang, coupleSceneAccess, type Entitlement } from "@/lib/entitlements";
 import { handleStripeEvent, HANDLED_STRIPE_EVENTS, type CommerceDb, type EntitlementRow, type StripeEventLike } from "@/lib/commerce/webhook.server";
@@ -10,19 +10,25 @@ import type { SessionState } from "@/lib/game/types";
 
 const NIGHT = "price_1UUDZqRGuzgtZTcBJOUzcXy6";
 const MONTH = "price_1UUDZsRGuzgtZTcB9osY658W";
-const YEAR = "price_1UUDZtRGuzgtZTcBkcwhCg10";
+const YEAR = "price_1UUPekRGuzgtZTcBS2itbNWR";
+const FOUNDER_YEAR = LEGACY_STRIPE_PRICE_IDS.unlimited_annual_founder_4999;
 const UID = "11111111-2222-4333-8444-555555555555";
 const NOW = Date.parse("2026-10-25T10:00:00Z");
 const H = 3600_000;
 const ent = (product_key: string, ends: number | null, status = "active"): Entitlement => ({ product_key, status, ends_at: ends === null ? null : new Date(ends).toISOString() });
 
 describe("offers", () => {
-  it("allowlists exactly three paid offers with the live price IDs", () => {
+  it("allowlists the three public paid offers and preserves the founder annual alias", () => {
     expect([...PAID_OFFER_KEYS]).toEqual(["night_pass_72h", "unlimited_monthly", "unlimited_annual"]);
     expect(priceIdFor("night_pass_72h")).toBe(NIGHT);
     expect(priceIdFor("unlimited_monthly")).toBe(MONTH);
     expect(priceIdFor("unlimited_annual")).toBe(YEAR);
-    expect(OFFER_BY_STRIPE_PRICE_ID.size).toBe(3);
+    expect(OFFER_BY_STRIPE_PRICE_ID.size).toBe(4);
+    expect(OFFER_BY_STRIPE_PRICE_ID.get(FOUNDER_YEAR)).toMatchObject({
+      key: "unlimited_annual",
+      amountCents: 4999,
+      stripePriceId: FOUNDER_YEAR,
+    });
   });
   it("rejects arbitrary offers and raw price ids", () => {
     for (const v of ["free_preview", NIGHT, "gang_pass", "", null, 5]) expect(isPaidOfferKey(v)).toBe(false);
