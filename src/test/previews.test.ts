@@ -15,7 +15,7 @@ describe("Mechanic previews", () => {
   it("truth labels are only claimed when true", () => {
     for (const g of GAMES) {
       const t = PREVIEWS[g.id].truths;
-      expect(t.includes("AI geführt")).toBe(!!g.ai);
+      expect(t.includes("Director geführt")).toBe(!!g.ai);
       expect(t.includes("gegeneinander")).toBe(!!g.battle);
       if (t.includes("gemeinsam")) expect(g.coop).toBe(true);
       expect(t).toContain("für 2");
