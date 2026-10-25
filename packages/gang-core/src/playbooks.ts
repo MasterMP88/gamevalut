@@ -395,7 +395,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     promise:
       "Jede Person erfindet eine plausible Lüge. Dann versucht der Raum, die Wahrheit wiederzufinden.",
     howItFeels:
-      "Fibbage-Energie ohne Trivia-Staub: kurze Fakten, gute Lügen, sofortige Schadenfreude.",
+      "Kurze Fakten, gute Lügen, sofortige Schadenfreude.",
     mechanic: "bluff",
     minPlayers: 3,
     maxPlayers: 20,
@@ -411,7 +411,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
   {
     id: "the-line",
     title: "THE LINE",
-    promise: "Keine Buttons reichen: Der Raum selbst wird zur Skala.",
+    promise: "Keine Buttons nötig. Der Raum selbst wird zur Skala.",
     howItFeels:
       "Alle stehen auf, ordnen sich wortlos und sehen dann, wie sehr sie sich selbst oder die anderen falsch eingeschätzt haben.",
     mechanic: "physical",
@@ -533,7 +533,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     title: "PHOTO HUNT",
     promise: "Die Kamera ist nicht Deko. Der echte Raum wird zur Challenge.",
     howItFeels:
-      "Kurze kreative Foto-Missionen, dann anonymer Gallery-Reveal und Crowd-Vote.",
+      "Kurze Foto-Missionen, anonymer Reveal – dann entscheidet der Raum.",
     mechanic: "photo",
     minPlayers: 3,
     maxPlayers: 30,
@@ -589,7 +589,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     promise:
       "Ein Wort bleibt geheim. Eine Person zeichnet. Alle anderen raten gleichzeitig.",
     howItFeels:
-      "Null Kunstanspruch, schnelle Guesses und ein Reveal, bei dem schlechte Zeichnungen besser sind als gute.",
+      "Null Kunstanspruch, schnelle Tipps – und schlechte Zeichnungen sind oft die besseren.",
     mechanic: "drawing",
     minPlayers: 3,
     maxPlayers: 30,
@@ -628,9 +628,9 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     id: "music-drop",
     title: "MUSIC DROP",
     promise:
-      "Die Antwort ist ein Song. Nicht erklären – auswählen, locken, reveal.",
+      "Die Antwort ist ein Song. Nicht erklären. Wählen. Versiegeln. Reveal.",
     howItFeels:
-      "Musik wird zur sozialen Antwort. Voll spielbar ohne Streaming-Login; Provider sind nur ein Komfort-Layer.",
+      "Musik wird zur sozialen Antwort. Ohne Streaming-Login spielbar; mit verbundenem Musikdienst nur bequemer.",
     mechanic: "music",
     minPlayers: 2,
     maxPlayers: 99,
@@ -664,19 +664,19 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     promise:
       "Hör den Track. Setz ihn in die Zeit. Je enger du lockst, desto mehr zählt.",
     howItFeels:
-      "Eine lebende Musik-Timeline, auf der alle gleichzeitig setzen. Kein DJ, kein QR-Scan, kein Warten auf zehn Einzelzüge.",
+      "Eine lebende Musik-Timeline, auf der alle gleichzeitig setzen. Kein Warten auf zehn Einzelzüge.",
     mechanic: "music",
     minPlayers: 2,
     maxPlayers: 99,
     rounds: [8, 16],
     stages: ["answer", "reveal", "score"],
     scoring:
-      "Eigener TIME//DROP-Core: Placement + Precision/Expert-Boni; Teams werden nach Durchschnitt gewertet.",
+      "Richtig einsortiert gibt Punkte; engere Jahres-Locks bringen mehr. Teams zählen über ihren Durchschnitt.",
     finale:
       "Final Drop: letzter Track, alle dürfen vor dem Reveal auf ±2 Jahre locken.",
     capabilities: ["music"],
     safetyNote:
-      "Der Runtime-Core enthält keine Musikdateien. Playback kommt ausschließlich aus einer separat erlaubten Provider-/Rechte-Schicht.",
+      "NOCTURNE enthält keine Musikdateien. Wiedergabe kommt nur über eine dafür vorgesehene Musikdienst-Verbindung.",
     prompts: prompts("time-drop", [
       { prompt: "FLOW · Nur in die Timeline setzen.", category: "Flow" },
       {
@@ -713,7 +713,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     rounds: [4, 8],
     stages: ["react", "reveal", "score"],
     scoring:
-      "1 Punkt pro gültiger Antwort im Team-Streak; Wiederholung oder Timeout bricht die Kette.",
+      "1 Punkt pro gültiger Antwort in der Serie; Wiederholung oder Timeout bricht die Kette.",
     finale: "Final Chain mit 3-Sekunden-Limit.",
     capabilities: [],
     prompts: prompts("chain", [
@@ -785,7 +785,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     id: "panic-button",
     title: "PANIC BUTTON",
     promise:
-      "Der Timer läuft. Antwort geben, Button drücken, weiterreichen. Denkst du zu lange, bleibt die Panik bei dir.",
+      "Der Timer läuft. Antwort geben, weiter. Denkst du zu lange, bleibt die Panik bei dir.",
     howItFeels:
       "Hot-Potato auf dem Handy mit Kategorien, Streaks und sehr wenig Zeit für gute Entscheidungen.",
     mechanic: "reaction",
