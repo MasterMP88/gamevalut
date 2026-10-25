@@ -1,3 +1,4 @@
+import { ShareNight } from "./ShareNight";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import type { MusicProvider } from "@/lib/music/provider";
@@ -42,9 +43,11 @@ function Back({
   duration?: 15 | 30 | 60 | null | undefined;
   className?: string;
 }) {
-  const { start } = useSessions();
+  const { start, sessions } = useSessions();
+  const completed = sessions[game.id];
   return (
     <div className={cn("flex flex-col gap-2", className)}>
+      {completed?.finished && <ShareNight state={completed} />}
       <Btn
         size="lg"
         className="w-full"

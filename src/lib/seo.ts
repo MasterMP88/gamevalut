@@ -1,10 +1,11 @@
+import { GANG_GAMES } from "./gang/catalog";
 import { GAMES, type GameConfig } from "./game/games";
 
 export const SITE = "https://nocturne-games-for-two.lovable.app";
 
 /** Public, indexable paths only. Account, auth and session routes are never listed. */
 export function publicPaths(): string[] {
-  return ["/", "/gang", ...GAMES.map((g) => `/game/${g.slug}`)];
+  return ["/", "/gang", "/privatsphaere", ...GAMES.map((g) => `/game/${g.slug}`), ...GANG_GAMES.map(g => `/gang/${g.id}`)];
 }
 
 export function sitemapXml(): string {
@@ -13,7 +14,7 @@ export function sitemapXml(): string {
 }
 
 export function gameDescription(g: GameConfig): string {
-  const base = `${g.title}: ${g.hook} Ein interaktives Date-Night-Spiel für Paare auf einem Handy, ${g.duration}.`;
+  const base = `${g.title}: ${g.hook} Ein interaktives Date-Night-Spiel für Paare auf einem oder zwei Handys, ${g.duration}.`;
   return base.length > 158 ? `${base.slice(0, 155)}…` : base;
 }
 

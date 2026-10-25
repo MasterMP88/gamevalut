@@ -72,10 +72,12 @@ describe("entitlements", () => {
 });
 
 describe("public vs private routes", () => {
-  it("sitemap lists home, /gang and all 9 game pages, never private routes", () => {
-    expect(publicPaths()).toHaveLength(11);
+  it("sitemap lists all public game guides and data explanation, never private routes", () => {
+    expect(publicPaths()).toHaveLength(28);
     expect(publicPaths()).toContain("/game/pass-the-aux");
     expect(publicPaths()).toContain("/gang");
+    expect(publicPaths()).toContain("/gang/secret-missions");
+    expect(publicPaths()).toContain("/privatsphaere");
     const xml = sitemapXml();
     for (const p of ["/tonight", "/auth", "/reset-password"]) expect(xml).not.toContain(p);
   });

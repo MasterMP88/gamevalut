@@ -1,7 +1,7 @@
 # Zahlungsabnahme vor Veröffentlichung
 
 Stand 25.10.2026: verbundenes Stripe-Livekonto **GameNights**, `acct_1UUBlYRGuzgtZTcB`.
-Die drei bestehenden Preise bleiben unverändert. Night Pass umfasst jetzt Paarspiele und GANG-Hosting.
+Night Pass 6,99 € und Monthly 9,99 €; der parallel beschlossene öffentliche Jahrestarif beträgt 59,99 €. Der bisherige 49,99-€-Tarif bleibt für bestehende Quellen anerkannt. Night Pass umfasst Paarspiele und GANG-Hosting.
 
 ## Verifiziert
 - `GET /v1/webhook_endpoints`: keine Endpunkte.

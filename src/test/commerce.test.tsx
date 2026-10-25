@@ -190,8 +190,8 @@ describe("GANG host gate", () => {
     fireEvent.click(screen.getByRole("button", { name: "Spiel starten" }));
     expect(screen.getByTestId("host-access").textContent).toContain("Ein Host zahlt · alle anderen treten kostenlos bei.");
     expect(screen.queryByRole("button", { name: "Raum öffnen" })).toBeNull();
-    expect(r.container.querySelector('[data-offer="night_pass_72h"]')).not.toBeNull();
-    expect(r.container.querySelector('[data-offer="unlimited_annual"]')).not.toBeNull();
+    expect(document.body.querySelector('[data-offer="night_pass_72h"]')).not.toBeNull();
+    expect(document.body.querySelector('[data-offer="unlimited_annual"]')).not.toBeNull();
   });
 });
 

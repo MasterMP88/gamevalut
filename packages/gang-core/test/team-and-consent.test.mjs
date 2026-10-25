@@ -13,7 +13,7 @@ const ps = (n) =>
   Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `P${i}` }));
 test("team captains alone see secret material, rotate and use bounded quantitative scores", () => {
   const pb = getGangPlaybook("team-chaos");
-  assert.equal(pb.prompts.length, 31);
+  assert.ok(pb.prompts.length >= 36);
   let s = createGangRuntime({
     id: "team",
     gameId: "team-chaos",

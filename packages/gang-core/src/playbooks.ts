@@ -1,3 +1,4 @@
+import { REPLAY_PROMPTS } from "./replay-prompts.js";
 import { EXTRA_PROMPTS } from "./extra-prompts.js";
 import { TEAM_PROMPTS } from "./team-prompts.js";
 import { BLUFF_PROMPTS } from "./bluff-prompts.js";
@@ -420,7 +421,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     rounds: [4, 9],
     stages: ["perform", "reveal"],
     scoring:
-      "Optional 1 Punkt für exakte Nachbarschaften; standardmäßig spielt ihr um den Reveal, nicht um Tabellen.",
+      "Optional: vorab eine direkt benachbarte Person tippen und danach die Positionen erfassen. Jeder richtige Tipp gibt 1 Punkt. Standardmäßig spielt ihr ohne Wertung.",
     finale:
       "Silent Line: komplett ohne Sprechen, erst danach darf diskutiert werden.",
     capabilities: [],
@@ -880,7 +881,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
   },
 ].map((p) => ({
   ...p,
-  prompts: [...p.prompts, ...(EXTRA_PROMPTS[p.id as GangGameId] ?? [])],
+  prompts: [...p.prompts, ...(EXTRA_PROMPTS[p.id as GangGameId] ?? []), ...((REPLAY_PROMPTS as Partial<Record<GangGameId, GangPrompt[]>>)[p.id as GangGameId] ?? [])],
 })) as GangPlaybook[];
 
 export function getGangPlaybook(id: string): GangPlaybook | undefined {

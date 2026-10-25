@@ -1,3 +1,5 @@
+import { PREVIEW_ENDINGS } from "@/lib/game/preview-endings";
+import type { GameId } from "@/lib/game/types";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
@@ -50,13 +52,16 @@ export function OfferPicker({ offers, onBeforeAuth, tone = "night" }: { offers: 
 }
 
 /** Shown instead of scene 6+ when there is no paid couple access. Never mid-scene. */
-export function CoupleAccessGate({ onBeforeAuth }: { onBeforeAuth?: (() => void) | undefined }) {
+export function CoupleAccessGate({ onBeforeAuth, gameId, sceneNumber = 6 }: { onBeforeAuth?: (() => void) | undefined; gameId?: GameId; sceneNumber?: number }) {
+  const closing = sceneNumber === 6 && gameId ? PREVIEW_ENDINGS[gameId] : null;
   return (
     <section data-testid="access-gate" aria-labelledby="gate-h" className="flex flex-1 flex-col animate-rise">
-      <p className="eyebrow">Free Preview beendet · Szene 5 geschafft</p>
+      <p className="eyebrow">{sceneNumber === 6 ? "Euer Auftakt ist komplett" : "Euer Zugang ist pausiert"}</p>
       <h2 id="gate-h" className="font-display mt-3 text-[clamp(2.6rem,11vw,4rem)] leading-[0.92]">Die Nacht geht weiter. <em className="text-primary">Wenn ihr wollt.</em></h2>
-      <p className="mt-3 text-muted-foreground">Euer Spielstand ist hier pausiert – mit Zugang spielt ihr direkt ab Szene 6 weiter.</p>
-      <div className="mt-6"><OfferPicker offers={["night_pass_72h", "unlimited_monthly", "unlimited_annual"]} onBeforeAuth={onBeforeAuth} /></div>
+      {closing && <div className="mt-6 border-y border-line py-6"><p className="eyebrow">Ein letzter Moment · freiwillig & kostenlos</p><h3 className="font-display mt-2 text-3xl">{closing[0]}</h3><p className="mt-3 text-muted-foreground">{closing[1]}</p></div>}
+      <p className="mt-5 text-muted-foreground">Euer Spielstand wartet hier. Mit Zugang spielt ihr ab Szene {sceneNumber} weiter; ihr könnt den Abend auch jetzt abschließen.</p>
+      <details className="mt-6 border-y border-line"><summary className="tap flex min-h-14 cursor-pointer items-center text-primary">Zugänge und Preise ansehen →</summary><div className="pb-5"><OfferPicker offers={["night_pass_72h", "unlimited_monthly", "unlimited_annual"]} onBeforeAuth={onBeforeAuth} /></div></details>
+      <a href="/" className="tap mt-4 inline-flex min-h-12 items-center text-sm text-muted-foreground">Für heute genug · zur Übersicht</a>
     </section>
   );
 }

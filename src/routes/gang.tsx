@@ -1,3 +1,5 @@
+import { gangGame } from "@/lib/gang/catalog";
+import type { GangGameId } from "@/lib/gang/core/playbooks";
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
@@ -13,7 +15,8 @@ const TITLE = "GANG MODE — Partyspiele für 2–99 Leute · NOCTURNE";
 const DESC = "GANG MODE von NOCTURNE: Partyspiele und Gruppenspiele für 2–99 Leute. Gemeinsam auf TV oder Laptop, mit einem Handy oder – wenn das Game davon profitiert – per QR-Code auf allen Geräten. Host zahlt, Gäste spielen kostenlos mit.";
 
 export const Route = createFileRoute("/gang")({
-  validateSearch: (s: Record<string, unknown>): { join?: string; screen?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { join?: string; screen?: string; game?: GangGameId } => ({
+    ...(typeof s["game"] === "string" && gangGame(s["game"]) ? { game: gangGame(s["game"])!.id } : {}),
     ...(typeof s["join"] === "string" && s["join"] ? { join: s["join"] } : {}),
     ...(typeof s["screen"] === "string" && s["screen"] ? { screen: s["screen"] } : {}),
   }),
@@ -33,19 +36,19 @@ export const Route = createFileRoute("/gang")({
 });
 
 function GangPage() {
-  const { join, screen } = Route.useSearch();
+  const { join, screen, game } = Route.useSearch();
   const navigate = useNavigate({ from: "/gang" });
   const client = useMemo(() => defaultRoomClient(), []);
   const home = () => navigate({ to: "/gang", search: {} });
   if (screen) return <GangBigScreen client={client} code={normalizeCode(screen)} />;
   if (join) return <JoinFlow code={normalizeCode(join)} onDone={home} />;
-  return <HostedGang back={<Link to="/" className="tap flex min-h-11 items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" /> NOCTURNE</Link>} />;
+  return <HostedGang key={game ?? "catalog"} initialGame={game} back={<Link to="/" className="tap flex min-h-11 items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" /> NOCTURNE</Link>} />;
 }
 
 /** Only the host path checks access; join/screen guests above never mount this. */
-function HostedGang({ back }: { back: React.ReactNode }) {
+function HostedGang({ back, initialGame }: { back: React.ReactNode; initialGame?: GangGameId | undefined }) {
   const { ents } = useEntitlements();
-  return <GangMode back={back} hostAllowed={canHostGang(ents)} />;
+  return <GangMode back={back} initialGame={initialGame} hostAllowed={canHostGang(ents)} />;
 }
 
 function JoinFlow({ code, onDone }: { code: string; onDone: () => void }) {

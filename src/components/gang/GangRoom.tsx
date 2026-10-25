@@ -1,3 +1,5 @@
+import { OptionalMechanics } from "./OptionalMechanics";
+import type { GangOptionalMechanics } from "@/lib/gang/core/runtime";
 import { paceQueue } from "@/lib/gang/core/director";
 import { TitleGallery } from "./TitleGallery";
 import { TeamResults } from "./TeamResults";
@@ -347,22 +349,30 @@ export function GangRoom({
     [client, token, setSnap],
   );
 
-  const run = useCallback(async (fn: () => Promise<unknown>) => {
-    if (busy.current) return;
-    busy.current = true;
-    try {
-      await fn();
-      setErr(null);
-    } catch (e) {
-      setErr(roomErrorText(e));
-    } finally {
-      busy.current = false;
+  const inFlight = useRef<Promise<void> | null>(null);
+  const userQueued = useRef(false);
+  const run = useCallback(async (fn: () => Promise<unknown>, background = false) => {
+    if (background && (busy.current || userQueued.current)) return;
+    if (!background) {
+      if (userQueued.current) return;
+      userQueued.current = true;
+      if (inFlight.current) await inFlight.current;
     }
+    busy.current = true;
+    const task = (async () => {
+      try { await fn(); setErr(null); }
+      catch (e) { setErr(roomErrorText(e)); }
+      finally { busy.current = false; }
+    })();
+    inFlight.current = task;
+    await task;
+    if (inFlight.current === task) inFlight.current = null;
+    if (!background) userQueued.current = false;
   }, []);
 
   // Facilitator loop: failover load, drop-outs, auto-collect + advance.
   useEffect(() => {
-    if (!snap?.isFacilitator || !pub || busy.current) return;
+    if (!snap?.isFacilitator || !pub || pub.kind === "lobby" || busy.current) return;
     void run(async () => {
       let fac = facRef.current;
       if (!fac && pub.kind !== "lobby") {
@@ -426,7 +436,7 @@ export function GangRoom({
         );
         await publish(applyCollected(fac, actions), snap);
       }
-    });
+    }, true);
   }, [snap, progress, pub, client, token, publish, run]);
 
   // Owner-only private payload for this stage (refetched per stage, retried while not yet synced).
@@ -521,12 +531,12 @@ export function GangRoom({
       await refresh();
     }
   };
-  const start = (consent: boolean) =>
+  const start = (consent: boolean, optionalMechanics: GangOptionalMechanics) =>
     run(async () => {
       const base = lobbyFac(pub.queue, pub.rounds, pub.budgetMinutes);
       const roster = players.map((p) => ({ id: p.id, name: p.name }));
       const f = startGame(
-        { ...base, adultConsent: consent },
+        { ...base, adultConsent: consent, optionalMechanics },
         roster,
         Math.floor(Math.random() * 2 ** 31),
         `${pub.queue[0]}-${Date.now()}`,
@@ -926,7 +936,7 @@ function Lobby({
   snap: RoomSnapshot;
   pub: OnlinePublic;
   bigScreen: boolean;
-  onStart: (consent: boolean) => void;
+  onStart: (consent: boolean, optionalMechanics: GangOptionalMechanics) => void;
 }) {
   const players = snap.players.filter((p) => p.active && p.canInput);
   const screens = snap.players.filter((p) => p.active && !p.canInput).length;
@@ -938,6 +948,7 @@ function Lobby({
   const ok = queueFits(pub.queue, players.length) && (pacing?.fits ?? true);
   const adult = pub.queue.includes("after-dark");
   const [consent, setConsent] = useState(false);
+  const [optionalMechanics, setOptionalMechanics] = useState<GangOptionalMechanics>({});
   const [copied, setCopied] = useState<string | null>(null);
   const jUrl = joinUrl(origin(), snap.code);
   const sUrl = screenUrl(origin(), snap.code);
@@ -1095,6 +1106,7 @@ function Lobby({
               Ich bin 18+. Alle anderen entscheiden auf ihrem eigenen Handy.
             </label>
           )}
+          <OptionalMechanics games={pub.queue} value={optionalMechanics} onChange={setOptionalMechanics} />
           {!ok && (
             <p className="mb-2 text-sm text-muted-foreground">
               {players.length < lo
@@ -1105,7 +1117,7 @@ function Lobby({
           <button
             type="button"
             disabled={!ok || (adult && !consent)}
-            onClick={() => onStart(consent)}
+            onClick={() => onStart(consent, optionalMechanics)}
             className={primary}
           >
             {pub.queue.length > 1 ? "Night starten" : "Spiel starten"}
@@ -1379,14 +1391,16 @@ function ControllerInput({
           />
         )}
 
-      {view.input === "options" ? (
+      {view.input === "position" ? (
+        <div className="mt-6"><label className="block text-sm">Dein Platz von links nach rechts<select className="mt-3 min-h-14 w-full rounded-xl border border-line bg-room px-4 text-foreground" value={pick ?? ""} onChange={e => setPick(e.target.value)}><option value="" disabled>Position wählen</option>{cards.map(c=><option key={c.key} value={c.key}>Position {c.label}</option>)}</select></label><p className="mt-3 text-sm text-muted-foreground">Jede Position darf nur einmal vorkommen. Einigt euch im Raum, bevor ihr abgebt.</p><button disabled={!pick} onClick={()=>pick && onSend("pick",{key:pick})} className={cn(primary,"mt-6")}>Position bestätigen</button></div>
+      ) : view.input === "options" ? (
         <>
           <div
             role="radiogroup"
             aria-label="Optionen"
             className="mt-6 border-t border-line"
           >
-            {cards.map((c, i) => (
+            {cards.filter(c => !(gid === "the-line" && view.stage === "predict" && c.key === me)).map((c, i) => (
               <button
                 key={c.key}
                 type="button"
@@ -1754,7 +1768,7 @@ function ShowStage({
           +{res.scoreDelta[me]} FÜR DICH
         </p>
       )}
-      {!["the-line", "after-dark"].includes(game.id) && (
+      {(!["the-line", "after-dark"].includes(game.id) || (game.id === "the-line" && pub.optionalMechanics?.linePredictions)) && (
         <Leaders pub={pub} me={me} />
       )}
       {fac ? (

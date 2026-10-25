@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within, waitFor } from "@testing-library/react";
 import { GangMode } from "@/components/gang/GangMode";
 import { GangPlayer } from "@/components/gang/GangPlayer";
 import { GANG_GAMES } from "@/lib/gang/catalog";
@@ -30,13 +30,23 @@ describe("GANG MODE integration", () => {
     }
   });
 
+  it("game overlays close with Escape and return keyboard focus", async () => {
+    render(<GangMode hostAllowed />);
+    const opener=screen.getByRole("button",{name:"BLUFF öffnen"});
+    opener.focus();fireEvent.click(opener);
+    expect(screen.getByRole("dialog",{name:"CHOOSE A GAME"})).toBeTruthy();
+    fireEvent.keyDown(document.activeElement!,{key:"Escape",code:"Escape"});
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(opener));
+  });
+
   it("BLUFF recommends EVERYONE IN for sealed lies, with no handoff curtain", () => {
     render(<GangMode hostAllowed />);
     click("BLUFF öffnen");
     click("Spiel starten");
     expect(screen.getByTestId("everyone-in-setup").textContent).toContain("PASST ZU DIESEM GAME");
     expect(screen.getByRole("button", { name: "Raum öffnen" })).toBeTruthy();
-    expect(screen.getByRole("switch", { name: /TV\/Laptop als Bühne/ }).getAttribute("aria-checked")).toBe("false");
+    expect((screen.getByRole("radio", { name: /EVERYONE IN/ }) as HTMLInputElement).checked).toBe(true);
     expect(screen.queryByTestId("curtain")).toBeNull();
     expect(document.body.textContent).not.toContain("Gib das Handy an");
     expect(screen.queryByText(/SPIELER MÖGLICH/)).toBeNull();
@@ -67,8 +77,7 @@ describe("GANG MODE integration", () => {
     const summary = screen.getByTestId("night-summary");
     expect(within(summary).getAllByRole("listitem").length).toBeGreaterThan(0);
     click("Night starten");
-    const sharedPhone = screen.queryByRole("button", { name: "Mit einem Handy spielen" });
-    if (sharedPhone) fireEvent.click(sharedPhone);
+    fireEvent.click(screen.getByRole("radio", { name: /ONE PHONE/ }));
     click("Night starten");
     expect(screen.getByRole("button", { name: "Los geht's" })).toBeTruthy();
   });

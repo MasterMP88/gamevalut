@@ -23,6 +23,7 @@ import {
   type GangRuntimeAction,
   type GangRuntimePlayer,
   type GangRuntimeState,
+  type GangOptionalMechanics,
 } from "./core/runtime";
 import {
   getGangPlaybook,
@@ -52,6 +53,7 @@ export const PLAYER_VOTE_GAMES: GangGameId[] = [
 export type InputKind =
   | "consent"
   | "options"
+  | "position"
   | "text"
   | "track"
   | "done"
@@ -91,6 +93,7 @@ export interface OnlineView {
 }
 
 export interface OnlinePublic {
+  optionalMechanics?: GangOptionalMechanics | undefined;
   v: 1;
   kind: "lobby" | "play" | "finale" | "end";
   queue: GangGameId[];
@@ -114,6 +117,7 @@ export interface OnlinePublic {
 
 /** Full facilitator state, saved with gang_save_runtime (facilitator-only readable). */
 export interface FacState {
+  optionalMechanics?: GangOptionalMechanics;
   v: 1;
   queue: GangGameId[];
   qi: number;
@@ -148,6 +152,7 @@ export function inputKind(rt: GangRuntimeState): InputKind {
   if (["chain-reaction", "panic-button"].includes(g) && stage === "perform")
     return "done";
   if (g === "team-chaos" && stage === "react") return "teams";
+  if (g === "the-line" && stage === "perform" && rt.optionalMechanics?.linePredictions) return "position";
   if ((g === "team-chaos" || g === "the-line") && stage === "perform")
     return "done";
   if ((g === "after-dark" || g === "secret-missions") && stage === "perform")
@@ -212,7 +217,7 @@ export function buildCards(rt: GangRuntimeState): {
   const isPlayer =
     opts.length > 0 && opts.every((o) => rt.players.some((p) => p.id === o));
   return {
-    cards: opts.map((o) => ({ key: o, label: isPlayer ? name(o) : o })),
+    cards: opts.map((o) => ({ key: o, label: o === "__skip__" ? "Tipp auslassen" : name(o) || o })),
     map: {},
   };
 }
@@ -330,6 +335,7 @@ export function buildPublic(
     queue: fac.queue,
     rounds: fac.rounds,
     budgetMinutes: fac.budgetMinutes,
+    optionalMechanics: fac.optionalMechanics,
     qi: fac.qi,
     gameId,
     roster:
@@ -447,6 +453,7 @@ export function startGame(
     players,
     seed,
     targetRounds: fac.rounds?.[gameId],
+    optionalMechanics: fac.optionalMechanics ?? {},
     seenPromptIds: seenIds(),
     interactionMode: "everyone-in",
   });

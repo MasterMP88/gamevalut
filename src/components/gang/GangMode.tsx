@@ -1,7 +1,9 @@
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { GangGuide } from "./GangGuide";
 import { missionQueue } from "@/lib/gang/core/missions";
 import { paceQueue } from "@/lib/gang/core/director";
 /* GANG MODE surface: CHOOSE A GAME / BUILD A MIX / START MY NIGHT → Player Setup → GangPlayer (ONE PHONE). */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowLeft,
@@ -96,18 +98,20 @@ function Overlay({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const returnFocus = useRef(typeof document !== "undefined" ? document.activeElement as HTMLElement | null : null);
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={label}
+    <DialogPrimitive.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <DialogPrimitive.Portal><DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-room" />
+    <DialogPrimitive.Content
+      aria-describedby={undefined}
+      onCloseAutoFocus={(event) => { event.preventDefault(); if (returnFocus.current?.isConnected) returnFocus.current.focus(); }}
       className="fixed inset-0 z-50 flex flex-col overflow-y-auto overflow-x-hidden bg-room safe-x safe-top safe-bottom"
     >
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col py-3">
         <div className="flex min-h-11 items-center justify-between">
-          <span className="font-mono text-xs tracking-[0.2em] text-signal">
+          <DialogPrimitive.Title className="font-mono text-xs tracking-[0.2em] text-signal">
             {label}
-          </span>
+          </DialogPrimitive.Title>
           <button
             type="button"
             aria-label="Schließen"
@@ -119,7 +123,7 @@ function Overlay({
         </div>
         {children}
       </div>
-    </div>
+    </DialogPrimitive.Content></DialogPrimitive.Portal></DialogPrimitive.Root>
   );
 }
 
@@ -231,6 +235,10 @@ function GameSheet({
             </div>
           )}
         </dl>
+        <details className="my-6 border-y border-line py-2">
+          <summary className="tap flex min-h-12 cursor-pointer items-center text-sm">Ablauf, Wertung und Finale</summary>
+          <div className="py-4"><GangGuide id={g.id} compact /><a href={`/gang/${g.id}`} className="tap mt-4 inline-flex min-h-12 items-center text-signal">Beispielrunde & alle Regeln →</a></div>
+        </details>
         <button
           type="button"
           onClick={() => {
@@ -273,9 +281,9 @@ function PlayerSetup({
 }) {
   const recommendedMode = useMemo(() => recommendPlayMode(queue), [queue]);
   // Start with the mode the authored game contract prefers instead of forcing every player onto a phone.
-  const [solo, setSolo] = useState(recommendedMode === "one-phone");
-  const [stage, setStage] = useState(recommendedMode === "big-screen");
-  const onePhone = solo || !client;
+  const [mode, setMode] = useState<PlayMode>(recommendedMode);
+  const stage = mode === "big-screen";
+  const onePhone = mode === "one-phone" || !client;
   const [count, setCount] = useState(
     Math.min(Math.max(initial, range[0]), range[1]),
   );
@@ -296,6 +304,9 @@ function PlayerSetup({
         <p className="mt-4 text-sm text-muted-foreground">
           {queue.map((id) => gangGame(id)?.title).join(" → ")}
         </p>
+        {client && <fieldset className="mt-5"><legend className="eyebrow mb-2">Spielweise</legend><div className="grid grid-cols-3 border-y border-line">{([
+          ["one-phone", "ONE PHONE", "Ein Gerät reicht"], ["big-screen", "BIG SCREEN", "TV als Bühne"], ["everyone-in", "EVERYONE IN", "Alle per QR"],
+        ] as const).map(([id,label,detail])=><label key={id} className={cn("tap flex min-h-20 cursor-pointer flex-col justify-center gap-1 border-l border-line px-3 py-3 first:border-l-0", mode===id ? "bg-signal/10 text-signal" : "text-muted-foreground")}><input type="radio" name="gang-play-mode" className="sr-only peer" value={id} checked={mode===id} onChange={()=>{haptic(5);setMode(id);}}/><span className="font-mono text-xs peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4">{label}</span><span className="text-xs">{id===recommendedMode ? "Passt zum Game" : detail}</span></label>)}</div></fieldset>}
         <div className="my-5">
           <p className="mb-2 text-sm text-muted-foreground">Euer Zeitrahmen</p>
           <div className="grid grid-cols-4 gap-2">
@@ -343,50 +354,15 @@ function PlayerSetup({
               className="mt-5 border-l-2 border-signal pl-4"
             >
               <p className="font-mono text-[0.65rem] tracking-[0.2em] text-signal">
-                {recommendedMode === "everyone-in" ? "PASST ZU DIESEM GAME · EVERYONE IN" : "EVERYONE IN · OPTIONAL"}
+                {stage ? "BIG SCREEN · DER RAUM SPIELT" : recommendedMode === "everyone-in" ? "PASST ZU DIESEM GAME · EVERYONE IN" : "EVERYONE IN · OPTIONAL"}
               </p>
               <h2 className="font-display mt-2 text-[clamp(2.4rem,10vw,3.8rem)] leading-[0.9]">
-                Alle mit eigenem Handy.
+                {stage ? "Der TV wird zur Bühne." : "Jede:r mit eigenem Handy."}
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Du öffnest den Raum, die anderen scannen den QR-Code. Geheime
-                Antworten bleiben auf dem eigenen Handy – niemand muss
-                weitergeben.
+                {stage ? "TV oder Laptop zeigt Fragen, Countdowns und Ergebnisse für alle. Mitspielende treten per QR-Code bei; ihre Handys sind die Controller." : "Du öffnest den Raum, die anderen treten per QR-Code bei. Geheime Rollen und Antworten bleiben bis zur Auflösung verdeckt."}
               </p>
             </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={stage}
-              onClick={() => {
-                haptic(5);
-                setStage(!stage);
-              }}
-              className="tap mt-5 flex min-h-14 w-full items-center justify-between gap-4 border-y border-line py-3 text-left"
-            >
-              <span>
-                <span className="block text-sm text-foreground">
-                  TV/Laptop als Bühne
-                </span>
-                <span className="block text-xs text-muted-foreground">
-                  Optional · Handys bleiben die Controller
-                </span>
-              </span>
-              <span
-                aria-hidden
-                className={cn(
-                  "relative h-6 w-11 shrink-0 rounded-full border transition-colors",
-                  stage ? "border-signal bg-signal/30" : "border-line",
-                )}
-              >
-                <span
-                  className={cn(
-                    "absolute top-0.5 size-4 rounded-full bg-foreground transition-transform motion-reduce:transition-none",
-                    stage ? "translate-x-6" : "translate-x-0.5",
-                  )}
-                />
-              </span>
-            </button>
             {hostAllowed ? (
               <HostSetup
                 client={client}
@@ -400,28 +376,9 @@ function PlayerSetup({
             ) : (
               <HostAccessSheet />
             )}
-            <button
-              type="button"
-              onClick={() => {
-                haptic(5);
-                setSolo(true);
-              }}
-              className="tap mx-auto mt-3 flex min-h-11 items-center px-3 text-sm text-muted-foreground underline-offset-4 hover:underline"
-            >
-              Mit einem Handy spielen
-            </button>
           </>
         ) : (
           <>
-            {client && (
-              <button
-                type="button"
-                onClick={() => setSolo(false)}
-                className="tap mt-3 flex min-h-11 items-center text-left text-sm text-signal underline-offset-4 hover:underline"
-              >
-                Everyone In aktivieren
-              </button>
-            )}
             <p className="mt-3 font-mono text-[0.65rem] tracking-[0.2em] text-signal">
               {recommendedMode === "one-phone" ? "PASST ZU DIESEM GAME · ONE PHONE" : "ONE PHONE · ALTERNATIVE"}
             </p>
@@ -876,11 +833,13 @@ const MODES = [
 export function GangMode({
   back,
   hostAllowed = false,
+  initialGame,
 }: {
   back?: React.ReactNode;
   hostAllowed?: boolean;
+  initialGame?: GangGameId | undefined;
 }) {
-  const [flow, setFlow] = useState<Flow>(null);
+  const [flow, setFlow] = useState<Flow>(initialGame ? { k: "sheet", id: initialGame } : null);
   const [client, setClient] = useState<RoomClient | null>(null);
   const [resume, setResume] = useState<StoredSession | null>(null);
   useEffect(() => {
@@ -1134,6 +1093,12 @@ export function GangMode({
         )}
       </section>
 
+      <nav aria-label="Spielanleitungen" className="mx-auto mt-12 max-w-6xl safe-x">
+        <h2 className="eyebrow">Alle Regeln & Beispielrunden</h2>
+        <ul className="mt-3 flex flex-wrap gap-x-5">
+          {GANG_GAMES.map(g => <li key={g.id}><a href={`/gang/${g.id}`} className="tap inline-flex min-h-12 items-center text-sm text-muted-foreground hover:text-foreground">{g.title}</a></li>)}
+        </ul>
+      </nav>
       {mix && (
         <aside
           aria-label="Dein Mix"

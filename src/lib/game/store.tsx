@@ -34,6 +34,10 @@ const SAVE_DELAY = 600;
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const activeUid = useRef<string | null>(user?.id ?? null);
+  activeUid.current = user?.id ?? null;
+  const lastUid = useRef<string | null>(user?.id ?? null);
+  const accountBoundary = lastUid.current !== null && lastUid.current !== activeUid.current;
   const [players, setPlayers] = useState<[string, string]>(["", ""]);
   const [settings, setSettings] = useState<ConsentSettings>(DEFAULT_SETTINGS);
   const [sessions, setSessions] = useState<Partial<Record<GameId, SessionState>>>({});
@@ -55,8 +59,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const conflict = useRef<Partial<Record<GameId, boolean>>>({});
   const pendingGame = useRef<GameId | null>(null);
+  const prefsLoaded = useRef<string | null>(null);
+  // A signed-in session must never migrate to a different account or into guest mode.
+  // Guest -> account remains the explicitly supported handoff.
+  useEffect(() => {
+    const before=lastUid.current, after=user?.id ?? null;
+    lastUid.current=after;
+    if(before===null || before===after) return;
+    Object.values(timers.current).forEach(clearTimeout);
+    timers.current={};chain.current={};dbId.current={};rev.current={};saved.current={};conflict.current={};
+    pendingGame.current=null;prefsLoaded.current=null;latest.current={};
+    clearPending(window.localStorage);
+    setSessions({});setDbIds({});setSaveStatus({});setPlayers(["",""]);setSettings(DEFAULT_SETTINGS);
+  }, [user?.id]);
+  useEffect(()=>()=>{Object.values(timers.current).forEach(clearTimeout);},[]);
 
   const persist = useCallback(async (id: GameId, uid: string, attempt = 0): Promise<void> => {
+    if(activeUid.current!==uid) return;
     const s = latest.current[id];
     if (!s || saved.current[id] === s || conflict.current[id]) return;
     setSaveStatus((x) => ({ ...x, [id]: "saving" }));
@@ -65,6 +84,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (!rowId) {
         // Adopt an open session for this game (another device, or a guest run being migrated).
         const { data: open } = await supabase.from("game_sessions").select("id, revision").eq("user_id", uid).eq("game_id", id).eq("status", "active").maybeSingle();
+        if(activeUid.current!==uid) return;
         if (open) { rowId = open.id; rev.current[id] = open.revision; }
       }
       const row = toRow(s, uid, 0);
@@ -87,6 +107,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         rev.current[id],
         row,
       );
+      if(activeUid.current!==uid) return;
       if (!res.ok) {
         conflict.current[id] = true;
         setSaveStatus((x) => ({ ...x, [id]: "conflict" }));
@@ -104,6 +125,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setSaveStatus((x) => ({ ...x, [id]: "saved" }));
       }
     } catch (e) {
+      if(activeUid.current!==uid) return;
       // Another tab/device opened the active row first (unique active-per-game): adopt it once.
       if (attempt === 0 && (e as { code?: string })?.code === "23505") return persist(id, uid, 1);
       setSaveStatus((x) => ({ ...x, [id]: "error" }));
@@ -148,24 +170,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [sessions, user, persist]);
 
   // Preferences: load once on sign-in, then keep in sync.
-  const prefsLoaded = useRef<string | null>(null);
   useEffect(() => {
     if (!user || prefsLoaded.current === user.id) return;
     prefsLoaded.current = user.id;
     void supabase.from("preferences").select("settings, player_names").eq("user_id", user.id).maybeSingle().then(({ data }) => {
-      if (!data) return;
+      if (!data || activeUid.current!==user.id) return;
       const names = data.player_names as unknown as [string, string];
       if (Array.isArray(names)) setPlayers((p) => (p[0] || p[1] ? p : [names[0] ?? "", names[1] ?? ""]));
       if (data.settings && typeof data.settings === "object" && Object.keys(data.settings).length) setSettings({ ...DEFAULT_SETTINGS, ...(data.settings as object) });
     });
   }, [user]);
   useEffect(() => {
-    if (!user || prefsLoaded.current !== user.id) return;
+    if (!user || accountBoundary || prefsLoaded.current !== user.id) return;
     const t = setTimeout(() => {
+      if(activeUid.current!==user.id) return;
       void supabase.from("preferences").upsert({ user_id: user.id, settings: settings as never, player_names: players as never, updated_at: new Date().toISOString() }).then(() => undefined);
     }, 1200);
     return () => clearTimeout(t);
-  }, [user, players, settings]);
+  }, [user, players, settings, accountBoundary]);
 
   const start = useCallback(
     (id: GameId, durationMinutes: 15 | 30 | 60 | null = 30) => {
@@ -210,8 +232,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ players, setPlayers, settings, setSettings, sessions, start, dispatch, end, hydrate, saveStatus: user ? saveStatus : {}, dbIds }),
-    [players, settings, sessions, start, dispatch, end, hydrate, saveStatus, user, dbIds],
+    () => ({ players: accountBoundary ? ["", ""] as [string,string] : players, setPlayers, settings: accountBoundary ? DEFAULT_SETTINGS : settings, setSettings, sessions: accountBoundary ? {} : sessions, start, dispatch, end, hydrate, saveStatus: user && !accountBoundary ? saveStatus : {}, dbIds: accountBoundary ? {} : dbIds }),
+    [players, settings, sessions, start, dispatch, end, hydrate, saveStatus, user, dbIds, accountBoundary],
   );
   return <SessionCtx.Provider value={value}>{children}</SessionCtx.Provider>;
 }

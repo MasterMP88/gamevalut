@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as GangRouteImport } from './routes/gang'
+import { Route as PrivatsphaereRouteImport } from './routes/privatsphaere'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TogetherRouteImport } from './routes/together'
@@ -20,6 +21,7 @@ import { Route as AuthenticatedTonightRouteImport } from './routes/_authenticate
 import { Route as CheckoutStartRouteImport } from './routes/checkout.start'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
 import { Route as GameSlugRouteImport } from './routes/game.$slug'
+import { Route as GangSlugRouteImport } from './routes/gang_.$slug'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe/webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -39,6 +41,11 @@ const AuthRoute = AuthRouteImport.update({
 const GangRoute = GangRouteImport.update({
   id: '/gang',
   path: '/gang',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivatsphaereRoute = PrivatsphaereRouteImport.update({
+  id: '/privatsphaere',
+  path: '/privatsphaere',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -76,6 +83,11 @@ const GameSlugRoute = GameSlugRouteImport.update({
   path: '/game/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GangSlugRoute = GangSlugRouteImport.update({
+  id: '/gang_/$slug',
+  path: '/gang/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe/webhook',
   path: '/api/public/stripe/webhook',
@@ -86,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/gang': typeof GangRoute
+  '/privatsphaere': typeof PrivatsphaereRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/together': typeof TogetherRoute
@@ -93,12 +106,14 @@ export interface FileRoutesByFullPath {
   '/checkout/start': typeof CheckoutStartRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/game/$slug': typeof GameSlugRoute
+  '/gang/$slug': typeof GangSlugRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/gang': typeof GangRoute
+  '/privatsphaere': typeof PrivatsphaereRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/together': typeof TogetherRoute
@@ -106,6 +121,7 @@ export interface FileRoutesByTo {
   '/checkout/start': typeof CheckoutStartRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/game/$slug': typeof GameSlugRoute
+  '/gang/$slug': typeof GangSlugRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesById {
@@ -114,6 +130,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/gang': typeof GangRoute
+  '/privatsphaere': typeof PrivatsphaereRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/together': typeof TogetherRoute
@@ -121,6 +138,7 @@ export interface FileRoutesById {
   '/checkout/start': typeof CheckoutStartRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/game/$slug': typeof GameSlugRoute
+  '/gang_/$slug': typeof GangSlugRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRouteTypes {
@@ -129,6 +147,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/gang'
+    | '/privatsphaere'
     | '/reset-password'
     | '/sitemap.xml'
     | '/together'
@@ -136,12 +155,14 @@ export interface FileRouteTypes {
     | '/checkout/start'
     | '/checkout/success'
     | '/game/$slug'
+    | '/gang/$slug'
     | '/api/public/stripe/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/gang'
+    | '/privatsphaere'
     | '/reset-password'
     | '/sitemap.xml'
     | '/together'
@@ -149,6 +170,7 @@ export interface FileRouteTypes {
     | '/checkout/start'
     | '/checkout/success'
     | '/game/$slug'
+    | '/gang/$slug'
     | '/api/public/stripe/webhook'
   id:
     | '__root__'
@@ -156,6 +178,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/gang'
+    | '/privatsphaere'
     | '/reset-password'
     | '/sitemap.xml'
     | '/together'
@@ -163,6 +186,7 @@ export interface FileRouteTypes {
     | '/checkout/start'
     | '/checkout/success'
     | '/game/$slug'
+    | '/gang_/$slug'
     | '/api/public/stripe/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -171,12 +195,14 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   GangRoute: typeof GangRoute
+  PrivatsphaereRoute: typeof PrivatsphaereRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TogetherRoute: typeof TogetherRoute
   CheckoutStartRoute: typeof CheckoutStartRoute
   CheckoutSuccessRoute: typeof CheckoutSuccessRoute
   GameSlugRoute: typeof GameSlugRoute
+  GangSlugRoute: typeof GangSlugRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
 }
 
@@ -208,6 +234,13 @@ declare module '@tanstack/react-router' {
       path: '/gang'
       fullPath: '/gang'
       preLoaderRoute: typeof GangRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privatsphaere': {
+      id: '/privatsphaere'
+      path: '/privatsphaere'
+      fullPath: '/privatsphaere'
+      preLoaderRoute: typeof PrivatsphaereRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -259,6 +292,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GameSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gang_/$slug': {
+      id: '/gang_/$slug'
+      path: '/gang/$slug'
+      fullPath: '/gang/$slug'
+      preLoaderRoute: typeof GangSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/stripe/webhook': {
       id: '/api/public/stripe/webhook'
       path: '/api/public/stripe/webhook'
@@ -285,12 +325,14 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   GangRoute: GangRoute,
+  PrivatsphaereRoute: PrivatsphaereRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TogetherRoute: TogetherRoute,
   CheckoutStartRoute: CheckoutStartRoute,
   CheckoutSuccessRoute: CheckoutSuccessRoute,
   GameSlugRoute: GameSlugRoute,
+  GangSlugRoute: GangSlugRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport

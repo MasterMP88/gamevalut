@@ -1,3 +1,4 @@
+import { ShareNight } from "@/components/player/ShareNight";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Btn } from "@/components/vault/Btn";
@@ -516,6 +517,7 @@ export function CoupleRoom({
                 ))}
               </ol>
             ) : null}
+            {snap.isFacilitator && pub.ending && liveState && <div className="mt-6"><ShareNight state={liveState} /></div>}
             {snap.isFacilitator && pub.ending && (
               <Btn
                 className="mt-8"

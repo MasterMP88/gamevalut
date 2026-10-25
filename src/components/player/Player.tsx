@@ -197,7 +197,7 @@ export function Player({ game }: { game: GameConfig }) {
           )}
 
           <div className="mt-8 flex flex-1 flex-col">
-            {gated ? <CoupleAccessGate onBeforeAuth={() => stashPending(window.localStorage, state, settings)} /> : (<>
+            {gated ? <CoupleAccessGate gameId={game.id} sceneNumber={state.sceneNumber} onBeforeAuth={() => stashPending(window.localStorage, state, settings)} /> : (<>
             {scene?.cue && (
               <p key={`cue-${state.sceneNumber}`} className="mb-3 font-display text-lg italic text-champagne animate-rise">{fill(scene.cue, me, you)}</p>
             )}

@@ -28,8 +28,8 @@ export const FAQ: [string, string][] = [
   ["Was kostet NOCTURNE?", "Die Free Preview ist kostenlos und lässt euch bis Szene 5 hineinspielen – ohne Karte. Danach gibt es den Night Pass für 6,99 € einmalig (72 Stunden alle Games inklusive GANG-Hosting), Unlimited für 9,99 € pro Monat oder Unlimited Year für 59,99 € pro Jahr."],
   ["Zahlt im GANG MODE jeder?", "Nein. Ein Host zahlt, alle spielen. Gäste brauchen weder Account noch Abo. Wenn ein Game Everyone In nutzt, treten sie kostenlos per QR-Code oder Raumcode bei."],
   ["Brauchen wir mehrere Handys?", "Nein. Im GANG MODE reicht für viele Games ein einziges Gerät, andere funktionieren am besten gemeinsam auf TV oder Laptop. Eigene Handys kommen nur dort ins Spiel, wo Everyone In das Erlebnis wirklich besser macht."],
-  ["Was wird gespeichert?", "Mit Account nur der Spielstand: Spiel, Szene, Punkte und Einstellungen. Was ihr euch sagt oder eintippt, wird nicht automatisch gespeichert – außer du sicherst einen Moment ausdrücklich."],
-  ["Können wir später fortsetzen?", "Ja, mit Account. NOCTURNE sichert nach jeder Szene automatisch und bringt euch beim nächsten Mal zur selben Szene zurück – auch auf einem anderen Gerät."],
+  ["Was wird gespeichert?", "Mit Account sichern wir den Paar-Spielstand und gesehene Inhalts-IDs. Echo-Notizen bleiben im Tab, außer du sicherst sie ausdrücklich als Moment. In Mehrgeräte-Räumen werden Rundeneingaben und gegebenenfalls Fotos vorübergehend übertragen; Räume und zugehörige Daten werden nach spätestens 12 Stunden und fünf Minuten gelöscht."],
+  ["Können wir später fortsetzen?", "Mit Account könnt ihr strukturelle Paar-Spielstände später fortsetzen. Private Echo-Notizen und Songlisten werden dabei nicht wiederhergestellt. Mehrgeräte-Räume lassen sich im selben Browser-Tab wieder aufnehmen, solange der Raum noch aktiv ist."],
   ["Sind Aufgaben überspringbar?", "Immer. Skip ist auf jedem Bildschirm sichtbar und kostet nie etwas. Berührung, Sinnliches und Drinks lassen sich jederzeit ausschalten."],
 ];
 
@@ -86,7 +86,8 @@ function Home() {
           </span>
           <nav className="flex items-center gap-1" aria-label="Konto">
             <a href="#preise" className="tap eyebrow inline-flex min-h-11 items-center px-2 hover:text-foreground">Preise</a>
-            <PrivacyDialog>
+            <Link to="/privatsphaere" className="tap inline-flex min-h-12 items-center underline underline-offset-4">Datennutzung im Spiel</Link>
+          <PrivacyDialog>
               <button className="tap eyebrow inline-flex min-h-11 items-center gap-2 px-2 hover:text-foreground">
                 <ShieldCheck className="size-4" /> <span className="hidden sm:inline">Privat</span>
               </button>
@@ -260,6 +261,25 @@ function Home() {
           </section>
         </Reveal>
 
+        <Reveal className="mt-28 border-t border-line pt-12">
+          <section aria-labelledby="member-h" className="grid gap-10 lg:grid-cols-12 lg:gap-12">
+            <div className="lg:col-span-5">
+              <p className="eyebrow">Membership</p>
+              <h2 id="member-h" className="font-display mt-2 text-[clamp(2.4rem,10vw,4.2rem)] leading-[0.92]">Never play the same night <em className="text-primary">twice.</em></h2>
+              <p className="font-display mt-6 text-2xl leading-tight text-champagne">Das Spiel, das nie fertig ist.</p>
+              <p className="mt-3 max-w-md text-muted-foreground">NOCTURNE wächst weiter. Mit Unlimited bekommt ihr die ganze Library und die nächsten Game Drops dazu.</p>
+            </div>
+            <div className="lg:col-span-7">
+              <ol className="space-y-6">{[
+                ["Jeden Monat ein Game Drop", "Neue Fragen, Challenges, Twists oder Modi. Ein kuratiertes Update, kein bloß umsortierter Stapel."],
+                ["Regelmäßig neue Games", "Für zwei und für die Gruppe – sobald das neue Spiel wirklich steht."],
+                ["Vertraute Games bleiben in Bewegung", "Neue Inhalte, klarere Abläufe und ein Verlauf, der Ungespieltem Vorrang gibt."],
+              ].map(([title,copy],i)=><li key={title} className="flex gap-4 border-b border-line pb-6"><span className="font-mono text-sm text-primary">0{i+1}</span><div><h3 className="font-display text-2xl">{title}</h3><p className="mt-1 text-muted-foreground">{copy}</p></div></li>)}</ol>
+              <div className="mt-6 border-l-2 border-signal pl-4"><p className="eyebrow text-signal">Im aktuellen Update</p><p className="font-display mt-2 text-2xl">129 zusätzliche Karten. Zwei neue Extras.</p><p className="mt-2 text-sm text-muted-foreground">Neue Aufträge, Entscheidungen und Aufgaben. Dazu Nachbarschaftstipps in THE LINE und freiwillige Reaktionen in AFTER DARK.</p><Link to="/gang/$slug" params={{slug:"the-line"}} className="tap mt-2 inline-flex min-h-12 items-center text-sm text-signal">THE LINE mit neuen Regeln entdecken →</Link></div>
+            </div>
+          </section>
+        </Reveal>
+
         {/* PRICING */}
         <section id="preise" aria-labelledby="price-h" className="mt-24 scroll-mt-4">
           <p className="eyebrow">Zugang</p>
@@ -361,6 +381,7 @@ function Home() {
             {GAMES.map((g) => <Link key={g.id} to="/game/$slug" params={{ slug: g.slug }} className="tap min-h-9 hover:text-foreground">{g.title}</Link>)}
             <Link to="/gang" className="tap min-h-9 text-foreground hover:text-signal">GANG MODE</Link>
           </nav>
+          <Link to="/privatsphaere" className="tap inline-flex min-h-12 items-center underline underline-offset-4">Datennutzung im Spiel</Link>
           <PrivacyDialog>
             <button className="tap min-h-11 self-start underline underline-offset-4 hover:text-foreground">Privatsphäre &amp; Director</button>
           </PrivacyDialog>

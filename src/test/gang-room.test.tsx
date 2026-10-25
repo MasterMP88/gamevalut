@@ -324,3 +324,25 @@ describe("EVERYONE IN — private rounds + failover", () => {
     );
   });
 });
+
+it('THE LINE optional predictions pass through real controller choices and positional results', async () => {
+  const { srv, client, sessions } = await room(['the-line'], ['Host', 'Mia', 'Jo', 'Sam']);
+  const phones = sessions.map(s => mount(client, s));
+  await waitFor(() => expect(btn(phones[0]!, 'Spiel starten')).not.toBeDisabled(), W);
+  fireEvent.click(within(phones[0]!).getByRole('checkbox', {name:/THE LINE · Nachbarschaft tippen/}));
+  fireEvent.click(btn(phones[0]!, 'Spiel starten'));
+  await waitFor(()=>expect(roomOf(srv).publicState['kind'], phones[0]!.textContent ?? '').toBe('play'), W);
+  for (let i=0;i<4;i++) {
+    const neighbor=['Mia','Host','Sam','Jo'][i]!;
+    await waitFor(()=>expect(within(phones[i]!).getByRole('radio',{name:new RegExp(neighbor)})).toBeTruthy(),W);
+    fireEvent.click(within(phones[i]!).getByRole('radio',{name:new RegExp(neighbor)}));
+    fireEvent.click(btn(phones[i]!, 'Abgeben'));
+  }
+  for(let i=0;i<4;i++){
+    await waitFor(()=>expect(within(phones[i]!).getByLabelText('Dein Platz von links nach rechts')).toBeTruthy(),W);
+    fireEvent.change(within(phones[i]!).getByLabelText('Dein Platz von links nach rechts'),{target:{value:String(i+1)}});
+    fireEvent.click(btn(phones[i]!,'Position bestätigen'));
+  }
+  fireEvent.click(await within(phones[0]!).findByRole("button",{name:"Aufdecken"},W));
+  await waitFor(()=>expect(Object.values(roomOf(srv).publicState["scores"] as Record<string,number> ?? {})).toEqual([1,1,1,1]),W);
+});

@@ -1,3 +1,4 @@
+import { SITE } from "@/lib/seo";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -75,6 +76,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:site_name", content: "NOCTURNE" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:image", content: `${SITE}/og/nocturne.png` },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "NOCTURNE — Game Night für zwei oder die ganze Gruppe" },
+      { name: "twitter:image", content: `${SITE}/og/nocturne.png` },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },

@@ -6,7 +6,7 @@ import type { GameId, SessionState } from "./types";
  * Bump when scene banks change in a way that could invalidate saved scene ids.
  * STATE_VERSION bumps when the SessionState shape changes.
  */
-export const CONTENT_VERSION = 2;
+export const CONTENT_VERSION = 3;
 export const STATE_VERSION = 2;
 
 /**

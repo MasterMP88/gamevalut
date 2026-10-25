@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs><linearGradient id="night" x2="1" y2="1"><stop stop-color="#181217"/><stop offset="1" stop-color="#261d2f"/></linearGradient></defs>
+  <rect width="1200" height="630" fill="url(#night)"/>
+  <path d="M840 0H1200V630H840Z" fill="#171e19"/>
+  <g fill="none" stroke="#b5ce78" stroke-width="2" opacity=".6"><circle cx="1045" cy="257" r="164"/><circle cx="1045" cy="257" r="117"/><path d="M838 257H1200M1045 50V467"/></g>
+  <g fill="#b5ce78"><circle cx="1045" cy="93" r="12"/><circle cx="928" cy="257" r="12"/><circle cx="1045" cy="374" r="12"/></g>
+  <g fill="#f2e9de" font-family="DejaVu Sans, sans-serif"><text x="64" y="75" font-size="22" letter-spacing="5">N//</text><text x="64" y="131" font-size="15" letter-spacing="3">GAME NIGHT FÜR ZWEI. ODER ALLE.</text></g>
+  <text x="57" y="265" fill="#f2e9de" font-family="DejaVu Serif, serif" font-size="96" letter-spacing="-5">NOCTURNE</text>
+  <g fill="#d6bcca" font-family="DejaVu Serif, serif" font-style="italic" font-size="45"><text x="64" y="355">Never play the same</text><text x="64" y="411">night twice.</text></g>
+  <path d="M64 490H1136" stroke="#f2e9de" opacity=".2"/>
+  <text x="64" y="551" fill="#f2e9de" font-family="DejaVu Sans, sans-serif" font-size="18" letter-spacing="2">9 SPIELE FÜR ZWEI</text>
+  <text x="565" y="551" fill="#b5ce78" font-family="DejaVu Sans, sans-serif" font-size="18" letter-spacing="2">16 GAMES IM GANG MODE</text>
+  <text x="64" y="594" fill="#b4a9ae" font-family="DejaVu Sans, sans-serif" font-size="15">Im Browser. Ohne Download. Mit Stoff für den nächsten Abend.</text>
+</svg>
