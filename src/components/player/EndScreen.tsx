@@ -459,7 +459,7 @@ function Tracklist({
       <p className="mt-3 text-muted-foreground">
         {list.length
           ? `${list.length} ${list.length === 1 ? "Track" : "Tracks"} aus ${rounds} ${rounds === 1 ? "Runde" : "Runden"} · ${state.players[0]} & ${state.players[1]}`
-          : "Heute lief noch kein Song. Die nächste Nacht hat eine leere Seite."}
+          : "Heute noch kein Song. Die Tracklist wartet."}
       </p>
       {list.length > 0 && (
         <div className="sleeve mt-8 border border-line p-5 sm:p-7">
