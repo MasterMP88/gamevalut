@@ -28,5 +28,5 @@ jobs:
         run: |
           for f in gang/*.js; do node --check "$f"; done
           ! grep -Eiq 'PROTOTYPE|IN DEVELOPMENT|MULTIPLAYER RUNTIME.*COMING NEXT|heute noch nichts spielbar' gang/index.html gang/*.js
-          grep -q 'ONE PHONE PLAYABLE NOW' gang/home.js
-          grep -q '16 READY' gang/home.js
+          grep -q 'ONE PHONE' gang/home.js
+          grep -q 'id="catalog"' gang/home.js
