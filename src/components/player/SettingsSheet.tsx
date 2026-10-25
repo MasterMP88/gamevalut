@@ -81,7 +81,7 @@ export function SettingsSheet({
         {memory && (
           <section className="mt-6" aria-labelledby="archive-h">
             <div className="flex items-baseline justify-between border-b border-line pb-2">
-              <h3 id="archive-h" className="font-display text-2xl">Session Archive <span className="font-mono text-xs text-muted-foreground">· {anchors?.length ?? 0} · nur in diesem Tab</span></h3>
+              <h3 id="archive-h" className="font-display text-2xl">Gemerkte Momente <span className="font-mono text-xs text-muted-foreground">· {anchors?.length ?? 0} · nur in diesem Tab</span></h3>
               {!!anchors?.length && (
                 <Btn variant="ghost" size="sm" onClick={onClearAnchors}>Archiv leeren</Btn>
               )}
@@ -129,7 +129,7 @@ export function SettingsSheet({
 
         <div className="mt-8 flex flex-wrap gap-3">
           <PrivacyDialog>
-            <Btn variant="outline">Privacy &amp; AI</Btn>
+            <Btn variant="outline">Privatsphäre &amp; Director</Btn>
           </PrivacyDialog>
           <Btn variant="outline" onClick={onEnd}>Nacht beenden</Btn>
         </div>
