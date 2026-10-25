@@ -210,7 +210,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 01 · First Spark
 
-**Zu zweit · ONE PHONE**  
+**Zu zweit · ONE PHONE**
+
 15 Minuten empfohlen · 15/30/60/Open End
 
 **Auditbefund.** Ein klares, leichtes Wechselspiel ist vorhanden. Die öffentliche Detailvorschau bricht am Desktop fast wortweise um; die ausgewiesenen 30–60 Minuten erhöhen unnötig die Einstiegshürde. Im Implementierungszweig sind Kurzformate bereits angelegt.
@@ -239,7 +240,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 02 · After Dark
 
-**Zu zweit · ONE PHONE**  
+**Zu zweit · ONE PHONE**
+
 20–30 Minuten empfohlen · Kurzformat verfügbar
 
 **Auditbefund.** Timer, Roulette und Tempowechsel sind eigenständige Mechaniken. Die Detailseite nennt 45–90 Minuten und teilt den Namen mit dem anders funktionierenden GANG-Spiel; Übergänge müssen besser erklären, welche Regel gerade gilt.
@@ -268,7 +270,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 03 · Night Shift
 
-**Zu zweit · ONE PHONE**  
+**Zu zweit · ONE PHONE**
+
 30 Minuten empfohlen · Open End optional
 
 **Auditbefund.** Die Engine hält eine Richtung über drei Szenen; UI und Copy versprechen teilweise Steuerung nach jeder Szene. Der Nutzen muss sichtbar werden, ohne ständig vier Entscheidungen abzufragen.
@@ -297,7 +300,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 04 · Heatcheck
 
-**Zu zweit · HYBRID**  
+**Zu zweit · HYBRID**
+
 15–30 Minuten · kurze Duelle
 
 **Auditbefund.** Punktestand, Streaks und Power-ups sind vorhanden, aber viele Signale konkurrieren. Im Lovable-Player steht noch, dass Rebound-Skip dem Gegenüber +2 bringt; der offene Implementierungszweig dokumentiert die Korrektur bereits.
@@ -326,7 +330,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 05 · US//AFTER DARK
 
-**Zu zweit · ONE PHONE**  
+**Zu zweit · ONE PHONE**
+
 30 Minuten empfohlen · 15/30/60
 
 **Auditbefund.** Drei Energien und Vault-Ende geben ein klares gemeinsames Ziel. Prozentwerte und abstrakte Form erklären jedoch nicht von selbst, was als Nächstes hilft; die live genannten 60–180 Minuten wirken verpflichtend lang.
@@ -355,7 +360,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 06 · ONE//TWO
 
-**Zu zweit · ONE PHONE**  
+**Zu zweit · ONE PHONE**
+
 15 Minuten oder so lange das Gespräch trägt
 
 **Auditbefund.** Die reduzierte Frage-und-Wechsel-Mechanik ist die Stärke. Zusätzliche globale Bedienelemente, Endlos-Versprechen und universelle Abschlussmuster dürfen diese Ruhe nicht verwässern.
@@ -384,7 +390,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 07 · NIGHT//ECHO
 
-**Zu zweit · ONE PHONE**  
+**Zu zweit · ONE PHONE**
+
 20–30 Minuten · erster Echo-Moment im Kurzformat
 
 **Auditbefund.** Optionale Notizen und spätere Echos sind implementiert. Der Hook kann nach automatischem Zuhören klingen; Memory Core und Anchors sind intern verständlich, für Gäste aber unnötig technisch.
@@ -413,7 +420,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 08 · NIGHT//ECHO — Director
 
-**Zu zweit · ONE PHONE / optional HYBRID**  
+**Zu zweit · ONE PHONE / optional HYBRID**
+
 30 Minuten empfohlen · 15/30/60/Open End
 
 **Auditbefund.** Adaptive Szenenmischung und lokaler Ersatz sind vorgesehen. Öffentliche Demo und Beschreibung sprechen pauschal von live generierten Szenen; im Implementierungsbericht bleibt die globale KI-Freigabe aus. Laufzeitverfügbarkeit ist nicht allein durch den Text belegt.
@@ -442,7 +450,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 09 · PASS//THE AUX
 
-**Zu zweit · ONE PHONE mit inszenierter Übergabe**  
+**Zu zweit · ONE PHONE mit inszenierter Übergabe**
+
 15–30 Minuten · 5–8 Song-Momente
 
 **Auditbefund.** Versiegelte Songwahl, Duett und Tracklist bestehen. Der Standard ist manuelle Eingabe; Audio hängt an real konfigurierten Fähigkeiten. Der Unterschied zwischen Song nennen und Song hören muss vor Beginn klar sein.
@@ -471,7 +480,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 10 · THE MAJORITY
 
-**GANG MODE · HYBRID · Couch empfohlen**  
+**GANG MODE · HYBRID · Couch empfohlen**
+
 8–12 Minuten · 3–99, Crowd als Teams
 
 **Auditbefund.** Prognose und eigene Wahl sind getrennt modelliert. Live verlangt BIG SCREEN weiterhin QR-Controller; One Phone sammelt Einzelzüge. Das ist keine echte Couch-Variante.
@@ -500,7 +510,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 11 · WHO’S THAT?
 
-**GANG MODE · BIG SCREEN / ONE PHONE**  
+**GANG MODE · BIG SCREEN / ONE PHONE**
+
 6–10 Minuten · 3–99 in passenden Gruppen
 
 **Auditbefund.** Zeigen auf Personen passt bereits zur Fantasie; der One-Phone-Player verwendet jedoch die allgemeine private Eingaberoutine. Die Titelgalerie wird im offenen Zweig ergänzt.
@@ -529,7 +540,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 12 · UNDERCOVER
 
-**GANG MODE · EVERYONE IN · ONE PHONE für kleine Runden**  
+**GANG MODE · EVERYONE IN · ONE PHONE für kleine Runden**
+
 10–15 Minuten · 4–30
 
 **Auditbefund.** Geheimrollen, Hinweise, Abstimmung und Finale existieren. One Phone wird live generell empfohlen; für 20–30 Personen entsteht dabei eine lange Verteilrunde. Die genaue Rolleninformation muss mit der Regel übereinstimmen.
@@ -558,7 +570,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 13 · SECRET MISSIONS
 
-**GANG MODE · HYBRID · private Zuteilung, danach Raumspiel**  
+**GANG MODE · HYBRID · private Zuteilung, danach Raumspiel**
+
 20–45 Minuten neben anderen Spielen · 3–30
 
 **Auditbefund.** Die Fantasie ist ein Nebenbei-Spiel. Der Live-Player führt noch einen linearen Perform-Ablauf; der offene Zweig enthält bereits einen sessionweiten Missionszustand und einen Missionsbereich.
@@ -587,7 +600,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 14 · BAD ANSWERS ONLY
 
-**GANG MODE · HYBRID · Couch oder anonyme Schreibedition**  
+**GANG MODE · HYBRID · Couch oder anonyme Schreibedition**
+
 8–12 Minuten · 3–30
 
 **Auditbefund.** Das Spiel verspricht anonyme Gags, sammelt auf One Phone aber seriell Text. Eine spontane mündliche Variante kann die Gruppe schneller ins Spiel bringen, verliert jedoch bewusst die Anonymität.
@@ -616,7 +630,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 15 · BLUFF
 
-**GANG MODE · EVERYONE IN**  
+**GANG MODE · EVERYONE IN**
+
 10–15 Minuten · 3–20
 
 **Auditbefund.** Hier ist kurzes Schreiben Teil der Mechanik. Der offene Zweig verbessert Faktenquellen und Wahrheitsperson; Wahrheit und Lügen müssen visuell wirklich gleich behandelt werden.
@@ -645,7 +660,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 16 · THE LINE
 
-**GANG MODE · BIG SCREEN / ONE PHONE**  
+**GANG MODE · BIG SCREEN / ONE PHONE**
+
 6–10 Minuten · 4–99 mit Zonen
 
 **Auditbefund.** Die räumliche Skala ist eine echte Eigenständigkeit. Der allgemeine Screen- und Reveal-Ablauf muss zugunsten großer Pole und einer kurzen gemeinsamen Auswertung zurücktreten.
@@ -674,7 +690,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 17 · HOT SEAT
 
-**GANG MODE · HYBRID**  
+**GANG MODE · HYBRID**
+
 8–15 Minuten · 3–20
 
 **Auditbefund.** Geheime Eigenwahl und Prognosen sind vorhanden; die Kernfrage muss schon im Einstieg als Vorhersagespiel erkennbar sein, damit Spotlight nicht wie ein Verhör wirkt.
@@ -703,7 +720,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 18 · TEAM CHAOS
 
-**GANG MODE · BIG SCREEN + höchstens Teamgeräte**  
+**GANG MODE · BIG SCREEN + höchstens Teamgeräte**
+
 15–20 Minuten · 6–99
 
 **Auditbefund.** Zwei Teams passen zur Raumfantasie. Im offenen Zweig sind Captain-Karten, echte quantitative Ergebnisse und rotierende Rollen vorhanden; diese brauchen eine eindeutige Bühnenhierarchie.
@@ -732,7 +750,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 19 · PHOTO HUNT
 
-**GANG MODE · HYBRID · ein Kameragerät pro Team**  
+**GANG MODE · HYBRID · ein Kameragerät pro Team**
+
 8–12 Minuten · 3–30
 
 **Auditbefund.** Der öffentliche Einstieg nennt Kamera optional, während das Spiel von echten Fotos lebt. Live-One-Phone speichert lokale Bilder; der offene Zweig bringt eine Raumgalerie. Textantworten sind kein gleichwertiger Foto-Reveal.
@@ -761,7 +780,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 20 · DRAW THIS
 
-**GANG MODE · HYBRID · Papier-Couch als Startvariante**  
+**GANG MODE · HYBRID · Papier-Couch als Startvariante**
+
 10–15 Minuten · 3–30
 
 **Auditbefund.** Der offene Zweig setzt auf Papierzeichnen und Live-Rateversuche. Ein Stift-Motiv darf keine digitale Zeichenfläche versprechen, solange diese nicht existiert.
@@ -790,7 +810,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 21 · MUSIC DROP
 
-**GANG MODE · HYBRID · Couch-Songbattle / private Picks**  
+**GANG MODE · HYBRID · Couch-Songbattle / private Picks**
+
 10–15 Minuten · 2–99 als Teams
 
 **Auditbefund.** Live sagt der Hook „Know the song“, die tatsächliche Regel ist Songwahl zum Prompt mit Crowd-Vote. Das vermischt Musikraten und Songbattle und erzeugt eine falsche Erwartung.
@@ -819,7 +840,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 22 · CHAIN REACTION
 
-**GANG MODE · ONE PHONE / BIG SCREEN**  
+**GANG MODE · ONE PHONE / BIG SCREEN**
+
 5–8 Minuten · 3–30 in kleinen Ketten
 
 **Auditbefund.** Die Wortkette ist mündlich stark, während Texteingaben unter Zeitdruck sie ausbremsen. Der offene Zweig hat echte Zugfristen und bei großen Online-Runden parallele Spuren.
@@ -848,7 +870,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 23 · ONE OF YOU
 
-**GANG MODE · EVERYONE IN · Pass-Modus für kleine Gruppen**  
+**GANG MODE · EVERYONE IN · Pass-Modus für kleine Gruppen**
+
 10–15 Minuten · 4–30
 
 **Auditbefund.** Abweichende Fragen schaffen eine andere Deduktionsmechanik als UNDERCOVER. Die Präsentation braucht einen eigenen Reveal, der die Fragen semantisch vergleichbar macht.
@@ -877,7 +900,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 24 · PANIC BUTTON
 
-**GANG MODE · ONE PHONE / BIG SCREEN**  
+**GANG MODE · ONE PHONE / BIG SCREEN**
+
 4–7 Minuten · 2–99 in Teams/Spuren
 
 **Auditbefund.** Kern ist eine schnelle Wort-/Reaktionsstaffel, nicht bloß eine Abstimmung. Der offene Zweig verbessert Deadlines; striktes Telefon-Weiterreichen kann bei großen Gruppen und teuren Geräten störend sein.
@@ -906,7 +930,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 25 · AFTER DARK · GANG
 
-**GANG MODE · HYBRID · private Grenzen, gemeinsamer Screen**  
+**GANG MODE · HYBRID · private Grenzen, gemeinsamer Screen**
+
 10–20 Minuten · 2–20 Erwachsene
 
 **Auditbefund.** Individuelles Opt-in und Stop-Veto sind im offenen Zweig verbessert. Die alte Raumformulierung kann Mehrheitsdruck vermitteln; die Paarvariante gleichen Namens ist ein anderes Spiel.
@@ -935,7 +960,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 26 · FIRST//BEAT
 
-**Musik · vorhandener Core · HYBRID · Paar ONE PHONE, GANG TV/Teams**  
+**Musik · vorhandener Core · HYBRID · Paar ONE PHONE, GANG TV/Teams**
+
 10–15 Minuten · Verfügbarkeit noch gesperrt
 
 **Auditbefund.** Ein eigener Core mit 1/3/7/15-Sekunden-Hörfenstern existiert; das Spiel ist nicht in den neun Paarspielen integriert. Echtes geeignetes Audio ist Voraussetzung, keine kosmetische Nachrüstung.
@@ -964,7 +990,8 @@ Die folgenden Profile werden aus `ui-ux-game-concepts-2026.json` erzeugt. Das er
 
 ### 27 · TIME//DROP
 
-**Musik · vorhandener Core · HYBRID · Paar ONE PHONE / GANG TV+Teams**  
+**Musik · vorhandener Core · HYBRID · Paar ONE PHONE / GANG TV+Teams**
+
 12–20 Minuten · 2–99 mit geeigneter Variante
 
 **Auditbefund.** Ein eigener Timeline-Core samt Flow/Precision/Expert ist vorhanden, im GANG-Katalog aber als Prototyp ausgefiltert. Das Produkt benötigt eine eigene Oberfläche und reale Audiointegration.

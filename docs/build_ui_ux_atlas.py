@@ -12,7 +12,7 @@ md += '| # | Spiel | Empfohlene Spielweise | Format |\n| --- | --- | --- | --- |
 for i,g in enumerate(games,1):
     md += f"| {i:02} | {g['title']} | {g['mode']} | {g['duration']} |\n"
 for i,g in enumerate(games,1):
-    md += f"\n### {i:02} · {g['title']}\n\n**{g['world']} · {g['mode']}**  \n{g['duration']}\n\n"
+    md += f"\n### {i:02} · {g['title']}\n\n**{g['world']} · {g['mode']}**\n\n{g['duration']}\n\n"
     for key,label in fields:
         md += f"**{label}.** {g[key]}\n\n"
     md += f"**Beispiel-Copy:** „{g['prompt']}“ → **{g['cta']}** → „{g['moment']}“\n"
