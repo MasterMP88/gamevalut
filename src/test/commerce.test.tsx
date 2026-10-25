@@ -71,9 +71,10 @@ function fakeDb() {
   const status: Record<string, string> = {};
   const db: CommerceDb = {
     claim: async (id) => (seen.has(id) ? false : (seen.add(id), true)),
-    finish: async (id, s) => { status[id] = s; },
-    upsertEntitlement: async (r) => { const i = ents.findIndex((e) => e.user_id === r.user_id && e.product_key === r.product_key); if (i >= 0) ents[i] = r; else ents.push(r); },
-    upsertSubscription: async () => "sub-row",
+    finish: async (id, _attempt, s) => { status[id] = s; },
+    lock: async () => true,
+    release: async () => {},
+    apply: async (_resource,_attempt,r) => { const i = ents.findIndex((e) => e.user_id === r.user_id && e.product_key === r.product_key); if (i >= 0) ents[i] = r; else ents.push(r); },
   };
   return { db, ents, status };
 }
@@ -118,6 +119,7 @@ vi.mock("@/lib/commerce/stripe.server", async () => {
   return {
     stripeClient: () => new Stripe("sk_test_dummy", { httpClient: Stripe.createFetchHttpClient() }),
     adminCommerceDb: async () => { throw new Error("db must not be reached"); },
+    stripeLookup: () => { throw new Error("lookup must not be reached"); },
     verifyUser: async (t: unknown) => { if (t !== "a.b.c") throw new Error("Unauthorized"); return { id: UID, email: null }; },
   };
 });
@@ -188,8 +190,8 @@ describe("GANG host gate", () => {
 });
 
 describe("payment edges", () => {
-  it("handles exactly the five documented webhook events", () => {
-    expect([...HANDLED_STRIPE_EVENTS]).toEqual(["checkout.session.completed", "checkout.session.async_payment_succeeded", "customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"]);
+  it("handles the eight documented webhook events", () => {
+    expect([...HANDLED_STRIPE_EVENTS]).toEqual(["checkout.session.completed", "checkout.session.async_payment_succeeded", "customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted", "charge.refunded", "charge.dispute.created", "charge.dispute.closed"]);
   });
   it("async_payment_succeeded grants a 72h Night Pass with the same checks", async () => {
     const { db, ents } = fakeDb();
@@ -251,5 +253,34 @@ describe("equivalent access protection", () => {
  it("does not grant access for an unknown offer or an invalid time window", () => {
    expect(coupleSceneAccess(6,[ent("unknown",NOW+H)],NOW).allowed).toBe(false);
    expect(coupleSceneAccess(6,[{...ent("night_pass_72h",NOW+H),ends_at:"invalid"}],NOW).allowed).toBe(false);
+ });
+});
+
+
+describe("current Stripe state reconciliation",()=>{
+ it("an old active event cannot revive a currently canceled subscription, even at the same second",async()=>{
+  const {db,ents}=fakeDb();
+  const fresh=sub("fresh","customer.subscription.updated","canceled").data.object as import("@/lib/commerce/webhook.server").SubLike;
+  await handleStripeEvent(sub("late","customer.subscription.created","active"),db,{checkoutPriceIds:async()=>[],currentSubscription:async()=>fresh},NOW);
+  expect(ents[0]!.status).toBe("revoked");
+ });
+ it("refund and dispute events reconcile the original purchase and a won dispute can restore it",async()=>{
+  const {db,ents}=fakeDb();let blocked=true;
+  const lookup={checkoutPriceIds:async()=>[NIGHT],chargeSource:async()=>({kind:"checkout" as const,id:"cs_1"}),currentCheckout:async()=>({session:checkout("x").data.object as import("@/lib/commerce/webhook.server").CheckoutLike,blocked,paidAt:NOW/1000})};
+  await handleStripeEvent({id:"refund",type:"charge.refunded",created:NOW/1000,data:{object:{id:"ch_1"}}},db,lookup,NOW);
+  expect(ents[0]!.status).toBe("revoked");
+  blocked=false;
+  await handleStripeEvent({id:"won",type:"charge.dispute.closed",created:NOW/1000,data:{object:{id:"dp_1",charge:"ch_1"}}},db,lookup,NOW);
+  expect(ents[0]!.status).toBe("active");
+ });
+ it("never applies an event if current-state retrieval fails, and releases its lease",async()=>{
+  const {db,ents,status}=fakeDb();const release=vi.fn(async()=>{});db.release=release;
+  await expect(handleStripeEvent(sub("broken","customer.subscription.updated","active"),db,{checkoutPriceIds:async()=>[],currentSubscription:async()=>{throw new Error("Stripe unavailable");}},NOW)).rejects.toThrow("Stripe unavailable");
+  expect(ents).toHaveLength(0);expect(status["broken"]).toBe("failed");expect(release).toHaveBeenCalledOnce();
+ });
+ it("a busy source is retried instead of concurrently overwriting another delivery",async()=>{
+  const {db,ents,status}=fakeDb();db.lock=async()=>false;
+  await expect(handleStripeEvent(checkout("busy"),db,{checkoutPriceIds:async()=>[NIGHT]},NOW)).rejects.toThrow("Reconciliation busy");
+  expect(ents).toHaveLength(0);expect(status["busy"]).toBe("failed");
  });
 });

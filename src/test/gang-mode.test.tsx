@@ -30,11 +30,11 @@ describe("GANG MODE integration", () => {
     }
   });
 
-  it("normal start path defaults to EVERYONE IN, with no handoff curtain", () => {
+  it("BLUFF recommends EVERYONE IN for sealed lies, with no handoff curtain", () => {
     render(<GangMode hostAllowed />);
-    click("THE MAJORITY öffnen");
+    click("BLUFF öffnen");
     click("Spiel starten");
-    expect(screen.getByTestId("everyone-in-setup").textContent).toContain("EMPFOHLEN");
+    expect(screen.getByTestId("everyone-in-setup").textContent).toContain("PASST ZU DIESEM GAME");
     expect(screen.getByRole("button", { name: "Raum öffnen" })).toBeTruthy();
     expect(screen.getByRole("switch", { name: /TV\/Laptop als Bühne/ }).getAttribute("aria-checked")).toBe("false");
     expect(screen.queryByTestId("curtain")).toBeNull();
@@ -42,11 +42,10 @@ describe("GANG MODE integration", () => {
     expect(screen.queryByText(/SPIELER MÖGLICH/)).toBeNull();
   });
 
-  it("ONE PHONE is a secondary fallback that stays fully playable", () => {
+  it("THE MAJORITY starts with one shared phone and remains fully playable", () => {
     render(<GangMode hostAllowed />);
     click("THE MAJORITY öffnen");
     click("Spiel starten");
-    click(/Nur ein Handy\?/);
     expect(screen.queryByTestId("everyone-in-setup")).toBeNull();
     expect(screen.getByText(/3–99 SPIELER MÖGLICH/)).toBeTruthy();
     click("Los");
@@ -68,7 +67,8 @@ describe("GANG MODE integration", () => {
     const summary = screen.getByTestId("night-summary");
     expect(within(summary).getAllByRole("listitem").length).toBeGreaterThan(0);
     click("Night starten");
-    click(/Nur ein Handy\?/);
+    const sharedPhone = screen.queryByRole("button", { name: "Mit einem Handy spielen" });
+    if (sharedPhone) fireEvent.click(sharedPhone);
     click("Night starten");
     expect(screen.getByRole("button", { name: "Los geht's" })).toBeTruthy();
   });

@@ -19,7 +19,9 @@ export function checkoutParams(
     line_items: [{ price: priceIdFor(offerKey), quantity: 1 }],
     client_reference_id: user.id,
     metadata,
-    ...(subscription ? { subscription_data: { metadata } } : {}),
+    ...(subscription
+      ? { subscription_data: { metadata } }
+      : { payment_intent_data: { metadata } }),
     ...(customer
       ? { customer }
       : user.email
