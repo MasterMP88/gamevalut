@@ -469,7 +469,7 @@ function Director({ g, bare }: V) {
       <div className="relative mx-auto grid w-full max-w-6xl flex-1 gap-8 lg:grid-cols-12 lg:items-center lg:gap-14">
         {!bare && (
           <header className="lg:col-span-7">
-            <p className="flex items-center gap-2 font-mono text-[0.7rem] tracking-[0.2em] text-champagne"><span className="size-1.5 rounded-full bg-champagne animate-slow-pulse" />FLAGSHIP · {g.number} · AI LIVE, SONST LOKAL</p>
+            <p className="flex items-center gap-2 font-mono text-[0.7rem] tracking-[0.2em] text-champagne"><span className="size-1.5 rounded-full bg-champagne animate-slow-pulse" />FLAGSHIP · {g.number} · DIRECTOR CUT</p>
             <h3 id={`t-${g.id}`} className="font-display mt-4 text-[clamp(3.4rem,15vw,6rem)] leading-[0.84]">
               NIGHT//ECHO<span className="block italic text-primary">Director</span>
             </h3>
