@@ -56,7 +56,7 @@ export const EXTRA_PROMPTS: Partial<Record<GangGameId, GangPrompt[]>> = {
   ["Worüber könntest du sofort einen Vortrag halten?",["Musik","Essen","Eine Serie","Ein seltsames Hobby"]],
   ["Was ist dir beim Spiel wichtiger?",["Spannung","Lachen","Gewinnen","Alle einbeziehen"]],
   ["Was würde dich im Hotel überzeugen?",["Frühstück","Bett","Aussicht","Später Checkout"]],
-  ["Du musst eine Sache sammeln. Was?",["Geschichten","Rezepte","Postkarten","Tickets"]],
+  ["Wenn du nur eine Sache sammeln dürftest: was?",["Geschichten","Rezepte","Postkarten","Tickets"]],
   ["Welche Alltagsfunktion hättest du gern?",["Rückgängig","Pause","Lautlos","Schnellsuche"]],
  ]),
  "photo-hunt": text("photo", ["Ein Gegenstand als Film-Bösewicht.","Zwei Dinge, die aussehen wie ein sehr ungleiches Paar.","Eine winzige Landschaft aus Alltagszeug.","Ein Bild, in dem Größenverhältnisse nicht stimmen.","Die Farbe Gelb als Hauptperson.","Ein trauriger Gegenstand mit großem Auftritt.","Ein Werbefoto für etwas völlig Unverkäufliches.","Ein unscheinbares Detail als Sehenswürdigkeit.","Eine Spiegelung mit Überraschung.","Ein Bild mit exakt drei Farben.","Etwas Weiches, das gefährlich aussieht.","Der kleinste rote Teppich der Welt.","Ein Stillleben namens ‚Gleich fertig‘.","Zwei Objekte führen ein Streitgespräch.","Eine dramatische Diagonale.","Etwas Rundes als Held einer Geschichte.","Ein harmloses Ding mit riesigem Schatten.","Die Ruhe vor einem völlig erfundenen Sturm.","Ein Schatz, den man täglich übersieht.","Ein minimalistisches Poster für eure Nacht."], {seconds:35}),
