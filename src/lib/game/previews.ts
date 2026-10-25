@@ -41,7 +41,7 @@ export const PREVIEWS: Record<GameId, Preview> = {
     frames: [
       { tag: "DEIN ZUG · A", who: "A", text: "Welcher Song läuft in deinem Kopf, wenn du flirtest?" },
       { tag: "LAUT ANTWORTEN", who: "A", text: "Sag es deinem Gegenüber.", action: "Gesagt ✓" },
-      { tag: "HANDY RÜBER", who: "B", text: "Jetzt du.", action: "Weiter →" },
+      { tag: "NÄCHSTER ZUG", who: "B", text: "Jetzt du.", action: "Weiter →" },
       { tag: "MINI-MISSION · B", who: "B", text: "Zeig deinen besten Tanzschritt. Fünf Sekunden.", action: "Gemacht ✓" },
     ],
   },
@@ -113,7 +113,7 @@ export const PREVIEWS: Record<GameId, Preview> = {
   },
   "ai-director": {
     mechanic: "Ein unsichtbarer Gastgeber baut aus eurem Abend ein Spiel, das es nur heute gibt.",
-    truths: ["für 2", "AI geführt", "läuft auch offline"],
+    truths: ["für 2", "Director geführt", "spielt lokal weiter"],
     idealWhen: "Ideal wenn ihr euch überraschen lassen wollt.",
     frames: [
       { tag: "KOMPOSITION", who: "director", text: "Zu viele Fragen. Nächstes Format: Vorhersage.", action: "Director live" },
