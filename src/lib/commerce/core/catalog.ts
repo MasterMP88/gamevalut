@@ -56,12 +56,12 @@ export const OFFERS: readonly Offer[] = [
   {
     key: "unlimited_annual",
     label: "Unlimited Year",
-    amountCents: 4999,
+    amountCents: 5999,
     currency: "eur",
     billing: "year",
     durationHours: null,
     recommended: true,
-    stripePriceId: "price_1UUDZtRGuzgtZTcBkcwhCg10",
+    stripePriceId: "price_1UUPekRGuzgtZTcBS2itbNWR",
   },
 ] as const;
 
@@ -73,9 +73,18 @@ export const PAID_OFFERS = OFFERS.filter(
   (offer): offer is Offer & { stripePriceId: string } => offer.stripePriceId !== null,
 );
 
-export const OFFER_BY_STRIPE_PRICE_ID = new Map(
-  PAID_OFFERS.map((offer) => [offer.stripePriceId, offer] as const),
-);
+export const LEGACY_STRIPE_PRICE_IDS = {
+  unlimited_annual_founder_4999: "price_1UUDZtRGuzgtZTcBkcwhCg10",
+} as const;
+
+export const OFFER_BY_STRIPE_PRICE_ID = new Map<string, Offer>([
+  ...PAID_OFFERS.map((offer) => [offer.stripePriceId, offer] as const),
+  [LEGACY_STRIPE_PRICE_IDS.unlimited_annual_founder_4999, {
+    ...OFFER_BY_KEY.unlimited_annual,
+    amountCents: 4999,
+    stripePriceId: LEGACY_STRIPE_PRICE_IDS.unlimited_annual_founder_4999,
+  }],
+]);
 
 export const FREE_PREVIEW_LAST_SCENE = 5;
 
