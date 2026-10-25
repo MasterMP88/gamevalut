@@ -1,6 +1,6 @@
 # NOCTURNE Copy Audit 2026
 
-Status: **redaktionell umgesetzt – technischer Release-Check folgt über CI**  
+Status: **redaktionell umgesetzt und technisch validiert**  
 Datum: 2026-10-25  
 Voice Contract: [brand-voice-2026.md](./brand-voice-2026.md)
 
@@ -133,6 +133,20 @@ Neu:
   - fixiert 59,99 € als öffentlichen Jahrespreis
   - fixiert die aktuelle Stripe Price-ID
   - stellt sicher, dass der 49,99-€-Founder-Preis weiterhin als Legacy-Alias erkannt wird
+
+## Technische Validierung
+
+Der Copy-Pass wird durch vier CI-Gates abgesichert:
+- **App quality:** Vitest, TypeScript und Production Build
+- **Commerce core**
+- **GANG core**
+- **GANG browser**
+
+Alle vier Gates waren bei der Abnahme dieses Audits grün.
+
+### Infrastruktur-Hinweis
+
+Das bestehende Root-`package-lock.json` enthält nicht portable lokale Links auf `../nocturne-audit-source/node_modules/...`. Das App-Quality-Gate installiert deshalb aktuell reproduzierbar aus `package.json` mit npm 11, ohne dieses Legacy-Lockfile zu verwenden. Das Lockfile sollte in einem separaten Infrastruktur-Cleanup sauber neu erzeugt werden; es ist kein Copy- oder Gameplay-Problem.
 
 ## Release-Kriterium
 
