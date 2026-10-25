@@ -7,11 +7,11 @@ Canonical, provider-light commercial rules for NOCTURNE.
 | Offer | Price | Rule |
 | --- | ---: | --- |
 | Free Preview | €0 | playable through scene 5; gate before scene 6 |
-| Night Pass | €6.99 once | 72 hours of paid access for the approved two-player scope |
+| Night Pass | €6.99 once | 72 hours, full library including GANG MODE for the host; guests free |
 | Unlimited | €9.99/month | recurring |
-| Unlimited Year | €49.99/year | recommended offer |
+| Unlimited Year | €59.99/year | recommended public offer; legacy €49.99 founder price remains valid for existing customers |
 
-The three paid offers already exist in the live **GameNights** Stripe account. This
+The three current public paid offers exist in the live **GameNights** Stripe account. The former €49.99 annual price remains allowlisted as a legacy/founder price, while new annual checkouts use €59.99. This
 package contains their public Stripe Price IDs so server integrations can allowlist
 them. It contains no Stripe secret.
 
@@ -23,8 +23,8 @@ them. It contains no Stripe secret.
 - Unknown Stripe prices never grant access.
 - GANG MODE follows **one host pays, everyone plays**:
   guests need neither an account nor payment.
-- The exact set of paid products that unlocks a GANG host is intentionally a runtime
-  configuration. A standalone GANG Pass is not silently launched by this package.
+- Night Pass, Unlimited Monthly and Unlimited Year all unlock GANG MODE for the host.
+- Guests never pay and never need an account.
 
 ## Integration contract
 
