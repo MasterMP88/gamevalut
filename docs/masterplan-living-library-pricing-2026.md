@@ -1,4 +1,4 @@
-# GameNights Masterplan — Living Game Library & Pricing 2026
+# NOCTURNE Masterplan — Living Game Library & Pricing 2026
 
 Status: **verbindlich beschlossen und in Umsetzung**
 Datum: 2026-10-25
@@ -7,7 +7,21 @@ Datum: 2026-10-25
 
 **Never play the same night twice.**
 
-GameNights ist kein statisches Kartenspiel und keine Sammlung, die nach wenigen Abenden „durchgespielt“ ist. Das Produkt wird als **Living Game-Night Membership** positioniert: Couple + GANG, laufend verbessert, monatlich erweitert und mit Replay-Mechaniken, die Wiederholungen aktiv reduzieren.
+NOCTURNE ist kein statisches Kartenspiel und keine Sammlung, die nach wenigen Abenden „durchgespielt“ ist. Das Produkt wird als **Living Game-Night Membership** positioniert: Couple + GANG, laufend verbessert, monatlich erweitert und mit Replay-Mechaniken, die Wiederholungen aktiv reduzieren.
+
+
+## Brand Voice Contract
+
+Die verbindliche Customer Voice ist in [`docs/brand-voice-2026.md`](./brand-voice-2026.md) definiert.
+
+Kernregeln:
+- Consumer Brand **NOCTURNE**; GameNights bleibt nur dort sichtbar, wo Merchant-/Operations-Kontext es technisch erfordert.
+- Voice: **SMART MISCHIEF**; Archetyp: **THE PLAYFUL INSTIGATOR**.
+- **Clarity before comedy.** Checkout, Consent, Privacy und Fehler bleiben bewusst nüchterner als Marketing, Gameplay und Reveals.
+- Humor kommentiert Situationen, nie Grenzen oder sensible Antworten.
+- Keine künstliche Gen-Z-Sprache, kein Emoji-Spam, kein technischer Implementierungsjargon in Customer Copy.
+- Landingpage, Games, CTAs, Reveals, Endings und Retention Copy müssen wie dieselbe Marke klingen.
+- Brandvoice ist ab sofort ein **Release-Gate**; sichtbare Copy gilt erst als fertig, wenn Handlung und Markencharakter gleichzeitig klar sind.
 
 ## Warum ein Abo?
 
