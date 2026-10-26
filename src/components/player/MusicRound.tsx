@@ -389,9 +389,19 @@ export function PickForm({
 
   useEffect(() => {
     if (!speed || left <= 0) return;
-    const t = setTimeout(() => setLeft((n) => n - 1), 1000);
-    return () => clearTimeout(t);
-  }, [speed, left]);
+    const timer = window.setInterval(() => {
+      setLeft((n) => {
+        if (n <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+        return n - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+    // A single interval makes QUICK DRAW deterministic across browser and fake-timer runtimes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speed]);
 
   useEffect(() => {
     if (!speed || left !== 0 || expirySent.current) return;
