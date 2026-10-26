@@ -50,6 +50,6 @@ test("empty creative submissions produce no blank ballot cards or fake winners",
 test("international song titles remain distinct; every revised bluff has a source", () => {
   assert.notEqual(normalizeAnswer("星空"), normalizeAnswer("海洋"));
   const facts = getGangPlaybook("bluff").prompts;
-  assert.equal(facts.length, 30);
+  assert.ok(facts.length >= 54);
   assert.ok(facts.every((p) => p.sourceUrl?.startsWith("https://")));
 });

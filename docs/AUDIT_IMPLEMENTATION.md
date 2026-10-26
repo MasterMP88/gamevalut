@@ -99,3 +99,24 @@ Fortschritt und durchgeführte Prüfungen werden mit der Implementierung ergänz
 - Anbieter-/Kontakt-/Vertragsangaben aus verifizierten Betreiberinformationen, vollständige Vertrauensseiten und fachliche Prüfung. Keine Betreiberidentität oder Adresse erfunden.
 - Aktives Apple-Music-Audio und dedizierte FIRST BEAT/TIME DROP-Oberflächen erst mit echten Provider-Voraussetzungen; lokale Core-Tests sind keine Audiofreigabe. AI-Erweiterung bleibt serverseitig deaktiviert; lokaler Director funktioniert.
 - Datenschutzarme, freiwillige Produkttelemetrie und redaktioneller Monats-Drop-Betrieb sind noch kein abgeschlossener Betriebsnachweis. AFTER-DARK-Ausstieg aus einer einzelnen Runde funktioniert; ein dauerhafter Wechsel in den Zuschauerstatus während einer laufenden Nacht ist noch separat zu ergänzen.
+
+
+### GANG Couch / Premium-2026 — eigener Umsetzungsschritt
+- Verbindliche Empfehlungen für alle 16 spielbaren GANG-Titel in `experience.ts`; vollständige Einzelverträge, Regeln, Größenbänder und Nachweise in [GANG_PREMIUM_2026.md](GANG_PREMIUM_2026.md). TIME DROP bleibt Prototyp.
+- Neun öffentliche Raumspiele mit eigenem reinen Reducer und gemeinsamer Bühne ohne Raumbeitritt: THE MAJORITY, WHO’S THAT, THE LINE, BAD ANSWERS ONLY, MUSIC DROP, PANIC BUTTON, HOT SEAT, TEAM CHAOS, CHAIN REACTION.
+- TV/Laptop oder gemeinsames Handy, höchstens sechs Teams/Sektoren, rotierende Sprecher, echte Timer/Pause, Skip ohne Punkte, verlässlicher Abschluss, einmaliger Encore und neues Deck beim Replay. Auf dem TV zunächst Aufgabe und Aktion, Ergebniseingabe erst danach.
+- MUSIC DROP erkennt lokal mitgebrachte Audiodateien im Handbuzzer-/Steal-Spiel; keine behauptete Streaming-Anbindung. Dateinamen bleiben vor Reveal aus dem Spielbild. Die bestehende Song-Voting-Variante bleibt gesondert auswählbar.
+- Director verwendet Geräte, TV, Energie, Vibe, Zeit und Spielehistorie; die gemeinsame Gerätewahl bleibt ohne private Spiele und Beitrittszwang. Private Spiele behalten Everyone In/Hybrid bzw. One Phone mit Abdeckung.
+- Neue Content-Edition, 24 weitere BLUFF-Fakten mit Primärquellen, 32 öffentliche TEAM-CHAOS-Aufgaben; harter Session-Ausschluss unabhängig von älterer History. Rollenverteilung rotiert. UNDERCOVER/ONE OF YOU verraten die Sonderrolle nicht mehr durch Kartenmetadaten/Präfixe.
+- Korrekte Detektiv-Sieger statt des enttarnten Gegners; kein Punkte-Farming durch Skip oder fehlende Stimmen; zusätzliche Finalvarianten für UNDERCOVER, BLUFF, PHOTO HUNT, DRAW THIS.
+- Abnahme: **104/104 GANG-Core-Tests, 251/251 App-Tests, TypeScript und Produktionsbuild bestanden**. Browser: **27 Sessions / 81 Runden / 0 Laufzeitfehler** in 390/1440/1920px, inklusive echter WAV-Decodierung, Skip/Finale/Encore/Replay.
+- Dieser Schritt ändert keine Live-Datenbank und veröffentlicht die Website nicht. Couch-Reload-Recovery, separates Smartphone als TV-Ferncontroller, reale Mobilgeräte-/Safari-/99-Geräte-Tests und menschliche Spielspaßtests sind nicht durch diese technische Abnahme abgedeckt. Keine Lovable-Credits verbraucht.
+
+
+### Zusammengeführter GANG-Stand — 26.10.2026
+- Audit-Stand `4c38a2c` vollständig integriert; neue öffentliche Spielanleitungen, optionale Geräte-Mechaniken, Marken-/Preisänderungen und Paar-/Account-Korrekturen bleiben erhalten.
+- Couch- und Geräteanleitungen getrennt, damit MUSIC DROP keine Song-Eingabe als Hörspiel erklärt und öffentliche TEAM-CHAOS-Aufgaben keine geheimen Captain-Karten versprechen.
+- Beide redaktionellen Erweiterungen zusammengeführt; neue Couch-Karten erhalten kollisionsfreie IDs. 122 Missionen, 92 HOT-SEAT-Fragen und 48 öffentliche TEAM-CHAOS-Aufgaben. Eine doppelte Zeichenvorlage wurde ersetzt.
+- Zusätzlicher Nachweis: drei maximale Couch-Abende mit jeweils zwölf Runden plus Encore verwenden keine Karte doppelt. MUSIC DROP hängt ausdrücklich vom eigenen Audiostapel ab.
+- Gemeinsame Abnahme: **265/265 App-Tests**, **112/112 GANG-Core-Tests**, TypeScript und Produktionsbuild bestanden. Browser erneut **27 Sessions / 81 Runden / 0 Laufzeitfehler**. [Bericht](qa/gang-couch-2026-10-26.json) und Bildschirmnachweise liegen im Repo.
+- CI nutzt den vorhandenen App-Workflow, ergänzt um den Abgleich generierter und kanonischer Core-Dateien. Kein zweiter konkurrierender App-Workflow.

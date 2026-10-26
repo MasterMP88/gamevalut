@@ -1,5 +1,7 @@
+import { couchRange } from "./couch.js";
+import { couchGame } from "./experience.js";
 import { getGangPlaybook } from "./playbooks.js";
-import { eligibleGangGames } from "./catalog.js";
+import { eligibleGangGames, GANG_GAMES } from "./catalog.js";
 import { estimatedGameMinutes, preferredInteractionMode } from "./session.js";
 import type {
   DirectorContext,
@@ -7,6 +9,47 @@ import type {
   GangGameDefinition,
   GangPlan,
 } from "./types.js";
+
+function availableGames(context: DirectorContext): GangGameDefinition[] {
+  if (context.deviceContext.inputPreference !== "shared")
+    return eligibleGangGames(context.preferences, {
+      directorOnly: true,
+      includePlanned: false,
+    }).filter((g) => deviceFit(g, context));
+  const p = context.preferences;
+  return GANG_GAMES.filter(
+    (g) => g.status === "ready" && g.directorEligible && couchGame(g.id),
+  )
+    .map((g) => ({
+      ...g,
+      maxPlayers: couchRange(g.id as import("./playbooks.js").GangGameId)[1],
+    }))
+    .filter(
+      (g) =>
+        p.playerCount >= g.minPlayers &&
+        p.playerCount <= g.maxPlayers &&
+        g.capabilities.every((c) => p.enabledCapabilities.includes(c)),
+    );
+}
+
+function deviceFit(
+  game: GangGameDefinition,
+  context: DirectorContext,
+): boolean {
+  if (context.deviceContext.inputPreference === "shared")
+    return couchGame(game.id);
+  if (context.deviceContext.inputPreference === "individual")
+    return (
+      context.deviceContext.connectedDevices >=
+        context.preferences.playerCount &&
+      game.interactionModes.includes("everyone-in")
+    );
+  return (
+    context.deviceContext.connectedDevices >= context.preferences.playerCount ||
+    couchGame(game.id) ||
+    context.preferences.playerCount <= 8
+  );
+}
 
 function scoreCandidate(
   game: GangGameDefinition,
@@ -51,10 +94,7 @@ function scoreCandidate(
 export function pickNextGangGame(
   context: DirectorContext,
 ): DirectorPick | null {
-  const candidates = eligibleGangGames(context.preferences, {
-    directorOnly: true,
-    includePlanned: false,
-  });
+  const candidates = availableGames(context);
   if (!candidates.length) return null;
 
   const ranked = candidates
@@ -72,10 +112,10 @@ export function pickNextGangGame(
     context.deviceContext,
   );
 
-  const last = context.history.at(-1);
-  const reason = last
-    ? `Keeps the pace at energy ${game.energy} and changes the mechanic after ${last.primaryMechanic}.`
-    : `Fits ${context.preferences.playerCount} players and starts at energy ${game.energy}.`;
+  const reason =
+    couchGame(game.id) && context.deviceContext.inputPreference !== "individual"
+      ? "Ein Bildschirm reicht. Der ganze Raum spielt mit."
+      : "Private Entscheidungen passen auf eure eigenen Geräte.";
 
   return { game, interactionMode, reason };
 }
@@ -85,7 +125,25 @@ export function roundSeconds(
   gameId: string,
   playerCount: number,
   devices = playerCount,
+  shared = false,
 ): number {
+  if (shared && couchGame(gameId)) {
+    const turns =
+      playerCount <= 4
+        ? playerCount
+        : playerCount <= 8
+          ? 2
+          : playerCount <= 15
+            ? 3
+            : playerCount <= 30
+              ? 4
+              : 6;
+    return ["chain-reaction", "panic-button"].includes(gameId)
+      ? 25 + turns * 3 * 6
+      : gameId === "bad-answers-only"
+        ? 50 + turns * 7
+        : 70;
+  }
   const base: Record<string, number> = {
     "the-majority": 65,
     "whos-that": 50,
@@ -119,10 +177,9 @@ function jitter(id: string, seed: number): number {
 export function buildDirectorPlan(context: DirectorContext): GangPlan {
   const budget = context.preferences.durationMinutes;
   const seconds = (budget ?? 60) * 60;
-  const available = eligibleGangGames(context.preferences, {
-    directorOnly: true,
-    includePlanned: false,
-  }).filter((g) => g.id !== "secret-missions"); // background side quest, never a blocking slot
+  const available = availableGames(context).filter(
+    (g) => g.id !== "secret-missions",
+  ); // background side quest, never a blocking slot
   const history = [...context.history];
   const gameIds: string[] = [];
   const roundsByGame: Record<string, number> = {};
@@ -158,6 +215,8 @@ export function buildDirectorPlan(context: DirectorContext): GangPlan {
               game.id,
               context.preferences.playerCount,
               context.deviceContext.connectedDevices,
+              couchGame(game.id) &&
+                context.deviceContext.inputPreference !== "individual",
             ) <=
         seconds,
     );
@@ -172,6 +231,8 @@ export function buildDirectorPlan(context: DirectorContext): GangPlan {
           game.id,
           context.preferences.playerCount,
           context.deviceContext.connectedDevices,
+          couchGame(game.id) &&
+            context.deviceContext.inputPreference !== "individual",
         );
     history.push({
       gameId: game.id,
@@ -188,8 +249,12 @@ export function buildDirectorPlan(context: DirectorContext): GangPlan {
         id,
         context.preferences.playerCount,
         context.deviceContext.connectedDevices,
+        couchGame(id) && context.deviceContext.inputPreference !== "individual",
       );
-      const max = getGangPlaybook(id)?.rounds[1] ?? 12;
+      const max = Math.min(
+        getGangPlaybook(id)?.rounds[1] ?? 12,
+        context.deviceContext.inputPreference === "shared" ? 12 : Infinity,
+      );
       if (roundsByGame[id]! < max && spent + cost <= seconds) {
         roundsByGame[id]!++;
         spent += cost;
@@ -203,6 +268,16 @@ export function buildDirectorPlan(context: DirectorContext): GangPlan {
     roundsByGame,
     estimatedMinutes: Math.ceil(spent / 60),
     budgetMinutes: budget,
+    modesByGame: Object.fromEntries(
+      gameIds.map((id) => [
+        id,
+        preferredInteractionMode(
+          available.find((g) => g.id === id)!,
+          context.preferences,
+          context.deviceContext,
+        ),
+      ]),
+    ),
   };
 }
 
@@ -223,6 +298,7 @@ export function paceQueue(
   players: number,
   minutes: 15 | 30 | 60 | null,
   devices = players,
+  shared = false,
 ) {
   const unique = [...new Set(ids)];
   const rounds: Record<string, number> = {};
@@ -237,11 +313,15 @@ export function paceQueue(
           ? id === "hot-seat"
             ? Math.min(players, 20)
             : pb.rounds[0]
-          : 1;
+          : shared && couchGame(id)
+            ? 2
+            : 1;
+    if (shared && couchGame(id))
+      rounds[id] = Math.max(2, Math.min(12, rounds[id]!));
     spent +=
       id === "secret-missions"
         ? 60
-        : 45 + rounds[id]! * roundSeconds(id, players, devices);
+        : 45 + rounds[id]! * roundSeconds(id, players, devices, shared);
   }
   const budget = minutes === null ? Infinity : minutes * 60;
   if (minutes !== null) {
@@ -251,8 +331,11 @@ export function paceQueue(
       for (const id of unique) {
         const pb = getGangPlaybook(id);
         if (!pb || id === "secret-missions") continue;
-        const max = id === "hot-seat" ? Math.min(players, 20) : pb.rounds[1];
-        const cost = roundSeconds(id, players, devices);
+        const max = Math.min(
+          id === "hot-seat" ? Math.min(players, 20) : pb.rounds[1],
+          shared && couchGame(id) ? 12 : Infinity,
+        );
+        const cost = roundSeconds(id, players, devices, shared);
         if (rounds[id]! < max && spent + cost <= budget) {
           rounds[id]!++;
           spent += cost;

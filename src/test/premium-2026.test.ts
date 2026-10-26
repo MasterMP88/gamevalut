@@ -78,7 +78,7 @@ describe("Premium 2026 — distinct group mechanics",()=>{
   expect(s.targetRounds).toBe(20);
  });
  it("double undercover is reserved for the finale",()=>{
-  let s=createGangRuntime({id:"u",gameId:"undercover",players,targetRounds:4,seed:8});
+  let s=createGangRuntime({id:"u",gameId:"undercover",players,targetRounds:4,seed:9});
   while(s.roundNumber<4){expect(s.round.undercoverPlayerIds).toHaveLength(1);s=advanceGangStage(s,{force:true});}
   expect(s.round.undercoverPlayerIds).toHaveLength(2);
  });

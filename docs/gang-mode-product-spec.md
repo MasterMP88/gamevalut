@@ -19,23 +19,25 @@ GANG MODE must always expose three first-class entry paths:
 
 The Party Director is not allowed to hide or replace manual game choice.
 
-## Hybrid play
-The runtime supports:
-- **EVERYONE IN** via QR/room code — the default product path when each active player has a phone
-- **BIG SCREEN / CROWD MODE** — an enhancement of Everyone In: TV/iPad/laptop is the shared stage, phones remain controllers
-- **TEAM DEVICE**
-- **MIXED MODE**
-- **ONE PHONE / PASS MODE** — fallback for groups that truly only have one usable input device
+## Game-first play modes (binding, 2026 revision)
 
-The product chooses the best interaction mode automatically from player count and available devices. Technical setup must stay out of the critical path. Do not make users understand networking modes before they can play.
+The authored per-game contract in `packages/gang-core/src/experience.ts` decides the recommended mode. Phone availability alone must never make Everyone In the default.
 
-### Premium interaction contract (2026)
-- **Zero handoff by default:** when more than one personal input device is available, private input stays on the owner's device. Never ask people to pass a phone merely to protect a secret.
-- **Zero typing by default:** use tap, cards, swipe, ranking, slider, hold-to-reveal, reactions or spoken answers whenever the mechanic does not intrinsically depend on authored text.
-- **Creative typing is a mechanic, not admin work:** free text is allowed for games such as bluffing or intentionally funny authored answers, but must be short, local to the player's own device and never required for ordinary questions.
-- **Private input, shared drama:** secrets and predictions are owner-only before reveal; countdown, reveal, score and reactions are synchronized publicly.
-- **Big Screen is additive:** enabling a shared display must not remove a player's controller or turn one person into a permanent host.
-- **One Phone stays playable:** privacy curtain + quick taps remain available as a graceful fallback, but the UI must not present pass mode as the recommended experience when Everyone In is available.
+- **BIG SCREEN / TV / COUCH**: a shared laptop, or its mirrored TV, plus the host input on that same computer. No room, QR code or participant phones. Nine games have a dedicated public-room runtime.
+- **ONE PHONE**: the same shared-room game for those nine titles; read prompts aloud and keep the phone with the current facilitator. Private games instead use the existing privacy curtain/pass flow.
+- **EVERYONE IN**: personal devices when hidden cards, anonymous authored answers, photos or personal consent improve the game. Optional for the nine couch games; recommended for the seven private/media games.
+- **HYBRID**: Everyone In plus the existing networked public display. It never exposes private cards on TV.
+
+The new local couch runtime does not promise a separate phone remote or automatic TV discovery. HDMI/casting/mirroring is external to the app. Networking is not necessary for shared play.
+
+### Premium interaction contract
+
+- The room performs the game: speaking, pointing, moving, guessing and team discussion come before menus.
+- The host enters only the result after the public action; input forms must not dominate the TV while everyone is playing.
+- A secret can be a physical paper commitment for THE MAJORITY/HOT SEAT. Games requiring personal anonymity or consent stay on private devices.
+- Large groups play simultaneous teams/sectors, with rotating speakers; do not turn 99 people into a serial phone-passing queue.
+- Private input is owner-only until reveal. A hidden-role card must not disclose which variant its owner received.
+- Show only real capabilities: MUSIC DROP couch plays local audio files, while its Everyone-In variant is Song-Voting. Do not label either as a streaming integration.
 
 ## Party Director
 The Director orchestrates a night as:
@@ -60,13 +62,14 @@ Rules:
 
 ## Scale bands
 - **2–4:** personal, duel, bluff, story, prediction
-- **5–12:** full mechanic range
-- **13–30:** teams, voting, secret roles, tournaments, simultaneous actions
-- **31–99:** crowd voting, team battles, prediction, quiz, music, elimination, collective challenges
+- **5–8:** two couch teams or individual private inputs
+- **9–15:** three couch teams; parallel private inputs where supported
+- **16–30:** four couch teams; game-specific upper limits for private play
+- **31–99:** six sectors with bounded stage turns; only explicitly compatible games
 
 A game must declare the player range it truly supports.
 
-## Signature systems
+## Product direction (not an assertion of completed features)
 - Living Secret Missions / Side Quests
 - adaptive energy curve
 - zero-downtime spectator participation
@@ -100,25 +103,19 @@ Every catalog game declares:
 
 New games must be addable through the registry without changing GANG MODE architecture.
 
-## Implementation order
-1. Multiplayer/room reliability
-2. Game registry + pure mechanics
-3. Director selection/planning
-4. Secret Missions
-5. Crowd/spectator/physical systems
-6. Premium motion/sound/haptics
-7. Gang memory + retention
-8. Music/camera/After Dark/event expansion
+## Implementation and verification
+
+See [GANG_PREMIUM_2026.md](GANG_PREMIUM_2026.md) for all 16 game contracts, modes, scoring, content counts, scale decisions, implementation paths and evidence. TIME DROP remains a gated prototype and is not counted as a seventeenth ready game.
 
 ## Product quality gates
 - room-to-game target < 30 seconds
-- Everyone In is the recommended setup whenever the room can give each active player a controller
+- Authored game fit decides the setup, with a one-input shared-room route for all couch-compatible games
 - ordinary questions never require typed answers; typing is reserved for mechanics where authored text is the fun
 - no phone handoff is required when multiple input devices are connected
 - guests can join without creating an account
 - no regular long idle periods for inactive players
 - no static-question-only game counts as a premium mechanic
-- host plays; host does not become a permanent moderator
+- Host participates and can rotate; couch scoring still needs brief human judging/counting, which must be explained honestly
 - private information remains technically private
 - 2–99 is truthful: each game is filtered to its supported range
 - manual game choice remains available even when Director Mode exists

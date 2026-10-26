@@ -2,7 +2,12 @@
 import { seenIds } from "@/lib/content-history";
 import { GANG_GAMES } from "./core/catalog";
 import { buildDirectorPlan } from "./core/director";
-import type { Energy, GameCapability, GangPreferences } from "./core/types";
+import type {
+  Energy,
+  GameCapability,
+  GangPreferences,
+  DeviceContext,
+} from "./core/types";
 import type { GangGameId } from "./core/playbooks";
 
 export const VIBES = ["Chill", "Funny", "Wild", "Spicy", "Chaos"] as const;
@@ -20,17 +25,53 @@ export const MODULES = [
 ] as const;
 
 export type Vibe = (typeof VIBES)[number];
-const ENERGY: Record<Vibe, Energy> = { Chill: 2, Funny: 3, Wild: 4, Spicy: 4, Chaos: 5 };
+const ENERGY: Record<Vibe, Energy> = {
+  Chill: 2,
+  Funny: 3,
+  Wild: 4,
+  Spicy: 4,
+  Chaos: 5,
+};
 
-export function directorNight(input: { vibe: Vibe; duration: 15 | 30 | 60 | null; players: number; caps: GameCapability[]; seed?: number }): import("./core/types").GangPlan {
+export function directorNight(input: {
+  vibe: Vibe;
+  duration: 15 | 30 | 60 | null;
+  players: number;
+  caps: GameCapability[];
+  seed?: number;
+  devices?: DeviceContext;
+  energy?: Energy;
+}): import("./core/types").GangPlan {
   const preferences: GangPreferences = {
     playerCount: input.players,
     durationMinutes: input.duration,
-    energyTarget: ENERGY[input.vibe],
+    energyTarget: input.energy ?? ENERGY[input.vibe],
     moods: [input.vibe.toLowerCase()],
     enabledCapabilities: input.caps,
   };
-  const plan = buildDirectorPlan({ preferences, history: seenIds().filter((id) => id.startsWith("game/")).flatMap((id) => { const g = GANG_GAMES.find((g) => g.id === id.slice(5)); return g ? [{ gameId: g.id, primaryMechanic: g.mechanics[0]!, energy: g.energy }] : []; }), seed: input.seed ?? 1, deviceContext: { connectedDevices: input.players, hasBigScreen: false } });
+  const plan = buildDirectorPlan({
+    preferences,
+    history: seenIds()
+      .filter((id) => id.startsWith("game/"))
+      .flatMap((id) => {
+        const g = GANG_GAMES.find((g) => g.id === id.slice(5));
+        return g
+          ? [
+              {
+                gameId: g.id,
+                primaryMechanic: g.mechanics[0]!,
+                energy: g.energy,
+              },
+            ]
+          : [];
+      }),
+    seed: input.seed ?? 1,
+    deviceContext: input.devices ?? {
+      connectedDevices: 1,
+      hasBigScreen: false,
+      inputPreference: "shared",
+    },
+  });
   return plan;
 }
 
