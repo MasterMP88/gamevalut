@@ -77,6 +77,11 @@ export interface GangRuntimeState {
   targetRounds: number;
   /** Prompt IDs already used in this session. Optional for backward-compatible restored states. */
   promptHistory?: string[];
+  /** Hard session exclusion, separate from cross-session least-recent history. */
+  sessionPromptIds?: string[];
+  finaleVariant?: 0 | 1;
+  /** Session-local fairness only; never included in public views or content history. */
+  roleHistory?: string[];
   interactionMode?: "one-phone" | "everyone-in";
   resolutions?: GangRoundResolution[];
   declinedIds?: string[];
@@ -159,6 +164,7 @@ function privatePayloads(
   roundNumber: number,
   seed: number,
   isFinal: boolean,
+  roleHistory: readonly string[] = [],
 ): {
   privateByPlayer: Record<string, GangPrivatePayload>;
   oddPlayerId: string | null;
@@ -172,35 +178,52 @@ function privatePayloads(
 
   if (gameId === "undercover") {
     const count = players.length >= 8 && isFinal ? 2 : 1;
+    const counts = new Map(
+      players.map((p) => [
+        p.id,
+        roleHistory.filter((id) => id === p.id).length,
+      ]),
+    );
     const pool = players.map((player) => player.id);
     const selected = new Set<string>();
     while (selected.size < Math.min(count, players.length - 1)) {
       let index: number;
-      [index, currentSeed] = pickIndex(pool.length, currentSeed);
-      selected.add(pool[index]!);
+      const remaining = pool.filter((id) => !selected.has(id));
+      const least = Math.min(...remaining.map((id) => counts.get(id)!));
+      const candidates = remaining.filter((id) => counts.get(id) === least);
+      [index, currentSeed] = pickIndex(candidates.length, currentSeed);
+      selected.add(candidates[index]!);
     }
     undercoverPlayerIds = [...selected];
     for (const player of players) {
       const isUndercover = selected.has(player.id);
       privateByPlayer[player.id] = {
-        role: isUndercover ? "UNDERCOVER" : "CIVILIAN",
+        role: "WORD",
         secret: isUndercover
           ? (prompt.altPrompt ?? "Kein Wort")
           : (prompt.answer ?? ""),
-        prompt: isUndercover
-          ? "Bleib glaubwürdig. Du hast ein ähnliches, aber anderes Wort."
-          : "Finde die Person mit dem anderen Wort.",
+        prompt:
+          "Merke dir dein Wort. Beschreibe es, ohne es zu nennen. Welche Hinweise passen nicht dazu?",
       };
     }
   } else if (gameId === "one-of-you") {
     let index: number;
-    [index, currentSeed] = pickIndex(players.length, currentSeed);
-    oddPlayerId = players[index]!.id;
+    const least = Math.min(
+      ...players.map((p) => roleHistory.filter((id) => id === p.id).length),
+    );
+    const candidates = players.filter(
+      (p) => roleHistory.filter((id) => id === p.id).length === least,
+    );
+    [index, currentSeed] = pickIndex(candidates.length, currentSeed);
+    oddPlayerId = candidates[index]!.id;
     for (const player of players) {
       const odd = player.id === oddPlayerId;
       privateByPlayer[player.id] = {
-        role: odd ? "ODD" : "ROOM",
-        prompt: odd ? (prompt.altPrompt ?? prompt.prompt) : prompt.prompt,
+        role: "QUESTION",
+        prompt: (odd
+          ? (prompt.altPrompt ?? prompt.prompt)
+          : prompt.prompt
+        ).replace(/^(Normal|Odd):\s*/i, ""),
       };
     }
   } else if (gameId === "team-chaos") {
@@ -305,28 +328,26 @@ function promptForRound(
   gameId: GangGameId,
   seed: number,
   usedPromptIds: readonly string[],
+  sessionIds: readonly string[] = [],
 ): [GangPrompt, number] {
   const playbook = getGangPlaybook(gameId);
   if (!playbook) throw new Error(`Unknown GANG game: ${gameId}`);
 
+  const excluded = new Set(sessionIds);
+  const pool = playbook.prompts.filter((p) => !excluded.has(p.id));
+  if (!pool.length) throw new Error("Session content exhausted");
   const used = new Set(usedPromptIds);
-  const unseen = playbook.prompts.filter((prompt) => !used.has(prompt.id));
+  const unseen = pool.filter((prompt) => !used.has(prompt.id));
   const previous = usedPromptIds[usedPromptIds.length - 1];
-  const oldest = Math.min(
-    ...playbook.prompts.map((p) => usedPromptIds.lastIndexOf(p.id)),
-  );
-  const recycled = playbook.prompts.filter(
+  const oldest = Math.min(...pool.map((p) => usedPromptIds.lastIndexOf(p.id)));
+  const recycled = pool.filter(
     (prompt) =>
       prompt.id !== previous &&
       usedPromptIds.lastIndexOf(prompt.id) <=
         oldest + Math.max(2, Math.floor(playbook.prompts.length / 4)),
   );
   let candidates =
-    unseen.length > 0
-      ? unseen
-      : recycled.length > 0
-        ? recycled
-        : playbook.prompts;
+    unseen.length > 0 ? unseen : recycled.length > 0 ? recycled : pool;
   if (gameId === "bluff") {
     const previousTopic = playbook.prompts.find(
       (p) => p.id === previous,
@@ -335,9 +356,7 @@ function promptForRound(
     if (varied.length) candidates = varied;
   }
 
-  let index: number;
-  let nextSeed: number;
-  [index, nextSeed] = pickIndex(candidates.length, seed);
+  const [index, nextSeed] = pickIndex(candidates.length, seed);
   return [candidates[index]!, nextSeed];
 }
 
@@ -349,13 +368,16 @@ function createRound(
   targetRounds: number,
   usedPromptIds: readonly string[],
   interactionMode: "one-phone" | "everyone-in" = "one-phone",
+  sessionIds: readonly string[] = [],
+  finaleVariant: 0 | 1 = 0,
+  roleHistory: readonly string[] = [],
   optionalMechanics: GangOptionalMechanics = {},
 ): { round: GangRuntimeRound; seed: number } {
   const playbook = getGangPlaybook(gameId);
   if (!playbook) throw new Error(`Unknown GANG game: ${gameId}`);
   let prompt: GangPrompt;
   let nextSeed: number;
-  [prompt, nextSeed] = promptForRound(gameId, seed, usedPromptIds);
+  [prompt, nextSeed] = promptForRound(gameId, seed, usedPromptIds, sessionIds);
   const isFinal = roundNumber === targetRounds;
   if (isFinal) {
     if (gameId === "the-majority") {
@@ -452,13 +474,47 @@ function createRound(
       };
     }
   }
+  if (isFinal && finaleVariant === 1) {
+    if (gameId === "undercover")
+      prompt = {
+        ...prompt,
+        category: "finale-solo-agent",
+        seconds: 30,
+        subline:
+          "SOLO AGENT: Genau eine andere Karte. Kurze Hinweise, letzter gemeinsamer Verdacht.",
+      };
+    if (gameId === "bluff")
+      prompt = {
+        ...prompt,
+        category: "finale-bluff-lies",
+        subline:
+          "VERKAUF DIE LÜGE: Jeder getäuschte Mitspieler bringt zwei Punkte. Wahrheit bleibt zwei wert.",
+      };
+    if (gameId === "photo-hunt")
+      prompt = {
+        ...prompt,
+        category: "finale-single-color",
+        seconds: 30,
+        subline:
+          "FARBFINALE: Eine Farbe dominiert euer Bild. 30 Sekunden, keine Gesichter nötig.",
+      };
+    if (gameId === "draw-this")
+      prompt = {
+        ...prompt,
+        category: "finale-one-line",
+        seconds: 30,
+        subline:
+          "EIN-STRICH-FINALE: Zeichne möglichst ohne Absetzen. 30 Sekunden für die Ratenden.",
+      };
+  }
   const privateState = privatePayloads(
     gameId,
     prompt,
     players,
     roundNumber,
     nextSeed,
-    isFinal,
+    isFinal && (gameId !== "undercover" || finaleVariant === 0),
+    roleHistory,
   );
   nextSeed = privateState.seed;
   const turnOrder = [
@@ -481,35 +537,53 @@ function createRound(
       prompt,
       turnOrder,
       turnLanes,
-      stages: gameId === "the-line" && optionalMechanics.linePredictions
-        ? ["predict", "perform", "reveal", "score"]
-        : ["chain-reaction", "panic-button"].includes(gameId)
-        ? [
-            ...Array.from(
-              { length: laneSize * (gameId === "panic-button" ? 3 : 1) },
-              () => ["perform", "react"] as GangStageKind[],
-            ).flat(),
-            "reveal",
-            "score",
-          ]
-        : gameId === "draw-this"
-          ? ["private", "answer", "reveal", "score"]
-          : gameId === "music-drop" && players.length === 2
-            ? ["answer", "reveal", "score"]
-            : gameId === "after-dark"
-              ? isFinal || prompt.afterDarkMode === "choice-action"
-                ? ["vote", "perform", ...(!isFinal && optionalMechanics.afterDarkReactions ? ["react" as const] : []), "reveal", "score"]
-                : prompt.afterDarkMode === "action"
-                  ? ["perform", ...(optionalMechanics.afterDarkReactions ? ["react" as const] : []), "reveal", "score"]
-                  : [
-                      prompt.options?.length ? "vote" : "answer",
-                      ...(optionalMechanics.afterDarkReactions ? ["react" as const] : []),
-                      "reveal",
-                      "score",
-                    ]
-              : playbook.stages.includes("score")
-                ? playbook.stages.slice()
-                : [...playbook.stages, "score"],
+      stages:
+        gameId === "the-line" && optionalMechanics.linePredictions
+          ? ["predict", "perform", "reveal", "score"]
+          : ["chain-reaction", "panic-button"].includes(gameId)
+            ? [
+                ...Array.from(
+                  { length: laneSize * (gameId === "panic-button" ? 3 : 1) },
+                  () => ["perform", "react"] as GangStageKind[],
+                ).flat(),
+                "reveal",
+                "score",
+              ]
+            : gameId === "draw-this"
+              ? ["private", "answer", "reveal", "score"]
+              : gameId === "music-drop" && players.length === 2
+                ? ["answer", "reveal", "score"]
+                : gameId === "after-dark"
+                  ? isFinal || prompt.afterDarkMode === "choice-action"
+                    ? [
+                        "vote",
+                        "perform",
+                        ...(!isFinal && optionalMechanics.afterDarkReactions
+                          ? ["react" as const]
+                          : []),
+                        "reveal",
+                        "score",
+                      ]
+                    : prompt.afterDarkMode === "action"
+                      ? [
+                          "perform",
+                          ...(optionalMechanics.afterDarkReactions
+                            ? ["react" as const]
+                            : []),
+                          "reveal",
+                          "score",
+                        ]
+                      : [
+                          prompt.options?.length ? "vote" : "answer",
+                          ...(optionalMechanics.afterDarkReactions
+                            ? ["react" as const]
+                            : []),
+                          "reveal",
+                          "score",
+                        ]
+                  : playbook.stages.includes("score")
+                    ? playbook.stages.slice()
+                    : [...playbook.stages, "score"],
       stageIndex: 0,
       stageSubmissions: {},
       privateByPlayer: privateState.privateByPlayer,
@@ -569,6 +643,9 @@ export function createGangRuntime(input: {
     targetRounds,
     input.seenPromptIds ?? [],
     input.interactionMode ?? "one-phone",
+    [],
+    (seed & 1) === 1 ? 0 : 1,
+    [],
     input.optionalMechanics,
   );
   if (input.gameId === "after-dark")
@@ -586,6 +663,12 @@ export function createGangRuntime(input: {
     targetRounds,
     optionalMechanics: { ...input.optionalMechanics },
     promptHistory: [...(input.seenPromptIds ?? []), created.round.prompt.id],
+    sessionPromptIds: [created.round.prompt.id],
+    finaleVariant: (seed & 1) === 1 ? 0 : 1,
+    roleHistory: [
+      ...created.round.undercoverPlayerIds,
+      ...(created.round.oddPlayerId ? [created.round.oddPlayerId] : []),
+    ],
     interactionMode: input.interactionMode ?? "one-phone",
     resolutions: [],
     round: created.round,
@@ -707,7 +790,12 @@ export function submitGangAction(
     throw new Error("Ungültiges Teamergebnis.");
 
   const validOptions = dynamicVoteOptions(state);
-  if (state.gameId === "the-line" && stage === "predict" && action.optionId === action.playerId) throw new Error("Tippe auf eine andere Person.");
+  if (
+    state.gameId === "the-line" &&
+    stage === "predict" &&
+    action.optionId === action.playerId
+  )
+    throw new Error("Tippe auf eine andere Person.");
   if (
     action.optionId &&
     validOptions?.length &&
@@ -899,15 +987,17 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
         )
           award(action.playerId, 1);
       }
-    } else {
+    } else if (accused.length) {
       for (const id of round.undercoverPlayerIds) award(id, 3);
     }
     return {
-      headline: caught ? "UNDERCOVER enttarnt." : "UNDERCOVER kommt davon.",
+      headline: !accused.length
+        ? "Keine Stimmen. Keine Punkte."
+        : caught
+          ? "UNDERCOVER enttarnt."
+          : "UNDERCOVER kommt davon.",
       detail: `Undercover: ${round.undercoverPlayerIds.map(playerName).join(", ")}.`,
-      winners: caught
-        ? accused.filter((id) => round.undercoverPlayerIds.includes(id))
-        : round.undercoverPlayerIds,
+      winners: Object.keys(delta).filter((id) => delta[id]! > 0),
       scoreDelta: delta,
     };
   }
@@ -1012,9 +1102,16 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
     for (const action of Object.values(votes)) {
       const target = action.targetPlayerId ?? action.value ?? "";
       if (target === truthKey)
-        award(action.playerId, round.number === state.targetRounds ? 4 : 2);
+        award(
+          action.playerId,
+          round.number === state.targetRounds &&
+            round.prompt.category !== "finale-bluff-lies"
+            ? 4
+            : 2,
+        );
       else
-        for (const owner of answerChoiceOwners(state, target)) award(owner, 1);
+        for (const owner of answerChoiceOwners(state, target))
+          award(owner, round.prompt.category === "finale-bluff-lies" ? 2 : 1);
     }
     const leaders = Object.entries(delta)
       .sort((a, b) => b[1] - a[1])
@@ -1041,6 +1138,13 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
     const choice = Object.values(allStageSubmissions(state, "private"))[0];
     const answer = choice?.optionId ?? choice?.value ?? "";
     const predictions = allStageSubmissions(state, "predict");
+    if (!answer || choice?.timedOut)
+      return {
+        headline: "Keine geheime Wahl. Neue Runde.",
+        detail: "Diese Runde bleibt ohne Punkte.",
+        winners: [],
+        scoreDelta: delta,
+      };
     const correct = Object.values(predictions)
       .filter((action) => (action.optionId ?? action.value) === answer)
       .map((action) => action.playerId);
@@ -1109,19 +1213,17 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
       for (const action of Object.values(votes))
         if ((action.targetPlayerId ?? action.value) === round.oddPlayerId)
           award(action.playerId, 2);
-    } else if (round.oddPlayerId) award(round.oddPlayerId, 3);
+    } else if (round.oddPlayerId && accused.length) award(round.oddPlayerId, 3);
     return {
-      headline: caught
-        ? "ONE OF YOU wurde gefunden."
-        : "ONE OF YOU bleibt unsichtbar.",
+      headline: !accused.length
+        ? "Keine Stimmen. Keine Punkte."
+        : caught
+          ? "ONE OF YOU wurde gefunden."
+          : "ONE OF YOU bleibt unsichtbar.",
       detail: round.oddPlayerId
         ? `Die andere Frage hatte: ${playerName(round.oddPlayerId)}.`
         : "",
-      winners: caught
-        ? [round.oddPlayerId!].filter(Boolean)
-        : round.oddPlayerId
-          ? [round.oddPlayerId]
-          : [],
+      winners: Object.keys(delta).filter((id) => delta[id]! > 0),
       scoreDelta: delta,
     };
   }
@@ -1278,9 +1380,17 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
     const reactions = new Map<string, number>();
     for (const action of Object.values(allStageSubmissions(state, "react"))) {
       const label = action.optionId ?? action.value;
-      if (!action.timedOut && label && ["Lachen", "Überrascht", "Verbunden"].includes(label)) reactions.set(label, (reactions.get(label) ?? 0) + 1);
+      if (
+        !action.timedOut &&
+        label &&
+        ["Lachen", "Überrascht", "Verbunden"].includes(label)
+      )
+        reactions.set(label, (reactions.get(label) ?? 0) + 1);
     }
-    const reactionItems = [...reactions].map(([value, n]) => ({label: `${n} Reaktionen`, value}));
+    const reactionItems = [...reactions].map(([value, n]) => ({
+      label: `${n} Reaktionen`,
+      value,
+    }));
     const performed = Object.values(
       allStageSubmissions(state, "perform"),
     ).filter((a) => a.success).length;
@@ -1304,17 +1414,54 @@ function resolveRound(state: GangRuntimeState): GangRoundResolution {
     };
   }
   if (gameId === "the-line") {
-    if (!state.optionalMechanics?.linePredictions) return { headline: "Positionen stehen.", detail: "Der eigentliche Punkt ist das Gespräch danach.", winners: [], scoreDelta: delta };
-    const positions = Object.values(allStageSubmissions(state, "perform")).filter(a => !a.timedOut && a.optionId).map(a => ({ id: a.playerId, position: Number(a.optionId) }));
-    const complete = positions.length === players.length && new Set(positions.map(p => p.position)).size === players.length && positions.every(p => Number.isInteger(p.position) && p.position >= 1 && p.position <= players.length);
+    if (!state.optionalMechanics?.linePredictions)
+      return {
+        headline: "Positionen stehen.",
+        detail: "Der eigentliche Punkt ist das Gespräch danach.",
+        winners: [],
+        scoreDelta: delta,
+      };
+    const positions = Object.values(allStageSubmissions(state, "perform"))
+      .filter((a) => !a.timedOut && a.optionId)
+      .map((a) => ({ id: a.playerId, position: Number(a.optionId) }));
+    const complete =
+      positions.length === players.length &&
+      new Set(positions.map((p) => p.position)).size === players.length &&
+      positions.every(
+        (p) =>
+          Number.isInteger(p.position) &&
+          p.position >= 1 &&
+          p.position <= players.length,
+      );
     const guesses = Object.values(allStageSubmissions(state, "predict"));
-    if (complete) for (const guess of guesses) {
-      if (guess.timedOut || !guess.optionId || guess.optionId === "__skip__") continue;
-      const own = positions.find(p => p.id === guess.playerId), neighbor = positions.find(p => p.id === guess.optionId);
-      if (own && neighbor && Math.abs(own.position - neighbor.position) === 1) delta[guess.playerId] = 1;
-    }
-    return { headline: "Positionen stehen.", detail: complete ? "Ein Bonuspunkt für jeden vorher richtig getippten direkten Nachbarn. Links oder rechts zählt; Auslassen kostet nichts." : "Positionen fehlen oder sind doppelt. Diese Runde bleibt ohne Bonuspunkte – besprecht eure Linie gemeinsam.", winners: Object.keys(delta).filter(id => delta[id]! > 0), scoreDelta: delta,
-      ...(complete ? { revealItems: positions.sort((a,b)=>a.position-b.position).map(p=>({label:String(p.position),value:playerName(p.id),playerId:p.id})) } : {}) };
+    if (complete)
+      for (const guess of guesses) {
+        if (guess.timedOut || !guess.optionId || guess.optionId === "__skip__")
+          continue;
+        const own = positions.find((p) => p.id === guess.playerId),
+          neighbor = positions.find((p) => p.id === guess.optionId);
+        if (own && neighbor && Math.abs(own.position - neighbor.position) === 1)
+          delta[guess.playerId] = 1;
+      }
+    return {
+      headline: "Positionen stehen.",
+      detail: complete
+        ? "Ein Bonuspunkt für jeden vorher richtig getippten direkten Nachbarn. Links oder rechts zählt; Auslassen kostet nichts."
+        : "Positionen fehlen oder sind doppelt. Diese Runde bleibt ohne Bonuspunkte – besprecht eure Linie gemeinsam.",
+      winners: Object.keys(delta).filter((id) => delta[id]! > 0),
+      scoreDelta: delta,
+      ...(complete
+        ? {
+            revealItems: positions
+              .sort((a, b) => a.position - b.position)
+              .map((p) => ({
+                label: String(p.position),
+                value: playerName(p.id),
+                playerId: p.id,
+              })),
+          }
+        : {}),
+    };
   }
 
   return {
@@ -1426,6 +1573,9 @@ export function advanceGangStage(
       state.targetRounds,
       promptHistory,
       state.interactionMode,
+      state.sessionPromptIds ?? promptHistory.slice(-state.roundNumber),
+      state.finaleVariant ?? 0,
+      state.roleHistory ?? [],
       state.optionalMechanics,
     );
     return {
@@ -1434,6 +1584,15 @@ export function advanceGangStage(
       scores,
       roundNumber: nextNumber,
       promptHistory: [...promptHistory, created.round.prompt.id],
+      sessionPromptIds: [
+        ...(state.sessionPromptIds ?? promptHistory.slice(-state.roundNumber)),
+        created.round.prompt.id,
+      ],
+      roleHistory: [
+        ...(state.roleHistory ?? []),
+        ...created.round.undercoverPlayerIds,
+        ...(created.round.oddPlayerId ? [created.round.oddPlayerId] : []),
+      ],
       resolutions: [
         ...(state.resolutions ?? []),
         ...(round.resolution ? [round.resolution] : []),
@@ -1525,9 +1684,11 @@ export function privateGangView(
 
 function dynamicVoteOptions(state: GangRuntimeState): string[] | undefined {
   const stage = stageOf(state);
-  if (state.gameId === "after-dark" && stage === "react") return ["Lachen", "Überrascht", "Verbunden", "Skip"];
+  if (state.gameId === "after-dark" && stage === "react")
+    return ["Lachen", "Überrascht", "Verbunden", "Skip"];
   if (state.gameId === "the-line" && state.optionalMechanics?.linePredictions) {
-    if (stage === "predict") return [...state.players.map(p => p.id), "__skip__"];
+    if (stage === "predict")
+      return [...state.players.map((p) => p.id), "__skip__"];
     if (stage === "perform") return state.players.map((_, i) => String(i + 1));
   }
   if (stage !== "vote") return state.round.prompt.options?.slice();
@@ -1628,22 +1789,26 @@ export function publicGangView(state: GangRuntimeState): GangPublicRoundView {
   return {
     id: state.round.id,
     number: state.round.number,
-    prompt: state.gameId === "after-dark" && stage === "react"
-      ? "Wie war diese Runde für dich? Eine freiwillige Reaktion, ohne Namen."
-      : promptHidden
-      ? state.gameId === "secret-missions"
-        ? "SECRET MISSIONS laufen im Hintergrund"
-        : "PRIVATE ROUND"
-      : previousWord
-        ? `Verbinde dein Wort mit: ${previousWord}`
-        : state.round.prompt.prompt,
+    prompt:
+      state.gameId === "after-dark" && stage === "react"
+        ? "Wie war diese Runde für dich? Eine freiwillige Reaktion, ohne Namen."
+        : promptHidden
+          ? state.gameId === "secret-missions"
+            ? "SECRET MISSIONS laufen im Hintergrund"
+            : "PRIVATE ROUND"
+          : previousWord
+            ? `Verbinde dein Wort mit: ${previousWord}`
+            : state.round.prompt.prompt,
     ...(state.gameId === "the-line" && stage === "predict"
-      ? { subline: "Bevor ihr euch aufstellt: Wer wird direkt links oder rechts neben dir stehen? Ein Tipp oder freiwillig auslassen." }
+      ? {
+          subline:
+            "Bevor ihr euch aufstellt: Wer wird direkt links oder rechts neben dir stehen? Ein Tipp oder freiwillig auslassen.",
+        }
       : state.round.prompt.teamChallenge
-      ? { subline: state.round.prompt.teamChallenge.instruction }
-      : state.round.prompt.subline
-        ? { subline: state.round.prompt.subline }
-        : {}),
+        ? { subline: state.round.prompt.teamChallenge.instruction }
+        : state.round.prompt.subline
+          ? { subline: state.round.prompt.subline }
+          : {}),
     ...(options ? { options } : {}),
     ...(state.round.prompt.seconds !== undefined
       ? { seconds: state.round.prompt.seconds }
@@ -1682,4 +1847,25 @@ export function isCorrectGuess(
       .map(normalizeAnswer)
       .includes(normalizeAnswer(action.value))
   );
+}
+
+/** A deliberate round skip is not a timeout result and cannot create free points. */
+export function skipGangRound(state: GangRuntimeState): GangRuntimeState {
+  if (state.finished || state.round.resolution) return state;
+  if (state.gameId === "after-dark" && stageOf(state) === "private")
+    return { ...state, finished: true, winnerIds: [] };
+  return {
+    ...state,
+    round: {
+      ...state.round,
+      stageIndex: state.round.stages.indexOf("score"),
+      privateByPlayer: {},
+      resolution: {
+        headline: "Neue Runde. Kein Punktverlust.",
+        detail: "Diese Runde wurde übersprungen.",
+        winners: [],
+        scoreDelta: {},
+      },
+    },
+  };
 }

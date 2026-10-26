@@ -1,3 +1,4 @@
+import { EDITION_THREE } from "./edition-three.js";
 import { REPLAY_PROMPTS } from "./replay-prompts.js";
 import { EXTRA_PROMPTS } from "./extra-prompts.js";
 import { TEAM_PROMPTS } from "./team-prompts.js";
@@ -219,7 +220,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     id: "undercover",
     title: "UNDERCOVER",
     promise:
-      "Fast alle kennen dasselbe Wort. Eine Person muss reden, ohne zu wissen, worüber.",
+      "Alle haben ein Wort. Fast alle dasselbe. Findet heraus, wer mit seinem Hinweis knapp danebenliegt.",
     howItFeels:
       "Bluff, Deduktion und diese eine Sekunde, in der alle plötzlich dieselbe Person anschauen.",
     mechanic: "secret-role",
@@ -395,8 +396,7 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
     title: "BLUFF",
     promise:
       "Jede Person erfindet eine plausible Lüge. Dann versucht der Raum, die Wahrheit wiederzufinden.",
-    howItFeels:
-      "Kurze Fakten, gute Lügen, sofortige Schadenfreude.",
+    howItFeels: "Kurze Fakten, gute Lügen, sofortige Schadenfreude.",
     mechanic: "bluff",
     minPlayers: 3,
     maxPlayers: 20,
@@ -881,7 +881,14 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
   },
 ].map((p) => ({
   ...p,
-  prompts: [...p.prompts, ...(EXTRA_PROMPTS[p.id as GangGameId] ?? []), ...((REPLAY_PROMPTS as Partial<Record<GangGameId, GangPrompt[]>>)[p.id as GangGameId] ?? [])],
+  prompts: [
+    ...p.prompts,
+    ...(EXTRA_PROMPTS[p.id as GangGameId] ?? []),
+    ...((REPLAY_PROMPTS as Partial<Record<GangGameId, GangPrompt[]>>)[
+      p.id as GangGameId
+    ] ?? []),
+    ...(EDITION_THREE[p.id as GangGameId] ?? []),
+  ],
 })) as GangPlaybook[];
 
 export function getGangPlaybook(id: string): GangPlaybook | undefined {

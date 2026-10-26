@@ -20,6 +20,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Eye, X } from "lucide-react";
 import {
   advanceGangStage,
+  skipGangRound as skipCoreRound,
   answerChoiceOwners,
   canAdvanceGangStage,
   createGangRuntime,
@@ -235,13 +236,9 @@ export function GangPlayer({
     apply(advanceGangStage(s, { force: !canAdvanceGangStage(s) }));
   const skipRound = () => {
     if (!rt) return;
-    let s = rt;
-    let res = rt.round.resolution;
-    while (!s.finished && publicGangView(s).stage !== "score") {
-      s = advanceGangStage(s, { force: true });
-      res = s.round.resolution ?? res;
-    }
-    if (res && res !== rt.round.resolution) setHistory((h) => [...h, res!]);
+    const s = skipCoreRound(rt);
+    const res = s.round.resolution;
+    if (res && res !== rt.round.resolution) setHistory((h) => [...h, res]);
     setDone([]);
     setOwnAnswers({});
     setRt(s);
@@ -609,7 +606,8 @@ function Intro({
   const adult = game.id === "after-dark";
   const [age, setAge] = useState(false);
   const [optIn, setOptIn] = useState(false);
-  const [optionalMechanics, setOptionalMechanics] = useState<GangOptionalMechanics>({});
+  const [optionalMechanics, setOptionalMechanics] =
+    useState<GangOptionalMechanics>({});
   const ok = !adult || (age && optIn);
   return (
     <div className="flex flex-1 flex-col motion-safe:animate-rise">
@@ -636,8 +634,12 @@ function Intro({
         {players} SPIELER · ONE PHONE
       </p>
       <details className="mt-5 border-y border-line py-2">
-        <summary className="tap flex min-h-12 cursor-pointer items-center text-sm">Kurze Spielanleitung</summary>
-        <div className="py-4"><GangGuide id={game.id} compact /></div>
+        <summary className="tap flex min-h-12 cursor-pointer items-center text-sm">
+          Kurze Spielanleitung
+        </summary>
+        <div className="py-4">
+          <GangGuide id={game.id} compact deviceRules />
+        </div>
       </details>
       {pb.safetyNote && (
         <p className="mt-4 border-l-2 border-[var(--g)] pl-3 text-sm text-foreground/85">
@@ -670,7 +672,11 @@ function Intro({
         Ein Handy geht reihum. Bei geheimen Phasen sagt der Bildschirm, wer dran
         ist.
       </p>
-      <OptionalMechanics games={[game.id]} value={optionalMechanics} onChange={setOptionalMechanics} />
+      <OptionalMechanics
+        games={[game.id]}
+        value={optionalMechanics}
+        onChange={setOptionalMechanics}
+      />
       <button
         type="button"
         disabled={!ok}
@@ -1049,9 +1055,11 @@ function PassTurn({
             <span className="block font-mono text-xs tracking-[0.2em] text-[var(--g)]">
               {pv.role === "AGENT"
                 ? "AGENT"
-                : pv.role === "ODD" || pv.role === "ROOM"
-                  ? "DEINE FRAGE"
-                  : pv.role}
+                : pv.role === "WORD"
+                  ? "DEIN WORT"
+                  : ["ODD", "ROOM", "QUESTION"].includes(pv.role)
+                    ? "DEINE FRAGE"
+                    : pv.role}
             </span>
           )}
           {pv?.secret && (
@@ -1128,9 +1136,14 @@ function PassTurn({
         );
       return v;
     }
-    return o === "__skip__" ? "Tipp auslassen" : rt.players.find((p) => p.id === o)?.name ?? o;
+    return o === "__skip__"
+      ? "Tipp auslassen"
+      : (rt.players.find((p) => p.id === o)?.name ?? o);
   };
-  let shown = gid === "the-line" && stage === "predict" ? opts.filter(o => o !== playerId) : opts;
+  let shown =
+    gid === "the-line" && stage === "predict"
+      ? opts.filter((o) => o !== playerId)
+      : opts;
   if (stage === "vote" && isPlayerOpts) {
     if (
       ANSWER_VOTE_GAMES.includes(gid) ||
@@ -1650,7 +1663,8 @@ function GroupStage({
       </div>
     );
   }
-  if (gid === "the-line" && rt.optionalMechanics?.linePredictions) return <LineOrder rt={rt} onSubmit={onSubmit} />;
+  if (gid === "the-line" && rt.optionalMechanics?.linePredictions)
+    return <LineOrder rt={rt} onSubmit={onSubmit} />;
   // the-line / after-dark perform
   return (
     <div className="flex flex-1 flex-col">
@@ -1841,7 +1855,8 @@ function ScoreView({
           {res.winners.map(name).join(", ")}
         </p>
       )}
-      {(!NO_POINTS.includes(game.id) || (game.id === "the-line" && rt.optionalMechanics?.linePredictions)) && (
+      {(!NO_POINTS.includes(game.id) ||
+        (game.id === "the-line" && rt.optionalMechanics?.linePredictions)) && (
         <ol
           className="mt-6 flex flex-wrap gap-x-5 gap-y-2"
           aria-label="Zwischenstand"
@@ -1988,7 +2003,9 @@ function Finale({
             )}
           </ol>
         </>
-      ) : (NO_POINTS.includes(game.id) && !(game.id === "the-line" && rt.optionalMechanics?.linePredictions)) || !anyPoints ? (
+      ) : (NO_POINTS.includes(game.id) &&
+          !(game.id === "the-line" && rt.optionalMechanics?.linePredictions)) ||
+        !anyPoints ? (
         <h2 className="font-display mt-3 text-[clamp(2.8rem,12vw,4.5rem)] leading-[0.88]">
           {rt.targetRounds} Runden. Ein Raum, der jetzt mehr übereinander weiß.
         </h2>
@@ -2286,8 +2303,67 @@ export function MajorityDual({
   );
 }
 
-function LineOrder({ rt, onSubmit }: { rt: GangRuntimeState; onSubmit: (s: GangRuntimeState) => void }) {
-  const [order, setOrder] = useState(() => rt.players.map(p => p.id));
-  const move = (i: number, by: number) => { const next=[...order]; [next[i],next[i+by]]=[next[i+by]!,next[i]!]; setOrder(next); };
-  return <div className="flex flex-1 flex-col"><p className="eyebrow mt-6">Die Linie steht</p><h2 className="font-display mt-3 text-4xl">Von links nach rechts</h2><p className="mt-4 text-sm text-muted-foreground">Erfasst eure wirkliche Reihenfolge. Die vorher abgegebenen Tipps bleiben verdeckt.</p><ol className="my-6 divide-y divide-line">{order.map((id,i)=><li key={id} className="flex min-h-14 items-center gap-3"><span className="w-7 font-mono text-xs">{i+1}</span><span className="min-w-0 flex-1 break-words">{rt.players.find(p=>p.id===id)?.name}</span><button className="tap size-12 disabled:opacity-30" disabled={i===0} onClick={()=>move(i,-1)} aria-label={`${rt.players.find(p=>p.id===id)?.name} nach links`}>←</button><button className="tap size-12 disabled:opacity-30" disabled={i===order.length-1} onClick={()=>move(i,1)} aria-label={`${rt.players.find(p=>p.id===id)?.name} nach rechts`}>→</button></li>)}</ol><button className={btn({size:"lg"})} onClick={()=>{let next=rt;for(const [i,id] of order.entries())next=submitGangAction(next,{playerId:id,optionId:String(i+1)});onSubmit(next);}}>Reihenfolge bestätigen & Tipps aufdecken</button></div>;
+function LineOrder({
+  rt,
+  onSubmit,
+}: {
+  rt: GangRuntimeState;
+  onSubmit: (s: GangRuntimeState) => void;
+}) {
+  const [order, setOrder] = useState(() => rt.players.map((p) => p.id));
+  const move = (i: number, by: number) => {
+    const next = [...order];
+    [next[i], next[i + by]] = [next[i + by]!, next[i]!];
+    setOrder(next);
+  };
+  return (
+    <div className="flex flex-1 flex-col">
+      <p className="eyebrow mt-6">Die Linie steht</p>
+      <h2 className="font-display mt-3 text-4xl">Von links nach rechts</h2>
+      <p className="mt-4 text-sm text-muted-foreground">
+        Erfasst eure wirkliche Reihenfolge. Die vorher abgegebenen Tipps bleiben
+        verdeckt.
+      </p>
+      <ol className="my-6 divide-y divide-line">
+        {order.map((id, i) => (
+          <li key={id} className="flex min-h-14 items-center gap-3">
+            <span className="w-7 font-mono text-xs">{i + 1}</span>
+            <span className="min-w-0 flex-1 break-words">
+              {rt.players.find((p) => p.id === id)?.name}
+            </span>
+            <button
+              className="tap size-12 disabled:opacity-30"
+              disabled={i === 0}
+              onClick={() => move(i, -1)}
+              aria-label={`${rt.players.find((p) => p.id === id)?.name} nach links`}
+            >
+              ←
+            </button>
+            <button
+              className="tap size-12 disabled:opacity-30"
+              disabled={i === order.length - 1}
+              onClick={() => move(i, 1)}
+              aria-label={`${rt.players.find((p) => p.id === id)?.name} nach rechts`}
+            >
+              →
+            </button>
+          </li>
+        ))}
+      </ol>
+      <button
+        className={btn({ size: "lg" })}
+        onClick={() => {
+          let next = rt;
+          for (const [i, id] of order.entries())
+            next = submitGangAction(next, {
+              playerId: id,
+              optionId: String(i + 1),
+            });
+          onSubmit(next);
+        }}
+      >
+        Reihenfolge bestätigen & Tipps aufdecken
+      </button>
+    </div>
+  );
 }

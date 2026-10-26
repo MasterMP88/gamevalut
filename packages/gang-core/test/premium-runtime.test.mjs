@@ -53,9 +53,7 @@ test("private role games do not leak their secret into the public view", () => {
   assert.equal(JSON.stringify(view).includes("CIVILIAN"), false);
   const privateView = privateGangView(state, "p1");
   assert.ok(privateView);
-  assert.ok(
-    privateView.role === "CIVILIAN" || privateView.role === "UNDERCOVER",
-  );
+  assert.ok(privateView.role === "WORD");
 });
 
 test("hot seat accepts exactly the spotlight player in the private choice stage", () => {

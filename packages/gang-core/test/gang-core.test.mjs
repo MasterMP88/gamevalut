@@ -84,7 +84,7 @@ test("manual mixes reject unknown, duplicate and incompatible games", () => {
   );
 });
 
-test("two players with two phones prefer EVERYONE IN over pass mode", () => {
+test("shared social games do not prefer EVERYONE IN merely because phones exist", () => {
   const majority = getGangGame("the-majority");
   assert.ok(majority);
   const mode = preferredInteractionMode(
@@ -92,7 +92,7 @@ test("two players with two phones prefer EVERYONE IN over pass mode", () => {
     { ...base, playerCount: 3 },
     { connectedDevices: 3, hasBigScreen: false },
   );
-  assert.equal(mode, "everyone-in");
+  assert.equal(mode, "one-phone");
 });
 
 test("one phone remains a fallback when there is only one input device", () => {

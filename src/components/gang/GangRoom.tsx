@@ -1259,7 +1259,9 @@ function ControllerInput({
           <Secret label={gid === "secret-missions" ? "VERSIEGELT" : "GEHEIM"}>
             {role && gid !== "undercover" && (
               <span className="block font-mono text-xs tracking-[0.2em] text-[var(--g)]">
-                {role === "ODD" || role === "ROOM" ? "DEINE FRAGE" : role}
+                {["ODD", "ROOM", "QUESTION"].includes(role ?? "")
+                  ? "DEINE FRAGE"
+                  : role}
               </span>
             )}
             {secret && (

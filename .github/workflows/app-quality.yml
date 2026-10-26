@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "src/**"
+      - "packages/gang-core/**"
+      - "scripts/vendor-cores.mjs"
       - "package.json"
       - "package-lock.json"
       - "tsconfig*.json"
@@ -12,6 +14,8 @@ on:
     branches: [main]
     paths:
       - "src/**"
+      - "packages/gang-core/**"
+      - "scripts/vendor-cores.mjs"
       - "package.json"
       - "package-lock.json"
       - "tsconfig*.json"
@@ -31,6 +35,10 @@ jobs:
           npm install --global npm@11 --no-audit --no-fund
           rm -f package-lock.json
           npm install --include=dev --package-lock=false --no-audit --no-fund
+      - name: Verify canonical core parity
+        run: |
+          node scripts/vendor-cores.mjs
+          git diff --exit-code -- src/lib/gang/core src/lib/commerce/core
       - name: Tests
         run: npm test
       - name: TypeScript

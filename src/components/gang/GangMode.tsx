@@ -1,3 +1,5 @@
+import { couchGame, GANG_EXPERIENCES } from "@/lib/gang/core/experience";
+import { GangSharedNight } from "./CouchPlayer";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { GangGuide } from "./GangGuide";
 import { missionQueue } from "@/lib/gang/core/missions";
@@ -68,6 +70,7 @@ type Flow =
   | { k: "sheet"; id: GangGameId }
   | {
       k: "setup";
+      preferredMode?: PlayMode | undefined;
       queue: GangGameId[];
       range: [number, number];
       count: number;
@@ -77,6 +80,7 @@ type Flow =
     }
   | {
       k: "play";
+      display?: "couch" | "phone";
       queue: GangGameId[];
       players: GangRuntimePlayer[];
       rounds?: RoundPlan | undefined;
@@ -98,32 +102,47 @@ function Overlay({
   onClose: () => void;
   children: React.ReactNode;
 }) {
-  const returnFocus = useRef(typeof document !== "undefined" ? document.activeElement as HTMLElement | null : null);
+  const returnFocus = useRef(
+    typeof document !== "undefined"
+      ? (document.activeElement as HTMLElement | null)
+      : null,
+  );
   return (
-    <DialogPrimitive.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
-    <DialogPrimitive.Portal><DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-room" />
-    <DialogPrimitive.Content
-      aria-describedby={undefined}
-      onCloseAutoFocus={(event) => { event.preventDefault(); if (returnFocus.current?.isConnected) returnFocus.current.focus(); }}
-      className="fixed inset-0 z-50 flex flex-col overflow-y-auto overflow-x-hidden bg-room safe-x safe-top safe-bottom"
+    <DialogPrimitive.Root
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col py-3">
-        <div className="flex min-h-11 items-center justify-between">
-          <DialogPrimitive.Title className="font-mono text-xs tracking-[0.2em] text-signal">
-            {label}
-          </DialogPrimitive.Title>
-          <button
-            type="button"
-            aria-label="Schließen"
-            onClick={onClose}
-            className="tap flex size-11 items-center justify-center"
-          >
-            <X className="size-5" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </DialogPrimitive.Content></DialogPrimitive.Portal></DialogPrimitive.Root>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-room" />
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            if (returnFocus.current?.isConnected) returnFocus.current.focus();
+          }}
+          className="fixed inset-0 z-50 flex flex-col overflow-y-auto overflow-x-hidden bg-room safe-x safe-top safe-bottom"
+        >
+          <div className="mx-auto flex w-full max-w-xl flex-1 flex-col py-3">
+            <div className="flex min-h-11 items-center justify-between">
+              <DialogPrimitive.Title className="font-mono text-xs tracking-[0.2em] text-signal">
+                {label}
+              </DialogPrimitive.Title>
+              <button
+                type="button"
+                aria-label="Schließen"
+                onClick={onClose}
+                className="tap flex size-11 items-center justify-center"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            {children}
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
 
@@ -154,12 +173,20 @@ function Stepper({
       >
         <Minus className="size-5" />
       </button>
-      <output
-        aria-live="polite"
-        className="w-20 text-center font-display text-6xl tabular-nums leading-none"
-      >
-        {value}
-      </output>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        aria-label={label}
+        value={value}
+        onChange={(e) => {
+          const n = Number(e.target.value);
+          if (Number.isFinite(n))
+            onChange(Math.min(max, Math.max(min, Math.floor(n))));
+        }}
+        className="min-h-14 w-24 border-b border-line bg-transparent text-center font-display text-5xl tabular-nums leading-none"
+      />
       <button
         type="button"
         aria-label="Mehr Spieler"
@@ -236,8 +263,18 @@ function GameSheet({
           )}
         </dl>
         <details className="my-6 border-y border-line py-2">
-          <summary className="tap flex min-h-12 cursor-pointer items-center text-sm">Ablauf, Wertung und Finale</summary>
-          <div className="py-4"><GangGuide id={g.id} compact /><a href={`/gang/${g.id}`} className="tap mt-4 inline-flex min-h-12 items-center text-signal">Beispielrunde & alle Regeln →</a></div>
+          <summary className="tap flex min-h-12 cursor-pointer items-center text-sm">
+            Ablauf, Wertung und Finale
+          </summary>
+          <div className="py-4">
+            <GangGuide id={g.id} compact />
+            <a
+              href={`/gang/${g.id}`}
+              className="tap mt-4 inline-flex min-h-12 items-center text-signal"
+            >
+              Beispielrunde & alle Regeln →
+            </a>
+          </div>
         </details>
         <button
           type="button"
@@ -260,6 +297,7 @@ function PlayerSetup({
   budgetMinutes,
   range,
   initial,
+  preferredMode,
   entry,
   client,
   hostAllowed,
@@ -272,18 +310,30 @@ function PlayerSetup({
   budgetMinutes?: 15 | 30 | 60 | null | undefined;
   range: [number, number];
   initial: number;
+  preferredMode?: PlayMode | undefined;
   entry: Entry;
   client: RoomClient | null;
   hostAllowed: boolean;
-  onStart: (p: GangRuntimePlayer[], rounds: RoundPlan) => void;
+  onStart: (
+    p: GangRuntimePlayer[],
+    rounds: RoundPlan,
+    display: "couch" | "phone",
+  ) => void;
   onRoom: (s: StoredSession, snap: RoomSnapshot, bigScreen: boolean) => void;
   onClose: () => void;
 }) {
-  const recommendedMode = useMemo(() => recommendPlayMode(queue), [queue]);
+  const shared = queue.every(couchGame);
+  const recommendedMode = useMemo(
+    () => preferredMode ?? recommendPlayMode(queue),
+    [queue, preferredMode],
+  );
+  const [display, setDisplay] = useState<"couch" | "phone">(
+    preferredMode === "one-phone" ? "phone" : "couch",
+  );
   // Start with the mode the authored game contract prefers instead of forcing every player onto a phone.
-  const [mode, setMode] = useState<PlayMode>(recommendedMode);
-  const stage = mode === "big-screen";
-  const onePhone = mode === "one-phone" || !client;
+  const [solo, setSolo] = useState(recommendedMode !== "everyone-in");
+  const [stage, setStage] = useState(recommendedMode === "big-screen");
+  const onePhone = solo || !client;
   const [count, setCount] = useState(
     Math.min(Math.max(initial, range[0]), range[1]),
   );
@@ -296,17 +346,54 @@ function PlayerSetup({
     count,
     budget,
     onePhone ? 1 : count,
+    onePhone && shared,
   );
   const ok = count >= range[0] && count <= range[1] && pacing.fits;
   return (
     <Overlay label="WER SPIELT?" onClose={onClose}>
       <div className="flex flex-1 flex-col">
+        {shared && (
+          <div
+            className="mt-4 grid grid-cols-2 gap-2"
+            aria-label="Gemeinsam spielen"
+          >
+            <button
+              type="button"
+              className={cn(
+                "min-h-14 border p-3 text-sm",
+                solo && display === "couch"
+                  ? "border-signal text-signal"
+                  : "border-line",
+              )}
+              aria-pressed={solo && display === "couch"}
+              onClick={() => {
+                setSolo(true);
+                setDisplay("couch");
+              }}
+            >
+              TV / Couch · ohne Beitritt
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "min-h-14 border p-3 text-sm",
+                solo && display === "phone"
+                  ? "border-signal text-signal"
+                  : "border-line",
+              )}
+              aria-pressed={solo && display === "phone"}
+              onClick={() => {
+                setSolo(true);
+                setDisplay("phone");
+              }}
+            >
+              Ein Handy · gemeinsam
+            </button>
+          </div>
+        )}
         <p className="mt-4 text-sm text-muted-foreground">
           {queue.map((id) => gangGame(id)?.title).join(" → ")}
         </p>
-        {client && <fieldset className="mt-5"><legend className="eyebrow mb-2">Spielweise</legend><div className="grid grid-cols-3 border-y border-line">{([
-          ["one-phone", "ONE PHONE", "Ein Gerät reicht"], ["big-screen", "BIG SCREEN", "TV als Bühne"], ["everyone-in", "EVERYONE IN", "Alle per QR"],
-        ] as const).map(([id,label,detail])=><label key={id} className={cn("tap flex min-h-20 cursor-pointer flex-col justify-center gap-1 border-l border-line px-3 py-3 first:border-l-0", mode===id ? "bg-signal/10 text-signal" : "text-muted-foreground")}><input type="radio" name="gang-play-mode" className="sr-only peer" value={id} checked={mode===id} onChange={()=>{haptic(5);setMode(id);}}/><span className="font-mono text-xs peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4">{label}</span><span className="text-xs">{id===recommendedMode ? "Passt zum Game" : detail}</span></label>)}</div></fieldset>}
         <div className="my-5">
           <p className="mb-2 text-sm text-muted-foreground">Euer Zeitrahmen</p>
           <div className="grid grid-cols-4 gap-2">
@@ -340,7 +427,7 @@ function PlayerSetup({
               weniger Spiele.
             </p>
           )}
-          {onePhone && count > 12 && (
+          {onePhone && !shared && count > 12 && (
             <p className="mt-2 text-sm text-muted-foreground">
               Bei {count} Personen zählt die Weitergabezeit mit. Eigene Handys
               verkürzen die Wartezeit.
@@ -354,40 +441,112 @@ function PlayerSetup({
               className="mt-5 border-l-2 border-signal pl-4"
             >
               <p className="font-mono text-[0.65rem] tracking-[0.2em] text-signal">
-                {stage ? "BIG SCREEN · DER RAUM SPIELT" : recommendedMode === "everyone-in" ? "PASST ZU DIESEM GAME · EVERYONE IN" : "EVERYONE IN · OPTIONAL"}
+                {recommendedMode === "everyone-in"
+                  ? "PASST ZU DIESEM GAME · EVERYONE IN"
+                  : "EVERYONE IN · OPTIONAL"}
               </p>
               <h2 className="font-display mt-2 text-[clamp(2.4rem,10vw,3.8rem)] leading-[0.9]">
-                {stage ? "Der TV wird zur Bühne." : "Jede:r mit eigenem Handy."}
+                Alle mit eigenem Handy.
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                {stage ? "TV oder Laptop zeigt Fragen, Countdowns und Ergebnisse für alle. Mitspielende treten per QR-Code bei; ihre Handys sind die Controller." : "Du öffnest den Raum, die anderen treten per QR-Code bei. Geheime Rollen und Antworten bleiben bis zur Auflösung verdeckt."}
+                Du öffnest den Raum, die anderen scannen den QR-Code. Geheime
+                Antworten bleiben auf dem eigenen Handy – niemand muss
+                weitergeben.
               </p>
             </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={stage}
+              onClick={() => {
+                haptic(5);
+                setStage(!stage);
+              }}
+              className="tap mt-5 flex min-h-14 w-full items-center justify-between gap-4 border-y border-line py-3 text-left"
+            >
+              <span>
+                <span className="block text-sm text-foreground">
+                  TV/Laptop als Bühne
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  Optional · Handys bleiben die Controller
+                </span>
+              </span>
+              <span
+                aria-hidden
+                className={cn(
+                  "relative h-6 w-11 shrink-0 rounded-full border transition-colors",
+                  stage ? "border-signal bg-signal/30" : "border-line",
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 size-4 rounded-full bg-foreground transition-transform motion-reduce:transition-none",
+                    stage ? "translate-x-6" : "translate-x-0.5",
+                  )}
+                />
+              </span>
+            </button>
             {hostAllowed ? (
-              <HostSetup
-                client={client}
-                queue={missionQueue(queue)}
-                rounds={pacing.rounds}
-                budgetMinutes={budget}
-                entry={entry}
-                bigScreen={stage}
-                onReady={(s, snap) => onRoom(s, snap, stage)}
-              />
+              <>
+                {queue.includes("music-drop") && (
+                  <p className="my-3 text-sm text-muted-foreground">
+                    MUSIC DROP spielt ihr hier als Song-Voting. Für das Hörspiel
+                    mit euren Audiodateien wählt TV / Couch.
+                  </p>
+                )}
+                <HostSetup
+                  client={client}
+                  queue={missionQueue(queue)}
+                  rounds={pacing.rounds}
+                  budgetMinutes={budget}
+                  entry={entry}
+                  bigScreen={stage}
+                  onReady={(s, snap) => onRoom(s, snap, stage)}
+                />
+              </>
             ) : (
               <HostAccessSheet />
             )}
+            <button
+              type="button"
+              onClick={() => {
+                haptic(5);
+                setSolo(true);
+              }}
+              className="tap mx-auto mt-3 flex min-h-11 items-center px-3 text-sm text-muted-foreground underline-offset-4 hover:underline"
+            >
+              Mit einem Handy spielen
+            </button>
           </>
         ) : (
           <>
+            {client && (
+              <button
+                type="button"
+                onClick={() => setSolo(false)}
+                className="tap mt-3 flex min-h-11 items-center text-left text-sm text-signal underline-offset-4 hover:underline"
+              >
+                Everyone In aktivieren
+              </button>
+            )}
             <p className="mt-3 font-mono text-[0.65rem] tracking-[0.2em] text-signal">
-              {recommendedMode === "one-phone" ? "PASST ZU DIESEM GAME · ONE PHONE" : "ONE PHONE · ALTERNATIVE"}
+              {shared
+                ? display === "couch"
+                  ? "TV / COUCH · ALLE SPIELEN MIT"
+                  : "EIN HANDY · DER RAUM SPIELT"
+                : recommendedMode === "one-phone"
+                  ? "PASST ZU DIESEM GAME · ONE PHONE"
+                  : "ONE PHONE · ALTERNATIVE"}
             </p>
 
             <h2 className="font-display mt-3 text-[clamp(2.8rem,12vw,4.5rem)] leading-[0.9]">
               Ein Gerät reicht.
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Legt das Handy in die Mitte oder gebt es nur dann weiter, wenn eine geheime Phase es braucht.
+              {shared
+                ? "Öffnet die Bühne auf Laptop oder TV, oder legt das Handy in die Mitte. Ihr spielt laut und gemeinsam. Niemand tritt einem Raum bei."
+                : "Geheime Karten sieht immer nur die Person, die gerade dran ist. Spiegelt diesen Modus nicht auf einen TV."}
             </p>
             <h3 className="font-display mt-8 text-3xl leading-[0.95]">
               Wer spielt mit?
@@ -404,7 +563,7 @@ function PlayerSetup({
             <p className="mt-2 font-mono text-xs text-muted-foreground">
               {range[0]}–{range[1]} SPIELER MÖGLICH
             </p>
-            {count <= NAMED_LIMIT ? (
+            {count <= NAMED_LIMIT && (!shared || count <= 4) ? (
               <ul className="mt-6 grid gap-1 sm:grid-cols-2">
                 {Array.from({ length: count }, (_, i) => (
                   <li key={i}>
@@ -429,8 +588,9 @@ function PlayerSetup({
               </ul>
             ) : (
               <p className="mt-6 text-sm text-muted-foreground">
-                Ab {NAMED_LIMIT + 1} Leuten heißt ihr automatisch Spieler 1–
-                {count}. Merkt euch eure Nummer.
+                {shared
+                  ? "Teams bilden wir gleich gemeinsam. Namen eintippen ist nicht nötig."
+                  : `Ab ${NAMED_LIMIT + 1} Leuten heißt ihr automatisch Spieler 1–${count}. Merkt euch eure Nummer.`}
               </p>
             )}
             {hostAllowed ? (
@@ -439,7 +599,7 @@ function PlayerSetup({
                 disabled={!ok}
                 onClick={() => {
                   haptic(12);
-                  onStart(roster(count, names), pacing.rounds);
+                  onStart(roster(count, names), pacing.rounds, display);
                 }}
                 className={cn(primary, "mt-auto pt-0")}
               >
@@ -466,6 +626,7 @@ function NightSetup({
     count: number,
     rounds?: RoundPlan,
     budgetMinutes?: 15 | 30 | 60 | null,
+    mode?: PlayMode,
   ) => void;
   onClose: () => void;
 }) {
@@ -474,6 +635,9 @@ function NightSetup({
   const [vibe, setVibe] = useState<Vibe | null>(null);
   const [dur, setDur] = useState<number | null | undefined>(undefined);
   const [sideQuests, setSideQuests] = useState(false);
+  const [individual, setIndividual] = useState(false);
+  const [tv, setTv] = useState(true);
+  const [energy, setEnergy] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [mods, setMods] = useState<GameCapability[]>([]);
   const [seed] = useState(() => Math.floor(Math.random() * 2 ** 31));
   const plan = useMemo(
@@ -485,12 +649,20 @@ function NightSetup({
             players: count,
             caps: mods,
             seed,
+            energy,
+            devices: {
+              connectedDevices: individual ? count : 1,
+              hasBigScreen: tv,
+              inputPreference: individual ? "individual" : "shared",
+            },
           })
         : null,
-    [step, vibe, dur, count, mods, seed],
+    [step, vibe, dur, count, mods, seed, individual, tv, energy],
   );
   const queue = [
-    ...(sideQuests && count >= 3 && count <= 30 ? ["secret-missions"] : []),
+    ...(individual && sideQuests && count >= 3 && count <= 30
+      ? ["secret-missions"]
+      : []),
     ...(plan?.gameIds ?? []),
   ] as GangGameId[];
   const Choice = ({
@@ -522,21 +694,71 @@ function NightSetup({
     {
       q: "Wie viele seid ihr?",
       body: (
-        <Stepper
-          value={count}
-          min={2}
-          max={99}
-          onChange={setCount}
-          label="Anzahl Spieler"
-        />
+        <>
+          <Stepper
+            value={count}
+            min={2}
+            max={99}
+            onChange={setCount}
+            label="Anzahl Spieler"
+          />
+          <div className="mt-6 grid gap-2">
+            <button
+              type="button"
+              aria-pressed={!individual}
+              className="min-h-12 border border-line p-3 text-left"
+              onClick={() => setIndividual(false)}
+            >
+              Ein gemeinsames Gerät · alle spielen im Raum
+            </button>
+            <button
+              type="button"
+              aria-pressed={individual}
+              className="min-h-12 border border-line p-3 text-left"
+              onClick={() => setIndividual(true)}
+            >
+              Alle haben ein eigenes Handy
+            </button>
+            <label className="flex min-h-12 items-center gap-3">
+              <input
+                type="checkbox"
+                checked={tv}
+                onChange={(e) => setTv(e.target.checked)}
+              />
+              TV oder Laptop vorhanden
+            </label>
+          </div>
+        </>
       ),
       ok: true,
     },
     {
       q: "Welcher Vibe?",
-      body: VIBES.map((v) => (
-        <Choice key={v} label={v} on={vibe === v} onClick={() => setVibe(v)} />
-      )),
+      body: (
+        <>
+          {VIBES.map((v) => (
+            <Choice
+              key={v}
+              label={v}
+              on={vibe === v}
+              onClick={() => setVibe(v)}
+            />
+          ))}
+          <label className="mt-6 block text-sm">
+            Wie viel Energie habt ihr gerade? · {energy}/5
+            <input
+              className="mt-3 w-full"
+              type="range"
+              min={1}
+              max={5}
+              value={energy}
+              onChange={(e) =>
+                setEnergy(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)
+              }
+            />
+          </label>
+        </>
+      ),
       ok: !!vibe,
     },
     {
@@ -555,7 +777,7 @@ function NightSetup({
       q: "Extras? Optional.",
       body: (
         <>
-          {count >= 3 && count <= 30 && (
+          {individual && count >= 3 && count <= 30 && (
             <Choice
               label="Geheime Nebenmissionen"
               on={sideQuests}
@@ -666,6 +888,7 @@ function NightSetup({
                 count,
                 plan?.roundsByGame,
                 (dur ?? null) as 15 | 30 | 60 | null,
+                individual ? "everyone-in" : tv ? "big-screen" : "one-phone",
               )
             }
             className={cn(primary, "mt-auto")}
@@ -791,8 +1014,11 @@ function GameCard({
 }
 
 function recommendPlayMode(queue: GangGameId[]): PlayMode {
-  const games = queue.map((id) => gangGame(id)).filter((g): g is GangGame => Boolean(g));
+  const games = queue
+    .map((id) => gangGame(id))
+    .filter((g): g is GangGame => Boolean(g));
   if (!games.length) return "one-phone";
+  if (queue.every(couchGame)) return "big-screen";
   const preferred = games.map((g) => g.interactionModes[0]);
   if (preferred.every((mode) => mode === "one-phone")) return "one-phone";
   if (
@@ -807,8 +1033,10 @@ function recommendPlayMode(queue: GangGameId[]): PlayMode {
   ) {
     return "big-screen";
   }
-  if (games.every((g) => g.interactionModes.includes("one-phone"))) return "one-phone";
-  if (games.every((g) => g.interactionModes.includes("everyone-in"))) return "everyone-in";
+  if (games.every((g) => g.interactionModes.includes("one-phone")))
+    return "one-phone";
+  if (games.every((g) => g.interactionModes.includes("everyone-in")))
+    return "everyone-in";
   return "one-phone";
 }
 
@@ -839,7 +1067,9 @@ export function GangMode({
   hostAllowed?: boolean;
   initialGame?: GangGameId | undefined;
 }) {
-  const [flow, setFlow] = useState<Flow>(initialGame ? { k: "sheet", id: initialGame } : null);
+  const [flow, setFlow] = useState<Flow>(
+    initialGame ? { k: "sheet", id: initialGame } : null,
+  );
   const [client, setClient] = useState<RoomClient | null>(null);
   const [resume, setResume] = useState<StoredSession | null>(null);
   useEffect(() => {
@@ -856,13 +1086,11 @@ export function GangMode({
     [tag],
   );
   const go = (id: string) =>
-    document
-      .getElementById(id)
-      ?.scrollIntoView?.({
-        behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "auto"
-          : "smooth",
-      });
+    document.getElementById(id)?.scrollIntoView?.({
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
   const move = (i: number, d: -1 | 1) => {
     const n = [...sel];
     [n[i], n[i + d]] = [n[i + d]!, n[i]!];
@@ -1093,10 +1321,22 @@ export function GangMode({
         )}
       </section>
 
-      <nav aria-label="Spielanleitungen" className="mx-auto mt-12 max-w-6xl safe-x">
+      <nav
+        aria-label="Spielanleitungen"
+        className="mx-auto mt-12 max-w-6xl safe-x"
+      >
         <h2 className="eyebrow">Alle Regeln & Beispielrunden</h2>
         <ul className="mt-3 flex flex-wrap gap-x-5">
-          {GANG_GAMES.map(g => <li key={g.id}><a href={`/gang/${g.id}`} className="tap inline-flex min-h-12 items-center text-sm text-muted-foreground hover:text-foreground">{g.title}</a></li>)}
+          {GANG_GAMES.map((g) => (
+            <li key={g.id}>
+              <a
+                href={`/gang/${g.id}`}
+                className="tap inline-flex min-h-12 items-center text-sm text-muted-foreground hover:text-foreground"
+              >
+                {g.title}
+              </a>
+            </li>
+          ))}
         </ul>
       </nav>
       {mix && (
@@ -1194,13 +1434,14 @@ export function GangMode({
       {night && (
         <NightSetup
           onClose={() => setNight(false)}
-          onLaunch={(queue, count, rounds, budgetMinutes) => {
+          onLaunch={(queue, count, rounds, budgetMinutes, preferredMode) => {
             setNight(false);
             setFlow({
               k: "setup",
               queue,
               rounds,
               budgetMinutes,
+              preferredMode,
               range: [count, count],
               count,
               entry: "director",
@@ -1234,12 +1475,13 @@ export function GangMode({
           budgetMinutes={flow.budgetMinutes}
           range={flow.range}
           initial={flow.count}
+          preferredMode={flow.preferredMode}
           entry={flow.entry}
           client={client}
           hostAllowed={hostAllowed}
           onClose={() => setFlow(null)}
-          onStart={(players, rounds) =>
-            setFlow({ k: "play", queue: flow.queue, players, rounds })
+          onStart={(players, rounds, display) =>
+            setFlow({ k: "play", queue: flow.queue, players, rounds, display })
           }
           onRoom={(session, snap, bigScreen) => {
             setResume(null);
@@ -1295,14 +1537,23 @@ export function GangMode({
           </div>
         </div>
       )}
-      {flow?.k === "play" && (
-        <GangPlayer
-          queue={flow.queue}
-          rounds={flow.rounds}
-          players={flow.players}
-          onExit={() => setFlow(null)}
-        />
-      )}
+      {flow?.k === "play" &&
+        (flow.queue.every(couchGame) ? (
+          <GangSharedNight
+            queue={flow.queue}
+            display={flow.display ?? "couch"}
+            rounds={flow.rounds}
+            players={flow.players}
+            onExit={() => setFlow(null)}
+          />
+        ) : (
+          <GangPlayer
+            queue={flow.queue}
+            rounds={flow.rounds}
+            players={flow.players}
+            onExit={() => setFlow(null)}
+          />
+        ))}
     </main>
   );
 }
