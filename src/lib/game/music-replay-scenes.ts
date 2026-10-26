@@ -1,8 +1,9 @@
 import type { MusicMode, Scene } from "./types";
 
 type SongCue = [title: string, prompt: string];
-const deck = (mode: MusicMode, cues: SongCue[]): Scene[] =>
-  cues.map(([title, prompt], i) => ({
+const deck = (mode: MusicMode, cues: SongCue[]): Scene[] => {
+  const actSize = Math.max(1, Math.ceil(cues.length / 4));
+  return cues.map(([title, prompt], i) => ({
     id: `aux-replay26-${mode}-${i + 1}`,
     type: "MUSIC",
     title,
@@ -10,10 +11,12 @@ const deck = (mode: MusicMode, cues: SongCue[]): Scene[] =>
     music: { mode },
     only: ["pass-the-aux"],
     source: "local",
-    phase: 0,
+    // The replay bank now participates in the full night arc instead of flooding phase 0.
+    phase: Math.min(3, Math.floor(i / actSize)),
     flavor: i % 3 === 0 ? "deep" : i % 3 === 1 ? "funny" : "cheeky",
-    ...(mode === "speed" ? { duration: 25 } : {}),
+    ...(mode === "speed" ? { duration: 20 } : {}),
   }));
+};
 
 // Song choices are supplied by the players. No fabricated catalogue, audio rights,
 // lyrics or streaming availability. Each cue has a different narrative job.
