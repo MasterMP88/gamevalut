@@ -416,12 +416,23 @@ export function EndScreen({
 }
 
 const REACTION_LABEL = {
-  match: "Match",
+  match: "Same Brain",
+  "same-energy": "Same Energy",
   twist: "Plot Twist",
   explains: "Das erklärt einiges",
+  "no-questions": "Keine Fragen",
+  "read-hit": "Read: Treffer",
 } as const;
 
-/** PASS//THE AUX finale — Tonight's Tracklist. Session-local; cleared with the session. */
+const SIGNATURE_LABEL = {
+  "needle-drop": "Needle Drop",
+  "aux-swap": "AUX Swap",
+  "red-flag": "Red Flag",
+  "one-song": "One Song",
+  "last-track": "Last Track",
+} as const;
+
+/** PASS//THE AUX finale — the session becomes a record, not just a result list. */
 function Tracklist({
   game,
   state,
@@ -434,10 +445,25 @@ function Tracklist({
   const list = state.tracklist ?? [];
   const rounds = new Set(list.map((t) => t.n)).size;
   const firstOfRound = (i: number) => list[i - 1]?.n !== list[i]!.n;
-  const matches = list.filter(
-    (t, i) => t.reaction === "match" && firstOfRound(i),
-  ).length;
-  // Extension point: a real provider (Apple Music) may offer playlist creation — only for provider tracks.
+  const moments = list.filter((_t, i) => firstOfRound(i));
+  const countReaction = (reaction: NonNullable<(typeof list)[number]["reaction"]>) =>
+    moments.filter((t) => t.reaction === reaction).length;
+  const matches = countReaction("match");
+  const sameEnergy = countReaction("same-energy");
+  const twists = countReaction("twist");
+  const readHits = countReaction("read-hit");
+  const signatures = moments.filter((t) => !!t.signature).length;
+  const nightLine =
+    matches >= 2
+      ? "Verdächtig gleiche Frequenz."
+      : readHits >= 2
+        ? "Ihr könnt euren Musikgeschmack offenbar lesen."
+        : twists >= 2
+          ? "Gleiche Nacht. Komplett verschiedene Filme."
+          : sameEnergy >= 2
+            ? "Nicht dieselben Songs. Trotzdem derselbe Vibe."
+            : "Keine Playlist hätte diese Nacht so gebaut.";
+
   const [provider, setProvider] = useState<MusicProvider | null>(null);
   const [saved, setSaved] = useState<"idle" | "busy" | "ok" | "fail">("idle");
   useEffect(() => {
@@ -453,74 +479,94 @@ function Tracklist({
       live = false;
     };
   }, [list]);
+
   return (
     <Stage>
-      <p className="eyebrow text-champagne">PASS//THE AUX · Finale</p>
-      <h1 className="font-display mt-4 text-[3.6rem] leading-[0.9] text-balance animate-sig">
-        Tonight’s Tracklist
+      <p className="eyebrow text-champagne">PASS//THE AUX · FINAL CUT</p>
+      <h1 className="font-display mt-4 text-[3.8rem] leading-[0.86] text-balance animate-sig">
+        Tonight’s Record
       </h1>
+      <p className="font-display mt-4 text-2xl italic text-champagne text-balance">
+        {nightLine}
+      </p>
       <p className="mt-3 text-muted-foreground">
         {list.length
-          ? `${list.length} ${list.length === 1 ? "Track" : "Tracks"} aus ${rounds} ${rounds === 1 ? "Runde" : "Runden"} · ${state.players[0]} & ${state.players[1]}`
-          : "Heute noch kein Song. Die Tracklist wartet."}
+          ? list.length + " " + (list.length === 1 ? "Track" : "Tracks") + " aus " + rounds + " " + (rounds === 1 ? "Runde" : "Runden") + " · " + state.players[0] + " × " + state.players[1]
+          : "Heute noch kein Song. Die Nadel wartet."}
       </p>
+
       {list.length > 0 && (
-        <div className="sleeve mt-8 border border-line p-5 sm:p-7">
-          <p className="flex items-baseline justify-between font-mono text-[0.65rem] tracking-[0.25em] text-muted-foreground">
-            <span>SIDE N//</span>
-            <span>
-              {state.players[0].toUpperCase()} ×{" "}
-              {state.players[1].toUpperCase()}
-            </span>
-          </p>
-          <ol className="mt-5 divide-y divide-line" data-testid="tracklist">
-            {list.map((t, i) => (
-              <li
-                key={`${t.n}-${i}`}
-                className="grid grid-cols-[2rem_1fr] gap-3 py-3 motion-safe:animate-rise"
-                style={{ animationDelay: `${Math.min(i, 10) * 90}ms` }}
-              >
-                <span className="pt-1 font-mono text-sm text-champagne">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div className="min-w-0">
-                  <p className="flex items-baseline gap-2">
-                    <span
-                      className="font-display min-w-0 break-words text-[1.5rem] leading-tight"
-                      data-testid="track-title"
-                    >
-                      {t.title}
-                    </span>
-                    <span className="ml-auto shrink-0 font-mono text-[0.6rem] tracking-[0.2em] text-primary">
-                      {state.players[t.owner].toUpperCase()}
-                    </span>
-                  </p>
-                  {t.artist && (
-                    <p className="truncate text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                      {t.artist}
-                    </p>
-                  )}
-                  <p className="mt-1 line-clamp-2 text-sm italic text-muted-foreground">
-                    {t.prompt}
-                    {t.reaction && firstOfRound(i)
-                      ? ` · ${REACTION_LABEL[t.reaction]}`
-                      : ""}
-                  </p>
-                </div>
-              </li>
+        <>
+          <section className="relative mt-8 overflow-hidden rounded-[1.75rem] border border-line bg-surface p-6 sm:p-8" aria-label="Tonight’s Record Cover">
+            <div className="absolute -right-16 -top-16 size-56 rounded-full border border-primary/30" aria-hidden />
+            <div className="absolute -right-8 -top-8 size-40 rounded-full border border-champagne/25" aria-hidden />
+            <p className="font-mono text-[0.65rem] tracking-[0.3em] text-primary">NOCTURNE RECORDS · N//09</p>
+            <div className="mt-16 max-w-[22rem]">
+              <p className="font-display text-5xl leading-[0.88] text-balance">PASS//<br />THE AUX</p>
+              <p className="mt-5 text-lg text-muted-foreground">{state.players[0]} × {state.players[1]}</p>
+            </div>
+            <div className="mt-16 flex items-end justify-between gap-4 border-t border-line pt-4">
+              <p className="font-mono text-[0.6rem] tracking-[0.22em] text-muted-foreground">SIDE N// · ONE NIGHT ONLY</p>
+              <span className="font-display text-3xl italic text-champagne">{String(rounds).padStart(2, "0")}</span>
+            </div>
+          </section>
+
+          <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-4" data-testid="aux-night-stats">
+            {[
+              ["SAME BRAIN", matches],
+              ["SAME ENERGY", sameEnergy],
+              ["PLOT TWIST", twists],
+              ["SIGNATURE", signatures],
+            ].map(([label, value]) => (
+              <div key={String(label)} className="bg-background p-4">
+                <p className="font-display text-3xl tabular-nums">{value}</p>
+                <p className="mt-1 font-mono text-[0.55rem] tracking-[0.18em] text-muted-foreground">{label}</p>
+              </div>
             ))}
-          </ol>
-          <p className="mt-5 font-mono text-[0.6rem] tracking-[0.25em] text-muted-foreground">
-            NOCTURNE · PASS//THE AUX · NUR DIESE NACHT
-          </p>
-        </div>
+          </div>
+          {readHits > 0 && (
+            <p className="mt-4 border-l-2 border-primary pl-3 text-sm text-muted-foreground">
+              READ//THE TRACK · {readHits === 1 ? "Ein Treffer." : readHits + " Treffer."} Ihr hört offenbar mehr als nur den Song.
+            </p>
+          )}
+
+          <div className="sleeve mt-8 rounded-[1.5rem] border border-line p-5 sm:p-7">
+            <p className="flex items-baseline justify-between font-mono text-[0.65rem] tracking-[0.25em] text-muted-foreground">
+              <span>TRACKLIST</span>
+              <span>{state.players[0].toUpperCase()} × {state.players[1].toUpperCase()}</span>
+            </p>
+            <ol className="mt-5 divide-y divide-line" data-testid="tracklist">
+              {list.map((t, i) => (
+                <li
+                  key={String(t.n) + "-" + String(i)}
+                  className="grid grid-cols-[2rem_1fr] gap-3 py-3 motion-safe:animate-rise"
+                  style={{ animationDelay: String(Math.min(i, 10) * 90) + "ms" }}
+                >
+                  <span className="pt-1 font-mono text-sm text-champagne">{String(i + 1).padStart(2, "0")}</span>
+                  <div className="min-w-0">
+                    <p className="flex items-baseline gap-2">
+                      <span className="font-display min-w-0 break-words text-[1.5rem] leading-tight" data-testid="track-title">{t.title}</span>
+                      <span className="ml-auto shrink-0 font-mono text-[0.6rem] tracking-[0.2em] text-primary">
+                        {t.mode === "consensus" ? "BEIDE" : state.players[t.owner].toUpperCase()}
+                      </span>
+                    </p>
+                    {t.artist && <p className="truncate text-xs uppercase tracking-[0.14em] text-muted-foreground">{t.artist}</p>}
+                    <p className="mt-1 line-clamp-2 text-sm italic text-muted-foreground">
+                      {t.prompt}
+                      {t.reaction && firstOfRound(i) ? " · " + REACTION_LABEL[t.reaction] : ""}
+                    </p>
+                    {t.signature && firstOfRound(i) && (
+                      <p className="mt-1 font-mono text-[0.55rem] tracking-[0.18em] text-champagne">{SIGNATURE_LABEL[t.signature].toUpperCase()}</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-5 font-mono text-[0.6rem] tracking-[0.25em] text-muted-foreground">NOCTURNE · PASS//THE AUX · NUR DIESE NACHT</p>
+          </div>
+        </>
       )}
-      {matches > 0 && (
-        <p className="mt-6 font-display text-2xl italic text-champagne">
-          {matches === 1 ? "Ein Match." : `${matches} Matches.`} Verdächtig
-          gleicher Geschmack.
-        </p>
-      )}
+
       {provider && (
         <Btn
           variant="outline"
@@ -531,12 +577,7 @@ function Tracklist({
             setSaved("busy");
             const ok =
               (provider.isAuthorized() || (await provider.authorize?.())) &&
-              (
-                await provider.createPlaylist?.(
-                  "NOCTURNE · Tonight’s Tracklist",
-                  list,
-                )
-              )?.ok;
+              (await provider.createPlaylist?.("NOCTURNE · Tonight’s Record", list))?.ok;
             setSaved(ok ? "ok" : "fail");
           }}
         >
@@ -544,20 +585,14 @@ function Tracklist({
             ? "In Apple Music gesichert"
             : saved === "fail"
               ? "Hat nicht geklappt – nochmal"
-              : "Als Playlist in Apple Music sichern"}
+              : "Tonight’s Record in Apple Music sichern"}
         </Btn>
       )}
-      <p className="mt-10 text-sm text-muted-foreground">
-        Die Tracklist lebt nur in dieser Session. Neu laden oder neu starten,
-        und sie ist weg.
+      <p className="mt-8 text-sm text-muted-foreground">
+        Eure Songauswahl bleibt standardmäßig nur in dieser Session. Beim Teilen entscheidet ihr ausdrücklich, ob Songs mit rausgehen.
       </p>
       <div className="mt-auto pt-10">
-        <Back
-          onEnd={onEnd}
-          game={game}
-          duration={state.durationMinutes}
-          className="w-full"
-        />
+        <Back onEnd={onEnd} game={game} duration={state.durationMinutes} className="w-full" />
       </div>
     </Stage>
   );
