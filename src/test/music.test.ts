@@ -8,7 +8,7 @@ import { canPlay, manualProvider, sameSong, type MusicProvider } from "@/lib/mus
 import type { MusicRound, SessionState } from "@/lib/game/types";
 
 const P: [string, string] = ["Ari", "Nova"];
-const round = (s: SessionState, r: Partial<MusicRound>): MusicRound => ({ sceneNumber: s.sceneNumber, stage: "pick", picks: [null, null], prediction: null, reaction: null, ...r });
+const round = (s: SessionState, r: Partial<MusicRound>): MusicRound => ({ sceneNumber: s.sceneNumber, stage: "pick", picks: [null, null], prediction: null, reaction: null, speedExpired: false, ...r });
 const start = (seed = 3) => createSession("pass-the-aux", P, DEFAULT_SETTINGS, seed);
 
 /** Play until the current scene has the wanted mode. */
@@ -30,12 +30,52 @@ describe("PASS//THE AUX registry", () => {
     expect(NIGHT_PICKS.some((p) => p.label === "Musik" && p.ids.includes("pass-the-aux"))).toBe(true);
     expect(new Set(GAMES.map((x) => x.number)).size).toBe(9);
   });
-  it("plays only music rounds, with ≥40 authored prompts across all four patterns", () => {
+  it("plays only music rounds, with a deep authored pool across all five patterns", () => {
     const pool = poolFor(GAMES_BY_ID["pass-the-aux"], SCENES);
     expect(pool.length).toBeGreaterThanOrEqual(40);
     expect(pool.every((s) => s.type === "MUSIC" && s.music)).toBe(true);
-    for (const m of ["solo", "duet", "guess", "speed"]) expect(pool.filter((s) => s.music?.mode === m).length, m).toBeGreaterThanOrEqual(6);
+    for (const m of ["solo", "duet", "guess", "speed", "consensus"]) expect(pool.filter((s) => s.music?.mode === m).length, m).toBeGreaterThanOrEqual(6);
+    expect(pool.filter((s) => s.music?.signature).length).toBeGreaterThanOrEqual(40);
     for (const g of GAMES.filter((x) => x.id !== "pass-the-aux")) expect(poolFor(g, SCENES).some((s) => s.type === "MUSIC"), g.id).toBe(false);
+  });
+});
+
+describe("PASS//THE AUX signature dramaturgy", () => {
+  it("lands a signature beat every fifth scene and avoids LAST TRACK before the finale", () => {
+    let s = start(13);
+    const seen: Array<{ n: number; signature?: string }> = [];
+    for (let i = 0; i < 10; i++) {
+      seen.push({ n: s.sceneNumber, ...(s.current?.music?.signature ? { signature: s.current.music.signature } : {}) });
+      if (i < 9) s = reducer(s, { type: "SKIP" });
+    }
+    expect(seen.find((x) => x.n === 5)?.signature).toBeTruthy();
+    expect(seen.find((x) => x.n === 10)?.signature).toBeTruthy();
+    expect(seen.slice(0, 9).some((x) => x.signature === "last-track")).toBe(false);
+  });
+
+  it("uses LAST TRACK as the planned final beat of a timed night", () => {
+    let s = createSession("pass-the-aux", P, DEFAULT_SETTINGS, 19, { durationMinutes: 15 });
+    while (s.sceneNumber < 10 && !s.finished) s = reducer(s, { type: "SKIP" });
+    expect(s.sceneNumber).toBe(10);
+    expect(s.current?.music?.signature).toBe("last-track");
+    expect(s.current?.music?.mode).toBe("consensus");
+  });
+
+  it("auto-records an exact duet match even when the UI did not submit a reaction", () => {
+    let s = toMode(start(23), "duet");
+    s = reducer(s, {
+      type: "MUSIC",
+      round: round(s, {
+        stage: "reveal",
+        picks: [
+          { title: "Midnight City", artist: "M83" },
+          { title: "midnight city", artist: "m83" },
+        ],
+      }),
+    });
+    s = reducer(s, { type: "DONE" });
+    expect(s.tracklist?.[0]?.reaction).toBe("match");
+    expect(s.tracklist?.[1]?.reaction).toBe("match");
   });
 });
 

@@ -57,8 +57,8 @@ export interface Scene {
   anchorId?: string | undefined;
   /** One-line contextual cue shown above the scene (tempo shift, Director Cut, return question). Never model reasoning. */
   cue?: string | undefined;
-  /** MUSIC scenes: which round pattern. */
-  music?: { mode: MusicMode } | undefined;
+  /** PASS//THE AUX: authored round pattern plus optional signature beat. */
+  music?: { mode: MusicMode; signature?: MusicSignature | undefined } | undefined;
   /** Source marker */
   source?: "local" | "ai" | "echo" | undefined;
 }
@@ -164,8 +164,9 @@ export interface SessionState {
   musicRound?: MusicRound | null;
 }
 
-export type MusicMode = "solo" | "duet" | "guess" | "speed";
-export type MusicReaction = "match" | "twist" | "explains";
+export type MusicMode = "solo" | "duet" | "guess" | "speed" | "consensus";
+export type MusicSignature = "needle-drop" | "aux-swap" | "red-flag" | "one-song" | "last-track";
+export type MusicReaction = "match" | "same-energy" | "twist" | "explains" | "no-questions" | "read-hit";
 
 /** User-entered song (or, later, real provider data). Never invented by the app. */
 export interface Track {
@@ -183,12 +184,13 @@ export interface TrackEntry extends Track {
   owner: 0 | 1;
   prompt: string;
   mode: MusicMode;
+  signature?: MusicSignature | undefined;
   reaction?: MusicReaction | undefined;
 }
 
 /**
  * Stages: pick (current player) → handoff → second (partner picks / predicts) → reveal.
- * Solo/guess/duet always pass a handoff; speed reveals straight away (nothing is hidden).
+ * Solo/guess/duet pass a deliberate privacy handoff. Speed and consensus reveal directly.
  */
 export interface MusicRound {
   sceneNumber: number;
@@ -196,4 +198,6 @@ export interface MusicRound {
   picks: [Track | null, Track | null];
   prediction: string | null;
   reaction: MusicReaction | null;
+  /** Speed never fails. Expiry changes the rule to a deliberate second-thought pick. */
+  speedExpired: boolean;
 }

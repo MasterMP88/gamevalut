@@ -171,5 +171,5 @@ export const PREMIUM_SCENES: Scene[] = [
  ["Der freundliche Kontrast","Ein überraschend sanfter Track von jemandem, den du sonst ganz anders hörst."],
  ["Wiedersehen in Stereo","Ein Song für das Wiedersehen nach einer viel zu langen Woche."],
  ["Die letzte gute Ausrede","Musik, wegen der ihr doch noch einen Moment bleibt."],
- ] as [string,string][]).map(([title,prompt],i): Scene => ({id:`premium2-aux-${i+1}`,title,prompt,type:"MUSIC",flavor:i%3===0?"funny":"deep",phase:i%3,only:["pass-the-aux"],source:"local",music:{mode:(["solo","duet","guess","speed"] as MusicMode[])[i%4]!},...(i%4===3?{duration:25}:{})})),
+ ] as [string,string][]).map(([title,prompt],i): Scene => ({id:`premium2-aux-${i+1}`,title,prompt,type:"MUSIC",flavor:i%3===0?"funny":"deep",phase:i%3,only:["pass-the-aux"],source:"local",music:{mode:(["solo","duet","guess","speed"] as MusicMode[])[i%4]!},...(i%4===3?{duration:20}:{})})),
 ];

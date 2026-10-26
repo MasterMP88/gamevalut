@@ -75,7 +75,7 @@ function duet(a: Track, b: Track) {
     fireEvent.change(screen.getByTestId("song-artist"), { target: { value: t.artist ?? "" } });
     fireEvent.click(screen.getByText(cta));
   };
-  pick(a, "Auswahl verstecken");
+  pick(a, "Auswahl versiegeln");
   // handoff: nothing of A's pick is visible
   expect(document.body.textContent).not.toContain(a.title);
   if (a.artist) expect(document.body.textContent).not.toContain(a.artist);
@@ -86,18 +86,46 @@ function duet(a: Track, b: Track) {
 }
 
 describe("PASS//THE AUX duet", () => {
-  it("next round needs no reaction; differing songs get a neutral line", () => {
-    const { onDone } = duet({ title: "Alpha Song", artist: "One" }, { title: "Beta Song", artist: "Two" });
+  it("requires a reveal verdict for different songs and turns it into payoff", () => {
+    const { onDone, getRound } = duet({ title: "Alpha Song", artist: "One" }, { title: "Beta Song", artist: "Two" });
     expect(screen.getByTestId("music-compare").textContent).toContain("Zwei Songs");
-    expect(screen.queryByText("Plot Twist")).toBeNull();
+    expect(screen.getByText("Erst einordnen")).toBeDisabled();
+    fireEvent.click(screen.getByTestId("music-reaction-twist"));
+    expect(screen.getByTestId("music-compare").textContent).toContain("PLOT TWIST");
+    expect(getRound()?.reaction).toBe("twist");
     fireEvent.click(screen.getByText("Nächste Runde →"));
     expect(onDone).toHaveBeenCalled();
   });
-  it("exact same song is auto-detected as MATCH and recorded", () => {
+
+  it("exact same song becomes SAME BRAIN automatically", () => {
     const { getRound } = duet({ title: "Same Song", artist: "Band" }, { title: "same song", artist: "BAND" });
-    expect(screen.getByTestId("music-compare").textContent).toContain("MATCH");
+    expect(screen.getByTestId("music-compare").textContent).toContain("SAME BRAIN");
     fireEvent.click(screen.getByText("Nächste Runde →"));
     expect(getRound()?.reaction).toBe("match");
+  });
+});
+
+describe("PASS//THE AUX rhythm changes", () => {
+  it("speed expiry flips the rule without blocking the pick", async () => {
+    vi.useFakeTimers();
+    const expired = vi.fn();
+    render(<PickForm who="Ari" text="Schnell" cta="Lock it in" speed onSpeedExpired={expired} onPick={() => {}} onSkip={() => {}} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(20_500); });
+    expect(expired).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/zweiten Gedanken/i)).toBeTruthy();
+    expect(screen.getByText(/Kein Fail State/i)).toBeTruthy();
+    vi.useRealTimers();
+  });
+
+  it("consensus is openly negotiated and skips the privacy handoff", () => {
+    const scene = { id: "one", type: "MUSIC", flavor: "deep", phase: 2, title: "ONE SONG", prompt: "Einigt euch.", music: { mode: "consensus", signature: "one-song" } } as unknown as Scene;
+    const onDone = vi.fn();
+    render(<MusicRoundBody scene={scene} me="Ari" you="Nova" memory={false} onDone={onDone} onSkip={() => {}} text="Einigt euch." provider={manualProvider} />);
+    expect(screen.getByText(/Ari \+ Nova · gemeinsam/)).toBeTruthy();
+    fireEvent.change(screen.getByTestId("song-title"), { target: { value: "Shared Song" } });
+    fireEvent.click(screen.getByText("Diesen Track nehmen"));
+    expect(screen.getByText(/ONE ROOM · ONE TRACK/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /bereit|ich bin|los/i })).toBeNull();
   });
 });
 

@@ -37,6 +37,18 @@ export const AUX_PROMPTS: Record<AuxRoundType, string[]> = {
     "Wähle einen Song, der nach 2:17 Uhr klingt.",
     "Wähle einen Track, der dich sofort in Bewegung bringt.",
   ],
+  CONSENSUS: [
+    "Ihr bekommt genau einen Song für diesen Raum. Einigt euch.",
+    "Ein Song, den ihr beide heute wirklich hören wollt. Keine Ironie.",
+    "Euer Roadtrip startet jetzt. Ein erster Track, gemeinsam beschlossen.",
+    "Nur ein Song darf euch noch fünf Minuten länger hier halten.",
+    "Ein Track, bei dem keiner von euch so tun darf, als wäre er zu cool dafür.",
+    "Euer gemeinsamer Wunsch beim DJ. Genau einer.",
+    "Ein langsamer Song, bei dem keiner die Augen verdreht.",
+    "Der erste Track morgen früh, wenn diese Nacht noch nachhängt.",
+    "Ein Song, der irgendwann nach genau diesem Abend klingen könnte.",
+    "Wenn jetzt Schluss wäre: euer gemeinsamer Abspann.",
+  ],
   SPEED_PICK: [
     "Erster Song, der dir bei {you} einfällt. Nicht nachdenken.",
     "Ein Track für jetzt. Du hast 20 Sekunden.",
@@ -70,7 +82,7 @@ export function makeAuxRound(args: {
 }
 
 export function buildAuxDeck(rounds = 16): AuxRound[] {
-  const order: AuxRoundType[] = ["SOLO_PICK", "DUET_PICK", "GUESS", "SPEED_PICK"];
+  const order: AuxRoundType[] = ["SOLO_PICK", "DUET_PICK", "GUESS", "SPEED_PICK", "CONSENSUS"];
   return Array.from({ length: Math.max(1, rounds) }, (_, index) =>
     makeAuxRound({
       id: `aux-${index + 1}`,

@@ -150,7 +150,7 @@ describe("two-phone canonical adapter", () => {
       f,
       actions({ title: "Song A", artist: "Artist A" }, { title: "Song B" }),
     ) as ReturnType<typeof session>;
-    const next = actPair(f, actions({ ready: true }));
+    const next = actPair(f, actions({ ready: true, reaction: "twist" }));
     expect(next.state!.tracklist?.map((t) => t.title)).toEqual([
       "Song A",
       "Song B",
@@ -162,7 +162,8 @@ describe("two-phone canonical adapter", () => {
       let f: PairRuntime = session(game);
       for (let n = 0; n < 200 && f.phase !== "end"; n++) {
         if (f.phase === "ready") f = actPair(f, actions({ ready: true }));
-        else if (f.phase === "reveal") f = actPair(f, actions({ ready: true }));
+        else if (f.phase === "reveal")
+          f = actPair(f, actions({ ready: true, reaction: "twist" }));
         else
           f = actPair(
             f,
@@ -180,14 +181,24 @@ describe("two-phone canonical adapter", () => {
       expect(f.state!.log.length).toBeGreaterThan(0);
     },
   );
-  it("does not invent a successful speed-song input after timeout", () => {
+  it("turns a speed timeout into SECOND THOUGHT instead of failing the round", () => {
     const f = session("pass-the-aux", {
       type: "MUSIC",
       music: { mode: "speed" },
+      duration: 20,
     });
-    const next = actPair(f, actions({ timedOut: true }));
-    expect(next.state!.tracklist).toEqual([]);
-    expect(next.state!.log.at(-1)?.outcome).toBe("skipped");
+    const retry = actPair(f, actions({ timedOut: true }));
+    expect(retry.phase).toBe("answer");
+    expect(retry.state!.sceneNumber).toBe(f.state.sceneNumber);
+    expect(retry.state!.musicRound?.speedExpired).toBe(true);
+    expect(retry.state!.current?.duration).toBeUndefined();
+    expect(retry.state!.current?.helper).toContain("SECOND THOUGHT");
+
+    const reveal = actPair(retry, actions({ title: "Second Thought" }));
+    expect(reveal.phase).toBe("reveal");
+    const done = actPair(reveal, actions({ ready: true }));
+    expect(done.state!.tracklist?.at(-1)?.title).toBe("Second Thought");
+    expect(done.state!.log.at(-1)?.outcome).toBe("done");
   });
   it("timer expiry ends the action but still asks both whether to complete it", () => {
     const f = session("coop", { type: "TIMER", duration: 20 });
@@ -208,7 +219,7 @@ describe("two-phone canonical adapter", () => {
     expect(extended.phase).toBe("paused");
     expect(extended.state!.afterHours).toBe(true);
   });
-  it("records only the partner's explicit music reaction", () => {
+  it("records only the partner's explicit solo reveal reaction", () => {
     const f = session("pass-the-aux", {
       type: "MUSIC",
       music: { mode: "solo" },
@@ -218,9 +229,51 @@ describe("two-phone canonical adapter", () => {
       reveal,
       actions(
         { ready: true, reaction: "twist" },
-        { ready: true, reaction: "match" },
+        { ready: true, reaction: "explains" },
       ),
     );
-    expect(next.state!.tracklist?.[0]?.reaction).toBe("match");
+    expect(next.state!.tracklist?.[0]?.reaction).toBe("explains");
+  });
+
+  it("lets the picker judge READ//THE TRACK and requires that verdict", () => {
+    const f = session("pass-the-aux", {
+      type: "MUSIC",
+      music: { mode: "guess" },
+    });
+    const reveal = actPair(
+      f,
+      actions(
+        { title: "Hidden Song", artist: "Artist" },
+        { value: "Für dich" },
+      ),
+    );
+    const withoutVerdict = actPair(reveal, actions({ ready: true }));
+    expect(withoutVerdict).toBe(reveal);
+    const done = actPair(
+      reveal,
+      actions(
+        { ready: true, reaction: "read-hit" },
+        { ready: true, reaction: "twist" },
+      ),
+    );
+    expect(done.state!.tracklist?.at(-1)?.reaction).toBe("read-hit");
+  });
+
+  it("recognizes SAME BRAIN in two-phone duet without a manual verdict", () => {
+    const f = session("pass-the-aux", {
+      type: "MUSIC",
+      music: { mode: "duet" },
+    });
+    const reveal = actPair(
+      f,
+      actions(
+        { title: "Same Song", artist: "Band" },
+        { title: "same song", artist: "BAND" },
+      ),
+    );
+    expect(reveal.result?.match).toBe(true);
+    expect(reveal.result?.label).toBe("SAME BRAIN");
+    const done = actPair(reveal, actions({ ready: true }));
+    expect(done.state!.tracklist?.at(-1)?.reaction).toBe("match");
   });
 });

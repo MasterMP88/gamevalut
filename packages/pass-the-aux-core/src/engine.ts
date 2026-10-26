@@ -53,8 +53,8 @@ function addOrReplacePick(picks: HiddenPick[], player: 0 | 1, pick: SongPick): H
 }
 
 function nextAfterPick(state: AuxRoundState, player: 0 | 1): AuxRoundState["stage"] {
-  if (state.round.type === "SOLO_PICK" || state.round.type === "SPEED_PICK") return "HANDOFF_A";
-  if (state.round.type === "GUESS") return "HANDOFF_A";
+  if (state.round.type === "SPEED_PICK" || state.round.type === "CONSENSUS") return "REVEAL";
+  if (state.round.type === "SOLO_PICK" || state.round.type === "GUESS") return "HANDOFF_A";
   if (state.round.type === "DUET_PICK") return player === state.round.activePlayer ? "HANDOFF_A" : "HANDOFF_B";
   return "HANDOFF_A";
 }
@@ -166,13 +166,16 @@ export function auxReducer(state: AuxSession, action: AuxAction): AuxSession {
       if (!["REVEAL", "REACTION"].includes(c.stage)) return state;
       if (!hasPick(c, c.round.activePlayer)) return state;
       if (c.round.type === "DUET_PICK" && c.picks.length < 2) return state;
-      const additions = toTracklist(c.round, c.picks);
       const ordered = [...c.picks].sort((a, b) => a.player - b.player);
       const autoReaction =
         c.round.type === "DUET_PICK" && sameSong(ordered[0]?.pick, ordered[1]?.pick)
           ? "MATCH"
           : null;
       const reaction = c.reaction ?? autoReaction;
+      // Different blind picks and READ//THE TRACK need an explicit human verdict.
+      if (c.round.type === "DUET_PICK" && !reaction) return state;
+      if (c.round.type === "GUESS" && !reaction) return state;
+      const additions = toTracklist(c.round, c.picks);
       return {
         ...state,
         current: { ...c, stage: "COMPLETE", reaction },

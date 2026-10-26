@@ -1,5 +1,5 @@
 export type PlayerIndex = 0 | 1;
-export type AuxRoundType = "SOLO_PICK" | "DUET_PICK" | "GUESS" | "SPEED_PICK";
+export type AuxRoundType = "SOLO_PICK" | "DUET_PICK" | "GUESS" | "SPEED_PICK" | "CONSENSUS";
 export type AuxStage =
   | "PROMPT"
   | "PICK_A"

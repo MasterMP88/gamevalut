@@ -10,9 +10,11 @@ const deck = (mode: MusicMode, cues: SongCue[]): Scene[] =>
     music: { mode },
     only: ["pass-the-aux"],
     source: "local",
+    // Replay depth must remain available even at the gentlest consent level.
+    // PASS//THE AUX pacing is owned by its dedicated mode/signature director, not this phase field.
     phase: 0,
     flavor: i % 3 === 0 ? "deep" : i % 3 === 1 ? "funny" : "cheeky",
-    ...(mode === "speed" ? { duration: 25 } : {}),
+    ...(mode === "speed" ? { duration: 20 } : {}),
   }));
 
 // Song choices are supplied by the players. No fabricated catalogue, audio rights,

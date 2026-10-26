@@ -1,29 +1,54 @@
-import type { Flavor, MusicMode, Scene } from "./types";
+import type { Flavor, MusicMode, MusicSignature, Scene } from "./types";
 
 /**
- * PASS//THE AUX — 09. Music is the answer. Every prompt asks for a song the players
- * name themselves; the app never suggests, fetches or displays lyrics.
+ * PASS//THE AUX — 09. Music is the answer.
+ *
+ * Standard rounds build familiarity. Signature beats deliberately break the loop every
+ * few scenes: choose for the other person, expose a red flag, make an instinct pick or
+ * agree on one track together. The app never invents songs or displays lyrics.
  */
 let n = 0;
-const mk = (mode: MusicMode) => (flavor: Flavor, phase: number, title: string, prompt: string, emoji?: string): Scene => ({
-  id: `aux-${mode}-${++n}`,
-  type: "MUSIC",
-  flavor,
-  phase,
-  title,
-  prompt,
-  emoji,
-  music: { mode },
-  only: ["pass-the-aux"],
-  ...(mode === "speed" ? { duration: 25 } : {}),
-});
+const mk =
+  (mode: MusicMode) =>
+  (flavor: Flavor, phase: number, title: string, prompt: string, emoji?: string): Scene => ({
+    id: `aux-${mode}-${++n}`,
+    type: "MUSIC",
+    flavor,
+    phase,
+    title,
+    prompt,
+    emoji,
+    music: { mode },
+    only: ["pass-the-aux"],
+    ...(mode === "speed" ? { duration: 20 } : {}),
+  });
 const solo = mk("solo");
 const duet = mk("duet");
 const guess = mk("guess");
 const speed = mk("speed");
+const consensus = mk("consensus");
+
+type SignatureCue = [title: string, prompt: string, flavor?: Flavor, phase?: number];
+const signatureDeck = (
+  signature: MusicSignature,
+  mode: MusicMode,
+  cues: SignatureCue[],
+): Scene[] =>
+  cues.map(([title, prompt, flavor = "funny", phase = 2], index) => ({
+    id: `aux-signature-${signature}-${index + 1}`,
+    type: "MUSIC",
+    flavor,
+    phase,
+    title,
+    prompt,
+    music: { mode, signature },
+    only: ["pass-the-aux"],
+    source: "local",
+    ...(mode === "speed" ? { duration: 20 } : {}),
+  }));
 
 export const MUSIC_SCENES: Scene[] = [
-  // ——— SOLO PICK: one song, hidden, handed over, unsealed
+  // ——— TUNE IN · quick identity, low friction
   solo("cheeky", 0, "Erster Eindruck", "Der Song, der gefährlich nah an deinem ersten Eindruck von {you} liegt."),
   solo("funny", 0, "Nie zugetraut", "Ein Track, den du liebst und den {you} dir niemals zugetraut hätte."),
   solo("deep", 1, "Nach zwölf", "Welcher Track beschreibt {you} nach Mitternacht?"),
@@ -39,7 +64,7 @@ export const MUSIC_SCENES: Scene[] = [
   solo("deep", 2, "Sommer damals", "Klingt nach einem Sommer, den {you} noch nicht kennt."),
   solo("cheeky", 3, "Kein Kommentar", "Läuft dieser Song, weiß {you} sofort, was du willst."),
 
-  // ——— DUET: same prompt, both pick blind, reveal side by side
+  // ——— SAME FREQUENCY · both pick blind
   duet("funny", 0, "Roadtrip", "Euer Roadtrip beginnt jetzt. Nur ein Track darf als Erstes laufen."),
   duet("cheeky", 1, "Erster Kuss", "Was hätte nach eurem ersten Kuss laufen sollen?"),
   duet("deep", 2, "Unser Lied", "Wenn ihr ein gemeinsames Lied hättet, das noch keiner von euch ausgesprochen hat."),
@@ -53,7 +78,7 @@ export const MUSIC_SCENES: Scene[] = [
   duet("funny", 0, "Aufzug", "Eure Musik für einen Aufzug, der zwischen zwei Etagen festhängt."),
   duet("cheeky", 2, "Afterparty", "Die Afterparty findet bei euch statt. Was hören die Nachbarn?"),
 
-  // ——— GUESS: one picks hidden, the other predicts the vibe first
+  // ——— READ ME · one hides, the other reads the reason before reveal
   guess("funny", 0, "Duschkonzert, live", "Was singst du unter der Dusche, wenn du sicher bist, dass {you} nicht da ist?"),
   guess("deep", 1, "Heimweg", "Dein Song für den Heimweg nach einer guten Nacht."),
   guess("cheeky", 1, "Vorspiel", "Ein Track, den du anmachst, bevor {you} klingelt."),
@@ -65,7 +90,7 @@ export const MUSIC_SCENES: Scene[] = [
   guess("cheeky", 3, "Zu laut", "Wird gerne zu laut gedreht, sobald die Tür zu ist."),
   guess("funny", 2, "Bühne frei", "Du hast fünf Minuten auf einer Festivalbühne. Ein Song."),
 
-  // ——— SPEED: 25 seconds, first thing that comes to mind, no fail state
+  // ——— QUICK DRAW · no fail state; timeout flips the rule
   speed("funny", 0, "Sofort", "Der erste Song, der dir zu {you} einfällt. Nicht nachdenken."),
   speed("funny", 0, "Montag", "Montagmorgen in einem Lied. Schnell."),
   speed("cheeky", 1, "Tanzfläche", "Bringt dich auf jede Tanzfläche, egal wie müde du bist."),
@@ -74,7 +99,81 @@ export const MUSIC_SCENES: Scene[] = [
   speed("cheeky", 2, "Spiegelmoment", "Läuft, wenn du dich vor dem Ausgehen im Spiegel ziemlich gut findest."),
   speed("deep", 2, "Regen", "Regen am Fenster, Tee, kein Plan. Ein Song."),
   speed("sensual", 3, "Kurz davor", "Das Lied für die Sekunde, bevor jemand den ersten Schritt macht."),
+
+  // ——— ONE SONG · together, intentionally not hidden
+  consensus("funny", 1, "Ein Raum. Ein Track.", "Ihr bekommt genau einen Song für diesen Raum. Einigt euch."),
+  consensus("deep", 2, "Gemeinsamer Nenner", "Heute wollt ihr beide wirklich denselben Track hören. Welcher ist es?"),
+  consensus("cheeky", 2, "Keine Ausrede", "Keiner von euch darf so tun, als wäre er zu cool dafür. Welcher Track?"),
+  consensus("deep", 3, "Bleiben", "Nur ein Song darf euch noch fünf Minuten länger hier halten. Welcher?"),
+
+  // ——— SIGNATURE: AUX SWAP · choose for the other person
+  ...signatureDeck("aux-swap", "solo", [
+    ["AUX SWAP · Main Character", "Wähle die Einlaufmusik für {you}. Nicht nett sein – treffend.", "cheeky", 1],
+    ["AUX SWAP · Montag", "Montagmorgen mit {you}: welcher Song rettet die Lage erstaunlich gut?", "funny", 1],
+    ["AUX SWAP · Geheime Stärke", "Die Seite von {you}, die andere zu selten sehen, braucht einen Soundtrack.", "deep", 2],
+    ["AUX SWAP · Karaoke", "Du meldest {you} ungefragt zum Karaoke an. Welcher Song?", "funny", 1],
+    ["AUX SWAP · Urlaub", "Der erste Track in {you}s perfektem Urlaub. Du entscheidest.", "funny", 2],
+    ["AUX SWAP · Glow-up", "Soundtrack für {you}s völlig übertriebenen Slow-Motion-Auftritt.", "cheeky", 2],
+    ["AUX SWAP · Durchhalten", "An einem miesen Tag würdest du {you} genau diesen Track schicken.", "deep", 3],
+    ["AUX SWAP · Tanzfläche", "Welcher Track bringt {you} am ehesten freiwillig auf die Tanzfläche?", "funny", 2],
+    ["AUX SWAP · Heimlich passend", "Viel passender zu {you}, als {you} zugeben würde: welcher Track?", "cheeky", 3],
+    ["AUX SWAP · Abspann", "Du schneidest den Film über {you}. Welcher Song läuft im Abspann?", "deep", 3],
+  ]),
+
+  // ——— SIGNATURE: RED FLAG · blind duel + judgement
+  ...signatureDeck("red-flag", "duet", [
+    ["RED FLAG · Sofortiges Urteil", "Sofortiges Urteil: Bei welchem Song würdest du kurz skeptisch werden? Beide blind.", "cheeky", 1],
+    ["RED FLAG · Auto-DJ", "Beim ersten Date im Auto wäre dieser Track riskant. Beide wählen blind.", "funny", 1],
+    ["RED FLAG · Hochzeits-DJ", "Hochzeit, falscher Moment: Welcher Track wäre unverzeihlich – und trotzdem lustig?", "funny", 2],
+    ["RED FLAG · Zu ernst", "Manche Menschen nehmen diesen Track viel zu ernst. Beide blind wählen.", "cheeky", 2],
+    ["RED FLAG · Ex-Alarm", "Sehr spezifische Geschichte im Raum: Welcher Track löst diesen Verdacht aus?", "cheeky", 3],
+    ["RED FLAG · Gym Crime", "Der Track, bei dem du im Gym innerlich sofort urteilst.", "funny", 1],
+    ["RED FLAG · Party vorbei", "Eine gute Party kippt in zehn Sekunden. Welcher Track war schuld?", "funny", 2],
+    ["RED FLAG · Guilty Defense", "Gegen jede Kritik verteidigst du diesen Track. Leider. Welchen?", "cheeky", 2],
+    ["RED FLAG · Zu viel Gefühl", "Emotional gefährlicher, als er klingt: Welcher Track trifft das?", "deep", 3],
+    ["RED FLAG · Kein Kommentar", "Dein Musikgeschmack steht vor Gericht. Welcher Track ist Beweisstück A?", "funny", 3],
+  ]),
+
+  // ——— SIGNATURE: NEEDLE DROP · instinct; timeout becomes second-thought
+  ...signatureDeck("needle-drop", "speed", [
+    ["NEEDLE DROP · 2:17", "Der Song, der nach 2:17 Uhr klingt. Zwanzig Sekunden.", "cheeky", 1],
+    ["NEEDLE DROP · Fenster runter", "Nachtfahrt. Fenster runter. Erster Track.", "funny", 1],
+    ["NEEDLE DROP · Schlechte Idee", "Direkt vor einer sehr schlechten Idee. Was läuft?", "funny", 2],
+    ["NEEDLE DROP · Gänsehaut", "Sofort Gänsehaut. Nicht analysieren – Track nennen.", "deep", 2],
+    ["NEEDLE DROP · Zu laut", "Der Track, den du immer ein bisschen zu laut hörst.", "cheeky", 2],
+    ["NEEDLE DROP · Sommer", "Ein einziger Track für einen Sommer, den du behalten würdest.", "deep", 2],
+    ["NEEDLE DROP · Tanz", "Du hast zehn Sekunden Mut. Welcher Song startet ihn?", "funny", 1],
+    ["NEEDLE DROP · Textnachricht", "Du bekommst gerade die Nachricht, auf die du gehofft hast. Song?", "deep", 3],
+    ["NEEDLE DROP · Mitternacht", "Mitternacht. Neuer Tag. Welcher Track zuerst?", "cheeky", 3],
+    ["NEEDLE DROP · Noch einmal", "Der Song, den du heute unbedingt noch einmal hören willst.", "deep", 3],
+  ]),
+
+  // ——— SIGNATURE: ONE SONG · negotiation changes the social rhythm
+  ...signatureDeck("one-song", "consensus", [
+    ["ONE SONG · Roadtrip", "Ihr fahrt jetzt los. Einigt euch auf genau einen ersten Track.", "funny", 1],
+    ["ONE SONG · Küche", "Küchenlicht, etwas zu spät, niemand will gehen. Ein Track für euch beide.", "funny", 1],
+    ["ONE SONG · Kein Skip", "Heute kein Skip erlaubt: Auf welchen Track einigt ihr euch?", "cheeky", 2],
+    ["ONE SONG · Erinnerung", "Irgendwann soll genau dieser Abend nach einem Track klingen. Welchem?", "deep", 3],
+    ["ONE SONG · Tanzfläche", "Ihr bekommt gemeinsam genau einen Wunsch beim DJ. Welchen?", "funny", 2],
+    ["ONE SONG · Friedensvertrag", "Eure Geschmäcker kollidieren. Findet trotzdem einen Track, den beide unterschreiben.", "funny", 2],
+    ["ONE SONG · Langsam", "Ein langsamer Song, bei dem keiner von euch die Augen verdreht.", "sensual", 3],
+    ["ONE SONG · Morgen", "Der erste Track morgen früh, wenn diese Nacht noch nachhängt.", "deep", 3],
+    ["ONE SONG · Fremde Stadt", "Ihr seid in einer fremden Stadt und kennt niemanden. Dieser Track gehört euch.", "cheeky", 3],
+    ["ONE SONG · Bleibt", "Nur dieser Song darf den Abend gerade verlängern. Entscheidet zusammen.", "deep", 3],
+  ]),
+
+  // ——— SIGNATURE: LAST TRACK · preferred by the engine for a planned final scene
+  ...signatureDeck("last-track", "consensus", [
+    ["LAST TRACK · Abspann", "Wenn diese Nacht jetzt endet: Welcher Song läuft im Abspann?", "deep", 2],
+    ["LAST TRACK · Licht an", "Gleich geht das Licht an. Welcher Song bekommt die letzten Minuten?", "deep", 2],
+    ["LAST TRACK · Noch nicht", "Der letzte Track – aber einer, bei dem ihr eigentlich noch nicht gehen wollt.", "cheeky", 2],
+    ["LAST TRACK · Morgen weiß es", "Morgen soll ein Track sofort wieder nach heute klingen. Welcher?", "deep", 2],
+    ["LAST TRACK · Keine Worte", "Kein Fazit. Nur ein gemeinsamer letzter Song.", "deep", 2],
+    ["LAST TRACK · Side N//", "Euer Record braucht einen Schlusstrack. Einigt euch auf den einzigen richtigen.", "cheeky", 2],
+  ]),
 ];
 
-/** Guess-round vibes the partner predicts before the reveal. */
-export const MUSIC_VIBES = ["Nostalgisch", "Guilty Pleasure", "Gefährlich gut", "Komplett unerwartet"] as const;
+/** GUESS rounds: the partner predicts why this song was chosen, then the picker judges the read. */
+export const MUSIC_VIBES = ["Erinnerung", "Guilty Pleasure", "Für dich", "Chaos"] as const;
+
+export const AUX_SIGNATURE_CADENCE = 5;
