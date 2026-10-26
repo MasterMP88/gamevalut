@@ -60,7 +60,7 @@ export function interactionCue(scene: Scene, memory: boolean): string {
     case "PRIVATE_SIGNAL": return "Geheim · nur zwischen euch";
     case "SYNC": return "Beide wählen verdeckt · dann Auflösung";
     case "PREDICTION": return "Heimlich tippen · Handy weitergeben";
-    case "MUSIC": return ({ solo: "Song verdeckt eintippen · Handy rüber", duet: "Beide wählen blind · dann entsiegeln", guess: "Song verstecken · Gegenüber tippt den Vibe", speed: "25 Sekunden · der erste Song zählt" } as const)[scene.music?.mode ?? "solo"];
+    case "MUSIC": return ({ solo: "Song verdeckt wählen · versiegeln · Handy rüber", duet: "Beide wählen blind · Reveal gemeinsam einordnen", guess: "Song verstecken · Gegenüber liest den Grund", speed: "20 Sekunden · danach dreht sich die Regel", consensus: "Gemeinsam genau einen Track festlegen" } as const)[scene.music?.mode ?? "solo"];
     case "ECHO": return "Callback · laut antworten";
     case "GLITCH": return "Neue Regel · gilt sofort";
     case "SHOWDOWN": return "Gemeinsam · Gewinner antippen";
