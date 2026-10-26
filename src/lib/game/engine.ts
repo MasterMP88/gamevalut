@@ -1,6 +1,8 @@
 import { ECHO_TEMPLATES, SCENES } from "./scenes";
 import { DETOURS, DIRECTOR_CUTS, MILESTONES, TEMPO_CUES, TEMPO_ORDER } from "./specials";
-import { GAMES_BY_ID, poolFor } from "./games";\nimport { AUX_SIGNATURE_CADENCE } from "./music-scenes";\nimport { sameSong } from "@/lib/music/provider";
+import { GAMES_BY_ID, poolFor } from "./games";
+import { AUX_SIGNATURE_CADENCE } from "./music-scenes";
+import { sameSong } from "@/lib/music/provider";
 import type {
   MusicRound,
   TrackEntry,
