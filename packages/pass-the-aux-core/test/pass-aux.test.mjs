@@ -78,7 +78,18 @@ test("speed expiry never fails or blocks picking", () => {
   s = auxReducer(s, { type: "SPEED_EXPIRED" });
   assert.equal(s.current?.speedExpired, true);
   s = auxReducer(s, { type: "SUBMIT_PICK", player: 0, pick: pickA });
-  assert.equal(s.current?.stage, "HANDOFF_A");
+  assert.equal(s.current?.stage, "REVEAL");
+});
+
+test("consensus reveals directly without a privacy handoff", () => {
+  let s = createAuxSession(["A", "B"]);
+  s = auxReducer(s, { type: "LOAD_ROUND", round: consensus });
+  s = auxReducer(s, { type: "START_PICK" });
+  s = auxReducer(s, { type: "SUBMIT_PICK", player: 0, pick: pickA });
+  assert.equal(s.current?.stage, "REVEAL");
+  s = auxReducer(s, { type: "COMPLETE_ROUND" });
+  assert.equal(s.current?.stage, "COMPLETE");
+  assert.equal(s.tracklist.at(-1)?.title, "Song A");
 });
 
 test("exact same song is detected automatically without a reaction choice", () => {
