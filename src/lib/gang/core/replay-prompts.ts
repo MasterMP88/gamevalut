@@ -63,7 +63,7 @@ export const MISSION_REPLAY_PROMPTS: GangPrompt[] = [
   "Lass jemanden einem Stuhl ein freundliches Kompliment für seine Arbeit machen.",
   "Sorge dafür, dass eine andere Person ein bekanntes Sprichwort mit einem Gegenstand im Raum verändert.",
   "Lass jemanden eine kurze Ansage für die imaginäre nächste Staffel eurer Game Night machen.",
-].map((prompt, i) => ({ id: `mission-edition3-${i + 1}`, prompt }));
+].map((prompt, i) => ({ id: `mission-replay26-${i + 1}`, prompt }));
 
 const HOT_ROWS: Array<[string, string[]]> = [
   ["Dein persönlicher Endgegner im Alltag?", ["Verpackungen", "Warteschleifen", "Passwörter", "Wäsche falten"]],
@@ -99,7 +99,7 @@ const HOT_ROWS: Array<[string, string[]]> = [
 ];
 export const HOT_SEAT_REPLAY_PROMPTS: GangPrompt[] = HOT_ROWS.map(([prompt, options], i) => ({ id: `hot-edition3-${i + 1}`, prompt, options }));
 
-const editorial = (id: string, rows: Array<string | Omit<GangPrompt, 'id'>>) => rows.map((p,i)=>({id:`${id}-edition3-${i+1}`,...(typeof p==='string'?{prompt:p}:p)}));
+const editorial = (id: string, rows: Array<string | Omit<GangPrompt, 'id'>>) => rows.map((p,i)=>({id:`${id}-${["who","draw","after"].includes(id) ? "replay26" : "edition3"}-${i+1}`,...(typeof p==='string'?{prompt:p}:p)}));
 export const REPLAY_PROMPTS = {
   'secret-missions': MISSION_REPLAY_PROMPTS,
   'hot-seat': HOT_SEAT_REPLAY_PROMPTS,

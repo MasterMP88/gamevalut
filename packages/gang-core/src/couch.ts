@@ -1,9 +1,13 @@
 import {
   getGangPlaybook,
+  gangRoundPrompts,
+  gangContentKey,
+  expandGangSeenIds,
   type GangGameId,
   type GangPrompt,
 } from "./playbooks.js";
 import { couchGame, GANG_EXPERIENCES, groupBand } from "./experience.js";
+import { CAPACITY_TEAM } from "./capacity-prompts.js";
 
 export type CouchPhase =
   "ready" | "explain" | "play" | "reveal" | "score" | "transition" | "finale";
@@ -307,7 +311,9 @@ const teamTasks: GangPrompt[] = [
   },
 }));
 export function couchPool(id: GangGameId): GangPrompt[] {
-  return id === "team-chaos" ? teamTasks : getGangPlaybook(id)!.prompts;
+  return id === "team-chaos"
+    ? [...teamTasks, ...CAPACITY_TEAM]
+    : gangRoundPrompts(id);
 }
 export function createCouchSession(input: {
   gameId: GangGameId;
@@ -330,7 +336,7 @@ export function createCouchSession(input: {
   )
     throw new RangeError("Invalid group size.");
   if (!Number.isFinite(input.seed)) throw new RangeError("Invalid seed.");
-  const history = [...(input.seen ?? [])];
+  const history = expandGangSeenIds(input.seen ?? []);
   const pool = couchPool(input.gameId);
   const unique = [
     ...new Map(
@@ -338,8 +344,8 @@ export function createCouchSession(input: {
     ).values(),
   ];
   const deck = unique.slice().sort((a, b) => {
-    const ai = history.lastIndexOf(a.id),
-      bi = history.lastIndexOf(b.id);
+    const ai = history.lastIndexOf(gangContentKey(a.id)),
+      bi = history.lastIndexOf(gangContentKey(b.id));
     // Oldest first, with seeded variation across the oldest quarter after exhaustion.
     const bucket = (i: number) =>
       i < 0 ? -1 : Math.floor(i / Math.max(1, Math.floor(unique.length / 4)));

@@ -1,3 +1,4 @@
+import { localAudioDeck, MAX_LOCAL_AUDIO_FILES } from "@/lib/gang/local-audio";
 import {
   useEffect,
   useReducer,
@@ -95,12 +96,6 @@ interface LocalTrack {
   id: string;
   title: string;
   url: string;
-}
-function fileId(f: File): string {
-  let h = 2166136261;
-  for (const c of `${f.name}:${f.size}:${f.lastModified}`)
-    h = Math.imul(h ^ c.charCodeAt(0), 16777619);
-  return `audio/${(h >>> 0).toString(16)}`;
 }
 function Quantity({
   label,
@@ -340,32 +335,12 @@ export function CouchPlayer({
     stopAudio();
     tracks.forEach((t) => URL.revokeObjectURL(t.url));
     const seen = seenIds();
-    const unique = new Map<string, File>();
-    for (const f of Array.from(files ?? []))
-      if (
-        (f.type.startsWith("audio/") ||
-          /\.(mp3|m4a|ogg|wav|flac|aac)$/i.test(f.name)) &&
-        f.size <= 100 * 1024 * 1024
-      )
-        unique.set(fileId(f), f);
-    const chosen = [...unique]
-      .slice(0, 40)
-      .sort(
-        ([a], [b]) =>
-          (seen.indexOf(a) < 0 ? -1 : seen.indexOf(a)) -
-            (seen.indexOf(b) < 0 ? -1 : seen.indexOf(b)) || a.localeCompare(b),
-      );
-    const offset = chosen.filter(([id]) => !seen.includes(id)).length;
-    // Shuffle the unheard part without promoting a heard song over an unheard one.
-    for (let i = offset - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [chosen[i], chosen[j]] = [chosen[j]!, chosen[i]!];
-    }
+    const chosen = localAudioDeck(Array.from(files ?? []), seen, seed);
     setTracks(
-      chosen.map(([id, f]) => ({
+      chosen.map(({ id, file }) => ({
         id,
-        title: f.name.replace(/\.[^.]+$/, "").replace(/_/g, " "),
-        url: URL.createObjectURL(f),
+        title: file.name.replace(/\.[^.]+$/, "").replace(/_/g, " "),
+        url: URL.createObjectURL(file),
       })),
     );
     setAudioError(
@@ -736,11 +711,12 @@ export function CouchPlayer({
                             Eure Musik mitbringen
                           </label>
                           <p className="my-2 text-sm text-white/65">
-                            Wählt mindestens zwei eigene Audiodateien.
+                            Wählt 2–{MAX_LOCAL_AUDIO_FILES} eigene Audiodateien.
                             Dateinamen sind die Auflösung – am besten „Artist –
                             Titel“. Alles bleibt auf diesem Gerät. Kein Upload.
                             Downloads aus Streaming-Apps sind keine
-                            importierbaren Audiodateien.
+                            importierbaren Audiodateien. Für drei volle Partien
+                            mit Zugabe braucht ihr 39 verschiedene Tracks.
                           </p>
                           <input
                             id="couch-audio"

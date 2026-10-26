@@ -432,7 +432,9 @@ export function advance(state: SessionState): SessionState {
   let lastEchoAt = state.lastEchoAt;
   let lastCutAt = state.lastCutAt;
   let milestones = state.milestones;
-  const usable = (sc: Scene) => allowedByConsent(sc, state.settings) && !state.usedIds.includes(sc.id);
+  // Editorial detours/cuts are new content too. When their small bank has been
+  // seen, use the main deck instead of injecting the same special every night.
+  const usable = (sc: Scene) => allowedByConsent(sc, state.settings) && !state.usedIds.includes(sc.id) && !(state.seenIds ?? []).includes(sc.id);
 
   // 1) US//AFTER DARK milestones
   if (game.coop) {
@@ -648,7 +650,9 @@ function coreReducer(state: SessionState, action: Action): SessionState {
           connection: clamp(state.energies.connection + g.connection + bonus, 0, 100),
           heat: clamp(state.energies.heat + g.heat, 0, 100),
         };
-        if (vaultUnlocked(next) && !vaultUnlocked(state)) return { ...next, finished: true };
+        // In a timed night the Vault is earned early, then awaits the agreed
+        // closing beat. Open-ended co-op retains its goal-based ending.
+        if (!state.targetScenes && vaultUnlocked(next) && !vaultUnlocked(state)) return { ...next, finished: true };
       }
 
       if (game.battle) {

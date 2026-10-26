@@ -1,4 +1,6 @@
 import { PREMIUM_SCENES } from "./premium-scenes";
+import { REPLAY_SCENES } from "./replay-scenes";
+import { MUSIC_REPLAY_SCENES } from "./music-replay-scenes";
 import type { Flavor, Scene, SceneFlags, SceneType } from "./types";
 
 /**
@@ -397,6 +399,8 @@ export const SCENES: Scene[] = [
   m("sensual", 4, "Schlussbild", "Arrangiert das Schlussbild dieser Nacht. Licht, Abstand, Blick. Haltet es zehn Sekunden.", { emoji: "🖤", ...DR, flags: TS }),
   ...MUSIC_SCENES,
   ...PREMIUM_SCENES,
+  ...REPLAY_SCENES,
+  ...MUSIC_REPLAY_SCENES,
 ];
 
 export const PHASE_NAMES = ["First Signal", "Mischief", "Patterns", "Magnetic", "After Hours"] as const;

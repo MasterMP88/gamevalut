@@ -1,5 +1,9 @@
 // Generated from packages/gang-core/src/missions.ts by scripts/vendor-cores.mjs. Edit the canonical package.
-import { getGangPlaybook, type GangGameId } from "./playbooks.js";
+import {
+  getGangPlaybook,
+  expandGangSeenIds,
+  type GangGameId,
+} from "./playbooks.js";
 import type { GangRuntimePlayer } from "./runtime.js";
 export interface MissionAssignment {
   id: string;
@@ -50,6 +54,7 @@ export function createMissionNight(
   if (players.length < 3 || players.length > 30)
     throw new Error("Missionen brauchen 3–30 Personen.");
   const prompts = getGangPlaybook("secret-missions")!.prompts;
+  const seenHistory = expandGangSeenIds(seenIds);
   let state = seed >>> 0;
   const rand = () => {
     state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
@@ -58,9 +63,9 @@ export function createMissionNight(
   const deck = prompts
     .map((p) => ({
       p,
-      seen: seenIds.includes(p.id),
+      seen: seenHistory.includes(p.id),
       tie: rand(),
-      age: seenIds.lastIndexOf(p.id),
+      age: seenHistory.lastIndexOf(p.id),
     }))
     .sort(
       (a, b) =>

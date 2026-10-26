@@ -1,8 +1,14 @@
 import { EDITION_THREE } from "./edition-three.js";
 import { REPLAY_PROMPTS } from "./replay-prompts.js";
+import {
+  CAPACITY_MUSIC,
+  CAPACITY_TEAM,
+  CAPACITY_HOT,
+} from "./capacity-prompts.js";
 import { EXTRA_PROMPTS } from "./extra-prompts.js";
 import { TEAM_PROMPTS } from "./team-prompts.js";
 import { BLUFF_PROMPTS } from "./bluff-prompts.js";
+import { BLUFF_EVERYDAY } from "./bluff-everyday.js";
 import type { GameCapability, GameMechanic } from "./types.js";
 
 export type GangGameId =
@@ -888,11 +894,53 @@ export const GANG_PLAYBOOKS: readonly GangPlaybook[] = [
       p.id as GangGameId
     ] ?? []),
     ...(EDITION_THREE[p.id as GangGameId] ?? []),
+    ...(p.id === "team-chaos"
+      ? CAPACITY_TEAM
+      : p.id === "music-drop"
+        ? CAPACITY_MUSIC
+        : p.id === "hot-seat"
+          ? CAPACITY_HOT
+          : p.id === "bluff"
+            ? BLUFF_EVERYDAY
+            : []),
   ],
 })) as GangPlaybook[];
 
 export function getGangPlaybook(id: string): GangPlaybook | undefined {
   return GANG_PLAYBOOKS.find((playbook) => playbook.id === id);
+}
+
+/** Historical duplicates stay recognizable, but do not inflate fresh capacity. */
+export function gangContentKey(id: string): string {
+  if (id === "team-edition3-4") return "team-collect-v2-7";
+  if (id === "team-couch-11") return "team-edition3-5";
+  return id;
+}
+
+/** The two parallel edition-3 releases collided on some identifiers. An old
+ * ambiguous observation excludes both possible cards, never guesses which was
+ * seen. New IDs have distinct namespaces and are unambiguous going forward.
+ */
+const legacyEditionIds = new Map<string, string[]>();
+for (const p of GANG_PLAYBOOKS.flatMap((p) => p.prompts)) {
+  if (!/-(couch2026|replay26)-/.test(p.id)) continue;
+  const old = p.id.replace(/-(couch2026|replay26)-/, "-edition3-");
+  legacyEditionIds.set(old, [
+    ...new Set([...(legacyEditionIds.get(old) ?? []), p.id]),
+  ]);
+}
+export function expandGangSeenIds(ids: readonly string[]): string[] {
+  return ids.flatMap((id) => [
+    gangContentKey(id),
+    ...(legacyEditionIds.get(id) ?? []).map(gangContentKey),
+  ]);
+}
+
+/** Final consent is a safety ritual, never counted/dealt as a fresh normal card. */
+export function gangRoundPrompts(id: string): GangPrompt[] {
+  return (getGangPlaybook(id)?.prompts ?? []).filter(
+    (p) => p.id !== "after-10" && p.id !== "team-edition3-4",
+  );
 }
 
 export function assertCompleteGangPlaybooks(): void {

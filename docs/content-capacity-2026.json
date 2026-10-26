@@ -1,0 +1,470 @@
+{
+  "date": "2026-10-26",
+  "coupleScenes": 833,
+  "registeredGangCardIds": 1082,
+  "couples": [
+    {
+      "id": "roxy-after-dark",
+      "title": "First Spark",
+      "maxPlayers": 2,
+      "maxBeats": 40,
+      "defaultCards": 305,
+      "gentleCards": 205,
+      "exclusiveCards": 26,
+      "testedDefaultNights": 5,
+      "testedGentleNights": 3
+    },
+    {
+      "id": "after-dark-2",
+      "title": "After Dark",
+      "maxPlayers": 2,
+      "maxBeats": 40,
+      "defaultCards": 230,
+      "gentleCards": 156,
+      "exclusiveCards": 26,
+      "testedDefaultNights": 5,
+      "testedGentleNights": 3
+    },
+    {
+      "id": "roxy-night",
+      "title": "Night Shift",
+      "maxPlayers": 2,
+      "maxBeats": 40,
+      "defaultCards": 348,
+      "gentleCards": 219,
+      "exclusiveCards": 26,
+      "testedDefaultNights": 5,
+      "testedGentleNights": 3
+    },
+    {
+      "id": "battle",
+      "title": "Heatcheck",
+      "maxPlayers": 2,
+      "maxBeats": 40,
+      "defaultCards": 340,
+      "gentleCards": 216,
+      "exclusiveCards": 61,
+      "testedDefaultNights": 5,
+      "testedGentleNights": 3
+    },
+    {
+      "id": "coop",
+      "title": "US//AFTER DARK",
+      "maxPlayers": 2,
+      "maxBeats": 40,
+      "defaultCards": 348,
+      "gentleCards": 219,
+      "exclusiveCards": 26,
+      "testedDefaultNights": 5,
+      "testedGentleNights": 3
+    },
+    {
+      "id": "one-two",
+      "title": "ONE//TWO",
+      "maxPlayers": 2,
+      "maxBeats": 40,
+      "defaultCards": 234,
+      "gentleCards": 156,
+      "exclusiveCards": 27,
+      "testedDefaultNights": 5,
+      "testedGentleNights": 3
+    },
+    {
+      "id": "night-echo",
+      "title": "NIGHT//ECHO",
+      "maxPlayers": 2,
+      "maxBeats": 40,
+      "defaultCards": 253,
+      "gentleCards": 167,
+      "exclusiveCards": 24,
+      "testedDefaultNights": 5,
+      "testedGentleNights": 3
+    },
+    {
+      "id": "ai-director",
+      "title": "NIGHT//ECHO — Director",
+      "maxPlayers": 2,
+      "maxBeats": 40,
+      "defaultCards": 350,
+      "gentleCards": 219,
+      "exclusiveCards": 26,
+      "testedDefaultNights": 5,
+      "testedGentleNights": 3
+    },
+    {
+      "id": "pass-the-aux",
+      "title": "PASS//THE AUX",
+      "maxPlayers": 2,
+      "maxBeats": 40,
+      "defaultCards": 204,
+      "gentleCards": 168,
+      "exclusiveCards": 212,
+      "testedDefaultNights": 5,
+      "testedGentleNights": 3
+    }
+  ],
+  "groups": [
+    {
+      "title": "THE MAJORITY",
+      "private": {
+        "id": "the-majority",
+        "mode": "private",
+        "maxPlayers": 99,
+        "cards": 68,
+        "perNight": 12,
+        "completeNights": 5,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 45
+      },
+      "couch": {
+        "id": "the-majority",
+        "mode": "couch",
+        "maxPlayers": 99,
+        "cards": 68,
+        "perNight": 13,
+        "completeNights": 5,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 49
+      }
+    },
+    {
+      "title": "WHO'S THAT?",
+      "private": {
+        "id": "whos-that",
+        "mode": "private",
+        "maxPlayers": 99,
+        "cards": 74,
+        "perNight": 14,
+        "completeNights": 5,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 53
+      },
+      "couch": {
+        "id": "whos-that",
+        "mode": "couch",
+        "maxPlayers": 99,
+        "cards": 74,
+        "perNight": 13,
+        "completeNights": 5,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 49
+      }
+    },
+    {
+      "title": "UNDERCOVER",
+      "private": {
+        "id": "undercover",
+        "mode": "private",
+        "maxPlayers": 30,
+        "cards": 66,
+        "perNight": 7,
+        "completeNights": 9,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 27
+      },
+      "couch": null
+    },
+    {
+      "title": "SECRET MISSIONS",
+      "private": {
+        "id": "secret-missions",
+        "mode": "private",
+        "maxPlayers": 30,
+        "cards": 122,
+        "perNight": 30,
+        "completeNights": 4,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 113
+      },
+      "couch": null
+    },
+    {
+      "title": "BAD ANSWERS ONLY",
+      "private": {
+        "id": "bad-answers-only",
+        "mode": "private",
+        "maxPlayers": 30,
+        "cards": 66,
+        "perNight": 10,
+        "completeNights": 6,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 38
+      },
+      "couch": {
+        "id": "bad-answers-only",
+        "mode": "couch",
+        "maxPlayers": 99,
+        "cards": 66,
+        "perNight": 13,
+        "completeNights": 5,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 49
+      }
+    },
+    {
+      "title": "BLUFF",
+      "private": {
+        "id": "bluff",
+        "mode": "private",
+        "maxPlayers": 20,
+        "cards": 66,
+        "perNight": 9,
+        "completeNights": 7,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 34
+      },
+      "couch": null
+    },
+    {
+      "title": "THE LINE",
+      "private": {
+        "id": "the-line",
+        "mode": "private",
+        "maxPlayers": 99,
+        "cards": 62,
+        "perNight": 9,
+        "completeNights": 6,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 34
+      },
+      "couch": {
+        "id": "the-line",
+        "mode": "couch",
+        "maxPlayers": 99,
+        "cards": 62,
+        "perNight": 13,
+        "completeNights": 4,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 49
+      }
+    },
+    {
+      "title": "HOT SEAT",
+      "private": {
+        "id": "hot-seat",
+        "mode": "private",
+        "maxPlayers": 20,
+        "cards": 116,
+        "perNight": 20,
+        "completeNights": 5,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 75
+      },
+      "couch": {
+        "id": "hot-seat",
+        "mode": "couch",
+        "maxPlayers": 20,
+        "cards": 116,
+        "perNight": 13,
+        "completeNights": 8,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 49
+      }
+    },
+    {
+      "title": "TEAM CHAOS",
+      "private": {
+        "id": "team-chaos",
+        "mode": "private",
+        "maxPlayers": 99,
+        "cards": 55,
+        "perNight": 12,
+        "completeNights": 4,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 45
+      },
+      "couch": {
+        "id": "team-chaos",
+        "mode": "couch",
+        "maxPlayers": 99,
+        "cards": 68,
+        "perNight": 13,
+        "completeNights": 5,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 49
+      }
+    },
+    {
+      "title": "PHOTO HUNT",
+      "private": {
+        "id": "photo-hunt",
+        "mode": "private",
+        "maxPlayers": 30,
+        "cards": 60,
+        "perNight": 8,
+        "completeNights": 7,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 30
+      },
+      "couch": null
+    },
+    {
+      "title": "DRAW THIS",
+      "private": {
+        "id": "draw-this",
+        "mode": "private",
+        "maxPlayers": 30,
+        "cards": 68,
+        "perNight": 12,
+        "completeNights": 5,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 45
+      },
+      "couch": null
+    },
+    {
+      "title": "MUSIC DROP",
+      "private": {
+        "id": "music-drop",
+        "mode": "private",
+        "maxPlayers": 99,
+        "cards": 42,
+        "perNight": 10,
+        "completeNights": 4,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 38
+      },
+      "couch": {
+        "id": "music-drop",
+        "mode": "couch",
+        "maxPlayers": 99,
+        "cards": 0,
+        "perNight": 13,
+        "completeNights": null,
+        "source": "own-audio",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 49
+      }
+    },
+    {
+      "title": "CHAIN REACTION",
+      "private": {
+        "id": "chain-reaction",
+        "mode": "private",
+        "maxPlayers": 30,
+        "cards": 62,
+        "perNight": 8,
+        "completeNights": 7,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 30
+      },
+      "couch": {
+        "id": "chain-reaction",
+        "mode": "couch",
+        "maxPlayers": 99,
+        "cards": 62,
+        "perNight": 13,
+        "completeNights": 4,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 49
+      }
+    },
+    {
+      "title": "ONE OF YOU",
+      "private": {
+        "id": "one-of-you",
+        "mode": "private",
+        "maxPlayers": 30,
+        "cards": 60,
+        "perNight": 7,
+        "completeNights": 8,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 8,
+        "threeNightReserve": 27
+      },
+      "couch": null
+    },
+    {
+      "title": "PANIC BUTTON",
+      "private": {
+        "id": "panic-button",
+        "mode": "private",
+        "maxPlayers": 99,
+        "cards": 62,
+        "perNight": 10,
+        "completeNights": 6,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 38
+      },
+      "couch": {
+        "id": "panic-button",
+        "mode": "couch",
+        "maxPlayers": 99,
+        "cards": 62,
+        "perNight": 13,
+        "completeNights": 4,
+        "source": "editorial",
+        "closingRitual": false,
+        "separateFinales": 0,
+        "threeNightReserve": 49
+      }
+    },
+    {
+      "title": "AFTER DARK",
+      "private": {
+        "id": "after-dark",
+        "mode": "private",
+        "maxPlayers": 20,
+        "cards": 63,
+        "perNight": 11,
+        "completeNights": 5,
+        "source": "editorial",
+        "closingRitual": true,
+        "separateFinales": 0,
+        "threeNightReserve": 42
+      },
+      "couch": null
+    }
+  ],
+  "notes": [
+    "Finite decks; retained content history required.",
+    "Shared couple pools are not additive; these are per-title nights starting with an otherwise unseen eligible pool.",
+    "ONE//TWO returns, co-op milestones and AFTER DARK consent are deliberate rituals, not new content.",
+    "Music Drop couch uses manually selected DJ tracks or player-supplied audio; DJ songs have no automatic history and no licensed catalogue is included.",
+    "FIRST BEAT and TIME DROP remain outside the released catalogue."
+  ]
+}

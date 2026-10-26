@@ -1,6 +1,9 @@
 // Generated from packages/gang-core/src/runtime.ts by scripts/vendor-cores.mjs. Edit the canonical package.
 import {
   getGangPlaybook,
+  gangContentKey,
+  gangRoundPrompts,
+  expandGangSeenIds,
   type GangGameId,
   type GangPrompt,
   type GangStageKind,
@@ -333,17 +336,22 @@ function promptForRound(
   const playbook = getGangPlaybook(gameId);
   if (!playbook) throw new Error(`Unknown GANG game: ${gameId}`);
 
-  const excluded = new Set(sessionIds);
-  const pool = playbook.prompts.filter((p) => !excluded.has(p.id));
+  const excluded = new Set(expandGangSeenIds(sessionIds));
+  const pool = gangRoundPrompts(gameId).filter(
+    (p) => !excluded.has(gangContentKey(p.id)),
+  );
   if (!pool.length) throw new Error("Session content exhausted");
-  const used = new Set(usedPromptIds);
-  const unseen = pool.filter((prompt) => !used.has(prompt.id));
+  const canonicalHistory = expandGangSeenIds(usedPromptIds);
+  const used = new Set(canonicalHistory);
+  const unseen = pool.filter((prompt) => !used.has(gangContentKey(prompt.id)));
   const previous = usedPromptIds[usedPromptIds.length - 1];
-  const oldest = Math.min(...pool.map((p) => usedPromptIds.lastIndexOf(p.id)));
+  const oldest = Math.min(
+    ...pool.map((p) => canonicalHistory.lastIndexOf(gangContentKey(p.id))),
+  );
   const recycled = pool.filter(
     (prompt) =>
       prompt.id !== previous &&
-      usedPromptIds.lastIndexOf(prompt.id) <=
+      canonicalHistory.lastIndexOf(gangContentKey(prompt.id)) <=
         oldest + Math.max(2, Math.floor(playbook.prompts.length / 4)),
   );
   let candidates =
@@ -368,10 +376,10 @@ function createRound(
   targetRounds: number,
   usedPromptIds: readonly string[],
   interactionMode: "one-phone" | "everyone-in" = "one-phone",
+  optionalMechanics: GangOptionalMechanics = {},
   sessionIds: readonly string[] = [],
   finaleVariant: 0 | 1 = 0,
   roleHistory: readonly string[] = [],
-  optionalMechanics: GangOptionalMechanics = {},
 ): { round: GangRuntimeRound; seed: number } {
   const playbook = getGangPlaybook(gameId);
   if (!playbook) throw new Error(`Unknown GANG game: ${gameId}`);
@@ -643,10 +651,9 @@ export function createGangRuntime(input: {
     targetRounds,
     input.seenPromptIds ?? [],
     input.interactionMode ?? "one-phone",
+    input.optionalMechanics,
     [],
     (seed & 1) === 1 ? 0 : 1,
-    [],
-    input.optionalMechanics,
   );
   if (input.gameId === "after-dark")
     created.round = {
@@ -1573,10 +1580,10 @@ export function advanceGangStage(
       state.targetRounds,
       promptHistory,
       state.interactionMode,
+      state.optionalMechanics,
       state.sessionPromptIds ?? promptHistory.slice(-state.roundNumber),
       state.finaleVariant ?? 0,
       state.roleHistory ?? [],
-      state.optionalMechanics,
     );
     return {
       ...state,

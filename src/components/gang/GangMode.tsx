@@ -1,7 +1,7 @@
-import { couchGame, GANG_EXPERIENCES } from "@/lib/gang/core/experience";
-import { GangSharedNight } from "./CouchPlayer";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { GangGuide } from "./GangGuide";
+import { couchGame, GANG_EXPERIENCES } from "@/lib/gang/core/experience";
+import { GangSharedNight } from "./CouchPlayer";
 import { missionQueue } from "@/lib/gang/core/missions";
 import { paceQueue } from "@/lib/gang/core/director";
 /* GANG MODE surface: CHOOSE A GAME / BUILD A MIX / START MY NIGHT → Player Setup → GangPlayer (ONE PHONE). */
@@ -327,13 +327,11 @@ function PlayerSetup({
     () => preferredMode ?? recommendPlayMode(queue),
     [queue, preferredMode],
   );
-  const [display, setDisplay] = useState<"couch" | "phone">(
-    preferredMode === "one-phone" ? "phone" : "couch",
-  );
   // Start with the mode the authored game contract prefers instead of forcing every player onto a phone.
-  const [solo, setSolo] = useState(recommendedMode !== "everyone-in");
-  const [stage, setStage] = useState(recommendedMode === "big-screen");
-  const onePhone = solo || !client;
+  const [mode, setMode] = useState<PlayMode>(recommendedMode);
+  const stage = mode === "big-screen";
+  const onePhone = mode === "one-phone" || (shared && stage) || !client;
+  const display = mode === "one-phone" ? "phone" : "couch";
   const [count, setCount] = useState(
     Math.min(Math.max(initial, range[0]), range[1]),
   );
@@ -352,48 +350,71 @@ function PlayerSetup({
   return (
     <Overlay label="WER SPIELT?" onClose={onClose}>
       <div className="flex flex-1 flex-col">
-        {shared && (
-          <div
-            className="mt-4 grid grid-cols-2 gap-2"
-            aria-label="Gemeinsam spielen"
-          >
-            <button
-              type="button"
-              className={cn(
-                "min-h-14 border p-3 text-sm",
-                solo && display === "couch"
-                  ? "border-signal text-signal"
-                  : "border-line",
-              )}
-              aria-pressed={solo && display === "couch"}
-              onClick={() => {
-                setSolo(true);
-                setDisplay("couch");
-              }}
-            >
-              TV / Couch · ohne Beitritt
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "min-h-14 border p-3 text-sm",
-                solo && display === "phone"
-                  ? "border-signal text-signal"
-                  : "border-line",
-              )}
-              aria-pressed={solo && display === "phone"}
-              onClick={() => {
-                setSolo(true);
-                setDisplay("phone");
-              }}
-            >
-              Ein Handy · gemeinsam
-            </button>
-          </div>
-        )}
         <p className="mt-4 text-sm text-muted-foreground">
           {queue.map((id) => gangGame(id)?.title).join(" → ")}
         </p>
+        {
+          <fieldset className="mt-5">
+            <legend className="eyebrow mb-2">Spielweise</legend>
+            <div className="grid grid-cols-3 border-y border-line">
+              {(
+                [
+                  [
+                    "one-phone",
+                    "ONE PHONE",
+                    shared ? "Ein Handy · gemeinsam" : "Verdeckt weitergeben",
+                  ],
+                  [
+                    "big-screen",
+                    "BIG SCREEN",
+                    shared
+                      ? "TV / Couch · ohne Beitritt"
+                      : "TV + private Handys",
+                  ],
+                  ["everyone-in", "EVERYONE IN", "Alle per QR"],
+                ] as const
+              )
+                .filter(
+                  ([id]) =>
+                    client ||
+                    id === "one-phone" ||
+                    (id === "big-screen" && shared),
+                )
+                .map(([id, label, detail]) => (
+                  <label
+                    key={id}
+                    className={cn(
+                      "tap flex min-h-20 cursor-pointer flex-col justify-center gap-1 border-l border-line px-3 py-3 first:border-l-0",
+                      mode === id
+                        ? "bg-signal/10 text-signal"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="gang-play-mode"
+                      className="sr-only peer"
+                      value={id}
+                      checked={mode === id}
+                      onChange={() => {
+                        haptic(5);
+                        setMode(id);
+                      }}
+                    />
+                    <span className="font-mono text-xs peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4">
+                      {label}
+                    </span>
+                    <span className="text-xs">
+                      {detail}
+                      {id === recommendedMode && (
+                        <span className="mt-1 block">Empfohlen</span>
+                      )}
+                    </span>
+                  </label>
+                ))}
+            </div>
+          </fieldset>
+        }
         <div className="my-5">
           <p className="mb-2 text-sm text-muted-foreground">Euer Zeitrahmen</p>
           <div className="grid grid-cols-4 gap-2">
@@ -441,52 +462,21 @@ function PlayerSetup({
               className="mt-5 border-l-2 border-signal pl-4"
             >
               <p className="font-mono text-[0.65rem] tracking-[0.2em] text-signal">
-                {recommendedMode === "everyone-in"
-                  ? "PASST ZU DIESEM GAME · EVERYONE IN"
-                  : "EVERYONE IN · OPTIONAL"}
+                {stage
+                  ? "BIG SCREEN · DER RAUM SPIELT"
+                  : recommendedMode === "everyone-in"
+                    ? "PASST ZU DIESEM GAME · EVERYONE IN"
+                    : "EVERYONE IN · OPTIONAL"}
               </p>
               <h2 className="font-display mt-2 text-[clamp(2.4rem,10vw,3.8rem)] leading-[0.9]">
-                Alle mit eigenem Handy.
+                {stage ? "Der TV wird zur Bühne." : "Jede:r mit eigenem Handy."}
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Du öffnest den Raum, die anderen scannen den QR-Code. Geheime
-                Antworten bleiben auf dem eigenen Handy – niemand muss
-                weitergeben.
+                {stage
+                  ? "TV oder Laptop zeigt Fragen, Countdowns und Ergebnisse für alle. Mitspielende treten per QR-Code bei; ihre Handys sind die Controller."
+                  : "Du öffnest den Raum, die anderen treten per QR-Code bei. Geheime Rollen und Antworten bleiben bis zur Auflösung verdeckt."}
               </p>
             </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={stage}
-              onClick={() => {
-                haptic(5);
-                setStage(!stage);
-              }}
-              className="tap mt-5 flex min-h-14 w-full items-center justify-between gap-4 border-y border-line py-3 text-left"
-            >
-              <span>
-                <span className="block text-sm text-foreground">
-                  TV/Laptop als Bühne
-                </span>
-                <span className="block text-xs text-muted-foreground">
-                  Optional · Handys bleiben die Controller
-                </span>
-              </span>
-              <span
-                aria-hidden
-                className={cn(
-                  "relative h-6 w-11 shrink-0 rounded-full border transition-colors",
-                  stage ? "border-signal bg-signal/30" : "border-line",
-                )}
-              >
-                <span
-                  className={cn(
-                    "absolute top-0.5 size-4 rounded-full bg-foreground transition-transform motion-reduce:transition-none",
-                    stage ? "translate-x-6" : "translate-x-0.5",
-                  )}
-                />
-              </span>
-            </button>
             {hostAllowed ? (
               <>
                 {queue.includes("music-drop") && (
@@ -508,28 +498,9 @@ function PlayerSetup({
             ) : (
               <HostAccessSheet />
             )}
-            <button
-              type="button"
-              onClick={() => {
-                haptic(5);
-                setSolo(true);
-              }}
-              className="tap mx-auto mt-3 flex min-h-11 items-center px-3 text-sm text-muted-foreground underline-offset-4 hover:underline"
-            >
-              Mit einem Handy spielen
-            </button>
           </>
         ) : (
           <>
-            {client && (
-              <button
-                type="button"
-                onClick={() => setSolo(false)}
-                className="tap mt-3 flex min-h-11 items-center text-left text-sm text-signal underline-offset-4 hover:underline"
-              >
-                Everyone In aktivieren
-              </button>
-            )}
             <p className="mt-3 font-mono text-[0.65rem] tracking-[0.2em] text-signal">
               {shared
                 ? display === "couch"

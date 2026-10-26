@@ -237,8 +237,8 @@ describe("shared-room gameplay", () => {
     click("THE MAJORITY öffnen");
     click("Spiel starten");
     expect(
-      screen.getByRole("button", { name: "TV / Couch · ohne Beitritt" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      screen.getByRole("radio", { name: /BIG SCREEN/ }),
+    ).toBeChecked();
     expect(screen.queryByRole("button", { name: "Raum öffnen" })).toBeNull();
     click("Los");
     expect(screen.getByTestId("couch-player")).toBeTruthy();

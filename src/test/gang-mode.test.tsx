@@ -77,10 +77,9 @@ describe("GANG MODE integration", () => {
     );
     expect(screen.getByRole("button", { name: "Raum öffnen" })).toBeTruthy();
     expect(
-      screen
-        .getByRole("switch", { name: /TV\/Laptop als Bühne/ })
-        .getAttribute("aria-checked"),
-    ).toBe("false");
+      (screen.getByRole("radio", { name: /EVERYONE IN/ }) as HTMLInputElement)
+        .checked,
+    ).toBe(true);
     expect(screen.queryByTestId("curtain")).toBeNull();
     expect(document.body.textContent).not.toContain("Gib das Handy an");
     expect(screen.queryByText(/SPIELER MÖGLICH/)).toBeNull();
@@ -115,10 +114,7 @@ describe("GANG MODE integration", () => {
     const summary = screen.getByTestId("night-summary");
     expect(within(summary).getAllByRole("listitem").length).toBeGreaterThan(0);
     click("Night starten");
-    const sharedPhone = screen.queryByRole("button", {
-      name: "Mit einem Handy spielen",
-    });
-    if (sharedPhone) fireEvent.click(sharedPhone);
+    fireEvent.click(screen.getByRole("radio", { name: /ONE PHONE/ }));
     click("Night starten");
     expect(screen.getByRole("button", { name: /Los geht/ })).toBeTruthy();
   });
