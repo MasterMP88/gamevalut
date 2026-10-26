@@ -102,7 +102,7 @@ export const MUSIC_SCENES: Scene[] = [
 
   // ——— ONE SONG · together, intentionally not hidden
   consensus("funny", 1, "Ein Raum. Ein Track.", "Ihr bekommt genau einen Song für diesen Raum. Einigt euch."),
-  consensus("deep", 2, "Gemeinsamer Nenner", "Ein Song, den ihr beide heute wirklich hören wollt. Keine Ironie."),
+  consensus("deep", 2, "Gemeinsamer Nenner", "Heute wollt ihr beide wirklich denselben Track hören. Welcher ist es?"),
   consensus("cheeky", 2, "Keine Ausrede", "Ein Track, bei dem keiner von euch so tun darf, als wäre er zu cool dafür."),
   consensus("deep", 3, "Bleiben", "Nur ein Song darf euch noch fünf Minuten länger hier halten. Welcher?"),
 
@@ -114,24 +114,24 @@ export const MUSIC_SCENES: Scene[] = [
     ["AUX SWAP · Karaoke", "Du meldest {you} ungefragt zum Karaoke an. Welcher Song?", "funny", 1],
     ["AUX SWAP · Urlaub", "Der erste Track in {you}s perfektem Urlaub. Du entscheidest.", "funny", 2],
     ["AUX SWAP · Glow-up", "Soundtrack für {you}s völlig übertriebenen Slow-Motion-Auftritt.", "cheeky", 2],
-    ["AUX SWAP · Durchhalten", "Ein Song, den du {you} an einem miesen Tag schicken würdest.", "deep", 3],
+    ["AUX SWAP · Durchhalten", "An einem miesen Tag würdest du {you} genau diesen Track schicken.", "deep", 3],
     ["AUX SWAP · Tanzfläche", "Welcher Track bringt {you} am ehesten freiwillig auf die Tanzfläche?", "funny", 2],
-    ["AUX SWAP · Heimlich passend", "Ein Song, der viel besser zu {you} passt, als {you} zugeben würde.", "cheeky", 3],
+    ["AUX SWAP · Heimlich passend", "Viel passender zu {you}, als {you} zugeben würde: welcher Track?", "cheeky", 3],
     ["AUX SWAP · Abspann", "Du schneidest den Film über {you}. Welcher Song läuft im Abspann?", "deep", 3],
   ]),
 
   // ——— SIGNATURE: RED FLAG · blind duel + judgement
   ...signatureDeck("red-flag", "duet", [
-    ["RED FLAG · Sofortiges Urteil", "Ein Song, bei dem du jemanden kurz beurteilen würdest. Beide blind.", "cheeky", 1],
+    ["RED FLAG · Sofortiges Urteil", "Sofortiges Urteil: Bei welchem Song würdest du kurz skeptisch werden? Beide blind.", "cheeky", 1],
     ["RED FLAG · Auto-DJ", "Ein Track, der beim ersten Date im Auto riskant wäre. Beide wählen.", "funny", 1],
     ["RED FLAG · Hochzeits-DJ", "Hochzeit, falscher Moment: Welcher Track wäre unverzeihlich – und trotzdem lustig?", "funny", 2],
     ["RED FLAG · Zu ernst", "Ein Track, den Menschen viel zu ernst nehmen. Beide blind.", "cheeky", 2],
-    ["RED FLAG · Ex-Alarm", "Ein Song, bei dem eine sehr spezifische Geschichte im Raum stehen könnte.", "cheeky", 3],
+    ["RED FLAG · Ex-Alarm", "Sehr spezifische Geschichte im Raum: Welcher Track löst diesen Verdacht aus?", "cheeky", 3],
     ["RED FLAG · Gym Crime", "Der Track, bei dem du im Gym innerlich sofort urteilst.", "funny", 1],
     ["RED FLAG · Party vorbei", "Eine gute Party kippt in zehn Sekunden. Welcher Track war schuld?", "funny", 2],
-    ["RED FLAG · Guilty Defense", "Ein Song, den du gegen jede Kritik verteidigen würdest. Leider.", "cheeky", 2],
+    ["RED FLAG · Guilty Defense", "Gegen jede Kritik verteidigst du diesen Track. Leider. Welchen?", "cheeky", 2],
     ["RED FLAG · Zu viel Gefühl", "Ein Track, der emotional gefährlicher ist, als er klingt.", "deep", 3],
-    ["RED FLAG · Kein Kommentar", "Ein Song, bei dem dein Musikgeschmack vor Gericht müsste.", "funny", 3],
+    ["RED FLAG · Kein Kommentar", "Dein Musikgeschmack steht vor Gericht. Welcher Track ist Beweisstück A?", "funny", 3],
   ]),
 
   // ——— SIGNATURE: NEEDLE DROP · instinct; timeout becomes second-thought
@@ -139,7 +139,7 @@ export const MUSIC_SCENES: Scene[] = [
     ["NEEDLE DROP · 2:17", "Der Song, der nach 2:17 Uhr klingt. Zwanzig Sekunden.", "cheeky", 1],
     ["NEEDLE DROP · Fenster runter", "Nachtfahrt. Fenster runter. Erster Track.", "funny", 1],
     ["NEEDLE DROP · Schlechte Idee", "Direkt vor einer sehr schlechten Idee. Was läuft?", "funny", 2],
-    ["NEEDLE DROP · Gänsehaut", "Ein Song mit sofortiger Gänsehaut. Nicht analysieren.", "deep", 2],
+    ["NEEDLE DROP · Gänsehaut", "Sofort Gänsehaut. Nicht analysieren – Track nennen.", "deep", 2],
     ["NEEDLE DROP · Zu laut", "Der Track, den du immer ein bisschen zu laut hörst.", "cheeky", 2],
     ["NEEDLE DROP · Sommer", "Ein einziger Track für einen Sommer, den du behalten würdest.", "deep", 2],
     ["NEEDLE DROP · Tanz", "Du hast zehn Sekunden Mut. Welcher Song startet ihn?", "funny", 1],
@@ -152,8 +152,8 @@ export const MUSIC_SCENES: Scene[] = [
   ...signatureDeck("one-song", "consensus", [
     ["ONE SONG · Roadtrip", "Ihr fahrt jetzt los. Einigt euch auf genau einen ersten Track.", "funny", 1],
     ["ONE SONG · Küche", "Küchenlicht, etwas zu spät, niemand will gehen. Ein Track für euch beide.", "funny", 1],
-    ["ONE SONG · Kein Skip", "Ein Song, den heute keiner von euch skippen dürfte. Einigt euch.", "cheeky", 2],
-    ["ONE SONG · Erinnerung", "Ein Song, der irgendwann nach genau diesem Abend klingen könnte.", "deep", 3],
+    ["ONE SONG · Kein Skip", "Heute kein Skip erlaubt: Auf welchen Track einigt ihr euch?", "cheeky", 2],
+    ["ONE SONG · Erinnerung", "Irgendwann soll genau dieser Abend nach einem Track klingen. Welchem?", "deep", 3],
     ["ONE SONG · Tanzfläche", "Ihr bekommt gemeinsam genau einen Wunsch beim DJ. Welchen?", "funny", 2],
     ["ONE SONG · Friedensvertrag", "Eure Geschmäcker kollidieren. Findet trotzdem einen Track, den beide unterschreiben.", "funny", 2],
     ["ONE SONG · Langsam", "Ein langsamer Song, bei dem keiner von euch die Augen verdreht.", "sensual", 3],
