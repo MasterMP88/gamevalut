@@ -7,8 +7,8 @@ import { HostAccessSheet } from "@/components/commerce/HostAccessSheet";
 import { ENDINGS } from "@/components/player/EndScreen";
 import { EnergyField } from "@/components/player/EnergyField";
 import { fill, nightSignature } from "@/lib/game/engine";
-import { GAMES_BY_ID } from "@/lib/game/games";
-import type { ConsentSettings, GameId } from "@/lib/game/types";
+import { GAMES_BY_ID } from "@/lib/game/games";\nimport { MUSIC_VIBES } from "@/lib/game/music-scenes";
+import type { ConsentSettings, GameId, MusicReaction } from "@/lib/game/types";
 import { recordSeen, seenIds } from "@/lib/content-history";
 import {
   RoomError,
@@ -403,6 +403,16 @@ export function CoupleRoom({
   const sc = pub.scene,
     me = pub.names[pub.turn],
     you = pub.names[1 - pub.turn]!;
+  const musicMode = sc?.type === "MUSIC" ? (sc.music?.mode ?? "solo") : null;
+  const exactMusicMatch =
+    sc?.type === "MUSIC" && musicMode === "duet" && pub.result?.match === true;
+  const musicJudge =
+    sc?.type === "MUSIC" &&
+    !exactMusicMatch &&
+    ((musicMode === "guess" && index === pub.turn) ||
+      ((musicMode === "duet" || musicMode === "solo") && index !== pub.turn));
+  const musicVerdictRequired =
+    musicJudge && (musicMode === "duet" || musicMode === "guess");
   const privateMission = privateCard?.["mission"] as {
     player: 0 | 1;
     text: string;
@@ -579,7 +589,19 @@ export function CoupleRoom({
               />
             ) : (
               <>
-                <h1 className="font-display mt-6 text-4xl">{sc?.title}</h1>
+                {sc?.type === "MUSIC" && sc.music?.signature && (
+                  <p className="mt-6 flex items-center gap-2 font-mono text-[0.65rem] tracking-[0.25em] text-champagne">
+                    <span className="inline-block size-1.5 rotate-45 bg-champagne" />
+                    SIGNATURE BEAT · {({
+                      "needle-drop": "NEEDLE DROP",
+                      "aux-swap": "AUX SWAP",
+                      "red-flag": "RED FLAG",
+                      "one-song": "ONE SONG",
+                      "last-track": "LAST TRACK",
+                    } as const)[sc.music.signature]}
+                  </p>
+                )}
+                <h1 className={`font-display ${sc?.type === "MUSIC" && sc.music?.signature ? "mt-3" : "mt-6"} text-4xl`}>{sc?.title}</h1>
                 <p className="font-display mt-4 text-2xl leading-snug">
                   {fill(
                     sc?.type === "SECRET" &&
@@ -636,21 +658,48 @@ export function CoupleRoom({
                           />
                         </label>
                       )}
-                    {sc?.type === "MUSIC" && index !== pub.turn && (
+                    {sc?.type === "MUSIC" && exactMusicMatch && (
+                      <div className="mt-5 border-l-2 border-primary pl-4">
+                        <p className="font-mono text-xs tracking-[0.25em] text-primary">SAME BRAIN</p>
+                        <p className="font-display mt-1 text-2xl italic text-champagne">Okay, das war unheimlich.</p>
+                      </div>
+                    )}
+                    {sc?.type === "MUSIC" && musicJudge && (
                       <fieldset className="mt-5">
-                        <legend>Deine Reaktion · freiwillig</legend>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {[
-                            ["match", "Match"],
-                            ["twist", "Überraschung"],
-                            ["explains", "Erklärt einiges"],
-                          ].map(([id, label]) => (
+                        <legend className="font-display text-xl">
+                          {musicMode === "guess"
+                            ? "War der Read gut?"
+                            : musicMode === "duet"
+                              ? "Was war das gerade?"
+                              : "Deine schnelle Reaktion"}
+                        </legend>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {musicVerdictRequired
+                            ? "Erst einordnen, dann geht es weiter."
+                            : "Optional – ein Tap reicht."}
+                        </p>
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          {(musicMode === "guess"
+                            ? ([["read-hit", "Treffer"], ["twist", "Plot Twist"]] as const)
+                            : musicMode === "duet"
+                              ? ([
+                                  ["same-energy", "Same Energy"],
+                                  ["twist", "Plot Twist"],
+                                  ["explains", "Erklärt einiges"],
+                                  ["no-questions", "Keine Fragen"],
+                                ] as const)
+                              : ([
+                                  ["explains", "Erklärt einiges"],
+                                  ["no-questions", "Keine Fragen"],
+                                ] as const)
+                          ).map(([id, label]) => (
                             <Btn
                               key={id}
                               disabled={busy || submitted}
                               variant={reaction === id ? "accent" : "outline"}
+                              className="h-auto min-h-14 whitespace-normal"
                               aria-pressed={reaction === id}
-                              onClick={() => setReaction(id!)}
+                              onClick={() => setReaction(id satisfies MusicReaction)}
                             >
                               {label}
                             </Btn>
@@ -660,12 +709,14 @@ export function CoupleRoom({
                     )}
                     <Btn
                       className="mt-8"
-                      disabled={busy || submitted}
+                      disabled={busy || submitted || (musicVerdictRequired && !reaction)}
                       onClick={() => send({ ready: true, reaction })}
                     >
                       {submitted
                         ? "Warte auf dein Gegenüber …"
-                        : "Gemeinsam weiter"}
+                        : musicVerdictRequired && !reaction
+                          ? "Erst einordnen"
+                          : "Gemeinsam weiter"}
                     </Btn>
                   </>
                 ) : (
@@ -960,6 +1011,9 @@ function PairInput({
   const choiceType = ["SYNC", "PREDICTION", "CHOICE"].includes(sc.type);
   const guess =
     sc.type === "MUSIC" && sc.music?.mode === "guess" && index !== pub.turn;
+  const consensus = sc.type === "MUSIC" && sc.music?.mode === "consensus";
+  const speedSecondThought =
+    sc.type === "MUSIC" && sc.music?.mode === "speed" && !deadline && !!sc.helper;
   const textInput = sc.type === "MUSIC";
   return (
     <section className="mt-6">
@@ -1026,31 +1080,64 @@ function PairInput({
       )}
       {textInput && (
         <>
-          <label className="mt-4 block">
-            {guess ? "Deine Vermutung: Song oder Stimmung" : "Dein Songtitel"}
-            <input
-              maxLength={guess ? 160 : 80}
-              disabled={disabled}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              className="mt-2 min-h-12 w-full rounded-xl border border-line bg-surface px-4"
-            />
-          </label>
-          {!guess && (
-            <label className="mt-4 block">
-              Interpret:in · optional
-              <input
-                maxLength={60}
-                disabled={disabled}
-                value={artist}
-                onChange={(e) => setArtist(e.target.value)}
-                className="mt-2 min-h-12 w-full rounded-xl border border-line bg-surface px-4"
-              />
-            </label>
+          {guess ? (
+            <fieldset className="mt-4">
+              <legend className="font-display text-xl">READ//THE TRACK · Warum dieser Song?</legend>
+              <div className="mt-3 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Grund tippen">
+                {MUSIC_VIBES.map((v) => (
+                  <Btn
+                    key={v}
+                    type="button"
+                    variant={value === v ? "accent" : "outline"}
+                    className="h-auto min-h-14 whitespace-normal text-left"
+                    aria-pressed={value === v}
+                    disabled={disabled}
+                    onClick={() => setValue(v)}
+                  >
+                    {v}
+                  </Btn>
+                ))}
+              </div>
+            </fieldset>
+          ) : (
+            <>
+              {consensus && (
+                <p className="mt-4 border-l-2 border-champagne pl-3 text-sm text-muted-foreground">
+                  ONE SONG · Sprecht euch ab. Eine Person legt euren gemeinsamen Track fest.
+                </p>
+              )}
+              {speedSecondThought && (
+                <p className="mt-4 border-l-2 border-champagne pl-3">
+                  <span className="font-mono text-xs tracking-[0.22em] text-champagne">SECOND THOUGHT</span>
+                  <span className="mt-1 block text-sm text-muted-foreground">Kein Fail State. Jetzt zählt bewusst der zweite Gedanke.</span>
+                </p>
+              )}
+              <label className="mt-4 block">
+                {consensus ? "Euer gemeinsamer Songtitel" : "Dein Songtitel"}
+                <input
+                  maxLength={80}
+                  disabled={disabled}
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  className="mt-2 min-h-12 w-full rounded-xl border border-line bg-surface px-4"
+                />
+              </label>
+              <label className="mt-4 block">
+                Interpret:in · optional
+                <input
+                  maxLength={60}
+                  disabled={disabled}
+                  value={artist}
+                  onChange={(e) => setArtist(e.target.value)}
+                  className="mt-2 min-h-12 w-full rounded-xl border border-line bg-surface px-4"
+                />
+              </label>
+            </>
           )}
           <p className="mt-3 text-sm text-muted-foreground">
-            Songtitel werden für diese Runde geteilt. Musik spielt ihr auf
-            Wunsch in eurer Musik-App ab.
+            {guess
+              ? "Dein Read bleibt bis zum Reveal verborgen."
+              : "Songtitel werden nur für diese Runde geteilt. Musik spielt ihr auf Wunsch in eurer Musik-App ab."}
           </p>
         </>
       )}
@@ -1122,9 +1209,13 @@ function PairInput({
           )
         }
       >
-        {choiceType || textInput || sc.type === "SHOWDOWN"
-          ? "Verdeckt abgeben"
-          : sc.type === "SECRET"
+        {textInput && consensus
+          ? "Gemeinsamen Track festlegen"
+          : textInput && guess
+            ? "Read versiegeln"
+            : choiceType || textInput || sc.type === "SHOWDOWN"
+              ? "Verdeckt abgeben"
+              : sc.type === "SECRET"
             ? "Gemerkt · geheim halten"
             : "Gemacht / gesagt"}
       </Btn>
