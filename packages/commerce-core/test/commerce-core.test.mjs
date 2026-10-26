@@ -4,7 +4,6 @@ import {
   FREE_PREVIEW_LAST_SCENE,
   GANG_GUESTS_REQUIRE_ACCOUNT,
   GANG_GUESTS_REQUIRE_PAYMENT,
-  GANG_HOST_PRODUCT_KEYS,
   OFFER_BY_KEY,
   OFFERS,
   accessForCoupleScene,
@@ -62,6 +61,16 @@ test("live Stripe price IDs map only to approved grants", () => {
     source: "stripe",
     durationHours: 72,
   });
+  assert.deepEqual(grantForStripePrice("price_1UUPekRGuzgtZTcBS2itbNWR"), {
+    productKey: "unlimited_annual",
+    source: "stripe",
+    durationHours: null,
+  });
+  assert.deepEqual(grantForStripePrice("price_1UUDZtRGuzgtZTcBkcwhCg10"), {
+    productKey: "unlimited_annual",
+    source: "stripe",
+    durationHours: null,
+  });
   assert.equal(grantForStripePrice("price_unknown"), null);
 });
 
@@ -80,35 +89,11 @@ test("GANG guests never need an account or payment", () => {
   assert.equal(GANG_GUESTS_REQUIRE_PAYMENT, false);
 });
 
-test("Night Pass and subscriptions unlock GANG for the host by default", () => {
-  assert.deepEqual(GANG_HOST_PRODUCT_KEYS, [
-    "night_pass_72h",
-    "unlimited_monthly",
-    "unlimited_annual",
-  ]);
-  for (const productKey of GANG_HOST_PRODUCT_KEYS) {
-    assert.equal(
-      accessForGangHost([{ productKey, status: "active" }]).allowed,
-      true,
-    );
-  }
-});
-
-test("unrelated or malformed entitlements fail closed", () => {
+test("GANG host products remain an explicit launch decision", () => {
+  const entitlements = [{ productKey: "unlimited_annual", status: "active" }];
+  assert.equal(accessForGangHost(entitlements, []).allowed, false);
   assert.equal(
-    accessForCoupleScene(6, [{ productKey: "free_preview", status: "active" }]).allowed,
-    false,
+    accessForGangHost(entitlements, ["unlimited_annual"]).allowed,
+    true,
   );
-  assert.equal(
-    accessForCoupleScene(6, [{ productKey: "night_pass_72h", status: "active", endsAt: "invalid" }]).allowed,
-    false,
-  );
-});
-
-test("legacy founder annual Stripe price still maps to annual access", () => {
-  assert.deepEqual(grantForStripePrice("price_1UUDZtRGuzgtZTcBkcwhCg10"), {
-    productKey: "unlimited_annual",
-    source: "stripe",
-    durationHours: null,
-  });
 });

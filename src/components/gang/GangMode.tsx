@@ -1,0 +1,1530 @@
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { GangGuide } from "./GangGuide";
+import { couchGame, GANG_EXPERIENCES } from "@/lib/gang/core/experience";
+import { GangSharedNight } from "./CouchPlayer";
+import { missionQueue } from "@/lib/gang/core/missions";
+import { paceQueue } from "@/lib/gang/core/director";
+/* GANG MODE surface: CHOOSE A GAME / BUILD A MIX / START MY NIGHT → Player Setup → GangPlayer (ONE PHONE). */
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  Check,
+  Minus,
+  Plus,
+  X,
+} from "lucide-react";
+import {
+  GANG_GAMES,
+  GANG_TAGS,
+  avgMinutes,
+  fitsPlayers,
+  gangGame,
+  mixMinutes,
+  type GangGame,
+} from "@/lib/gang/catalog";
+import {
+  DURATIONS,
+  MODULES,
+  NAMED_LIMIT,
+  VIBES,
+  directorNight,
+  roster,
+  type Vibe,
+} from "@/lib/gang/night";
+import type { GangGameId } from "@/lib/gang/core/playbooks";
+import type { GameCapability } from "@/lib/gang/core/types";
+import type { GangRuntimePlayer } from "@/lib/gang/core/runtime";
+import { btn } from "@/components/vault/Btn";
+import { haptic } from "@/lib/haptics";
+import { cn } from "@/lib/utils";
+import { GangPlayer } from "./GangPlayer";
+import { GangRoom, HostSetup } from "./GangRoom";
+import { HostAccessSheet } from "@/components/commerce/HostAccessSheet";
+import {
+  defaultRoomClient,
+  sessionStore,
+  type RoomClient,
+  type RoomSnapshot,
+  type StoredSession,
+} from "@/lib/gang/room-client";
+import { MotifArt, hueVars } from "./MotifArt";
+
+type Entry = "director" | "catalog" | "mix";
+export type PlayMode = "one-phone" | "everyone-in" | "big-screen";
+
+const CAP_LABEL: Record<string, string> = {
+  music: "Musik (manuell)",
+  camera: "Kamera optional",
+  spicy: "18+ · Opt-in",
+  alcohol: "Drinks optional",
+};
+const primary = cn(
+  btn({ size: "lg" }),
+  "w-full bg-signal text-signal-foreground hover:bg-signal/90",
+);
+
+type RoundPlan = Record<string, number>;
+type Flow =
+  | { k: "sheet"; id: GangGameId }
+  | {
+      k: "setup";
+      preferredMode?: PlayMode | undefined;
+      queue: GangGameId[];
+      range: [number, number];
+      count: number;
+      entry: Entry;
+      rounds?: RoundPlan | undefined;
+      budgetMinutes?: 15 | 30 | 60 | null | undefined;
+    }
+  | {
+      k: "play";
+      display?: "couch" | "phone";
+      queue: GangGameId[];
+      players: GangRuntimePlayer[];
+      rounds?: RoundPlan | undefined;
+    }
+  | {
+      k: "room";
+      session: StoredSession;
+      snap: RoomSnapshot | null;
+      bigScreen: boolean;
+    }
+  | null;
+
+function Overlay({
+  label,
+  onClose,
+  children,
+}: {
+  label: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const returnFocus = useRef(
+    typeof document !== "undefined"
+      ? (document.activeElement as HTMLElement | null)
+      : null,
+  );
+  return (
+    <DialogPrimitive.Root
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-room" />
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            if (returnFocus.current?.isConnected) returnFocus.current.focus();
+          }}
+          className="fixed inset-0 z-50 flex flex-col overflow-y-auto overflow-x-hidden bg-room safe-x safe-top safe-bottom"
+        >
+          <div className="mx-auto flex w-full max-w-xl flex-1 flex-col py-3">
+            <div className="flex min-h-11 items-center justify-between">
+              <DialogPrimitive.Title className="font-mono text-xs tracking-[0.2em] text-signal">
+                {label}
+              </DialogPrimitive.Title>
+              <button
+                type="button"
+                aria-label="Schließen"
+                onClick={onClose}
+                className="tap flex size-11 items-center justify-center"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            {children}
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
+  );
+}
+
+function Stepper({
+  value,
+  min,
+  max,
+  onChange,
+  label,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  onChange: (n: number) => void;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center gap-4" role="group" aria-label={label}>
+      <button
+        type="button"
+        aria-label="Weniger Spieler"
+        disabled={value <= min}
+        onClick={() => {
+          haptic(4);
+          onChange(value - 1);
+        }}
+        className="tap flex size-12 items-center justify-center border border-line disabled:opacity-30"
+      >
+        <Minus className="size-5" />
+      </button>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        aria-label={label}
+        value={value}
+        onChange={(e) => {
+          const n = Number(e.target.value);
+          if (Number.isFinite(n))
+            onChange(Math.min(max, Math.max(min, Math.floor(n))));
+        }}
+        className="min-h-14 w-24 border-b border-line bg-transparent text-center font-display text-5xl tabular-nums leading-none"
+      />
+      <button
+        type="button"
+        aria-label="Mehr Spieler"
+        disabled={value >= max}
+        onClick={() => {
+          haptic(4);
+          onChange(value + 1);
+        }}
+        className="tap flex size-12 items-center justify-center border border-line disabled:opacity-30"
+      >
+        <Plus className="size-5" />
+      </button>
+    </div>
+  );
+}
+
+const modeLabel = (g: GangGame) => {
+  const preferred = g.interactionModes[0];
+  if (preferred === "everyone-in") return "EVERYONE IN · PER QR";
+  if (preferred === "big-screen") return "BIG SCREEN · GEMEINSAM";
+  return "ONE PHONE · EIN GERÄT REICHT";
+};
+
+const PlayableBadge = ({ g }: { g: GangGame }) => (
+  <span className="font-mono text-[0.65rem] tracking-[0.2em] text-signal">
+    {modeLabel(g)}
+  </span>
+);
+
+function GameSheet({
+  g,
+  onStart,
+  onClose,
+}: {
+  g: GangGame;
+  onStart: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Overlay label="CHOOSE A GAME" onClose={onClose}>
+      <div
+        style={hueVars(g.hue)}
+        className="flex flex-1 flex-col motion-safe:animate-rise"
+      >
+        <MotifArt motif={g.motif} className="mt-6 w-32" />
+        <PlayableBadge g={g} />
+        <h2 className="font-display mt-3 text-[clamp(3rem,15vw,5.5rem)] leading-[0.85] tracking-tight">
+          {g.title}
+        </h2>
+        <p className="mt-3 text-lg text-[var(--g)]">{g.hook}</p>
+        <p className="mt-4 text-foreground/90">{g.rule}</p>
+        <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-line pt-4 text-sm">
+          <div>
+            <dt className="font-mono text-xs text-muted-foreground">SPIELER</dt>
+            <dd className="font-display text-2xl">
+              {g.min}–{g.max}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-mono text-xs text-muted-foreground">DAUER</dt>
+            <dd className="font-display text-2xl">
+              {g.minutes[0]}–{g.minutes[1]} min
+            </dd>
+          </div>
+          {g.capabilities.length > 0 && (
+            <div className="col-span-2">
+              <dt className="font-mono text-xs text-muted-foreground">
+                EXTRAS
+              </dt>
+              <dd>
+                {g.capabilities.map((c) => CAP_LABEL[c] ?? c).join(" · ")}
+              </dd>
+            </div>
+          )}
+        </dl>
+        <details className="my-6 border-y border-line py-2">
+          <summary className="tap flex min-h-12 cursor-pointer items-center text-sm">
+            Ablauf, Wertung und Finale
+          </summary>
+          <div className="py-4">
+            <GangGuide id={g.id} compact />
+            <a
+              href={`/gang/${g.id}`}
+              className="tap mt-4 inline-flex min-h-12 items-center text-signal"
+            >
+              Beispielrunde & alle Regeln →
+            </a>
+          </div>
+        </details>
+        <button
+          type="button"
+          onClick={() => {
+            haptic(10);
+            onStart();
+          }}
+          className={cn(primary, "mt-auto")}
+        >
+          Spiel starten
+        </button>
+      </div>
+    </Overlay>
+  );
+}
+
+function PlayerSetup({
+  queue,
+  rounds,
+  budgetMinutes,
+  range,
+  initial,
+  preferredMode,
+  entry,
+  client,
+  hostAllowed,
+  onStart,
+  onRoom,
+  onClose,
+}: {
+  queue: GangGameId[];
+  rounds?: RoundPlan | undefined;
+  budgetMinutes?: 15 | 30 | 60 | null | undefined;
+  range: [number, number];
+  initial: number;
+  preferredMode?: PlayMode | undefined;
+  entry: Entry;
+  client: RoomClient | null;
+  hostAllowed: boolean;
+  onStart: (
+    p: GangRuntimePlayer[],
+    rounds: RoundPlan,
+    display: "couch" | "phone",
+  ) => void;
+  onRoom: (s: StoredSession, snap: RoomSnapshot, bigScreen: boolean) => void;
+  onClose: () => void;
+}) {
+  const shared = queue.every(couchGame);
+  const recommendedMode = useMemo(
+    () => preferredMode ?? recommendPlayMode(queue),
+    [queue, preferredMode],
+  );
+  // Start with the mode the authored game contract prefers instead of forcing every player onto a phone.
+  const [mode, setMode] = useState<PlayMode>(recommendedMode);
+  const stage = mode === "big-screen";
+  const onePhone = mode === "one-phone" || (shared && stage) || !client;
+  const display = mode === "one-phone" ? "phone" : "couch";
+  const [count, setCount] = useState(
+    Math.min(Math.max(initial, range[0]), range[1]),
+  );
+  const [names, setNames] = useState<string[]>([]);
+  const [budget, setBudget] = useState<15 | 30 | 60 | null>(
+    budgetMinutes === undefined ? 30 : budgetMinutes,
+  );
+  const pacing = paceQueue(
+    missionQueue(queue),
+    count,
+    budget,
+    onePhone ? 1 : count,
+    onePhone && shared,
+  );
+  const ok = count >= range[0] && count <= range[1] && pacing.fits;
+  return (
+    <Overlay label="WER SPIELT?" onClose={onClose}>
+      <div className="flex flex-1 flex-col">
+        <p className="mt-4 text-sm text-muted-foreground">
+          {queue.map((id) => gangGame(id)?.title).join(" → ")}
+        </p>
+        {
+          <fieldset className="mt-5">
+            <legend className="eyebrow mb-2">Spielweise</legend>
+            <div className="grid grid-cols-3 border-y border-line">
+              {(
+                [
+                  [
+                    "one-phone",
+                    "ONE PHONE",
+                    shared ? "Ein Handy · gemeinsam" : "Verdeckt weitergeben",
+                  ],
+                  [
+                    "big-screen",
+                    "BIG SCREEN",
+                    shared
+                      ? "TV / Couch · ohne Beitritt"
+                      : "TV + private Handys",
+                  ],
+                  ["everyone-in", "EVERYONE IN", "Alle per QR"],
+                ] as const
+              )
+                .filter(
+                  ([id]) =>
+                    client ||
+                    id === "one-phone" ||
+                    (id === "big-screen" && shared),
+                )
+                .map(([id, label, detail]) => (
+                  <label
+                    key={id}
+                    className={cn(
+                      "tap flex min-h-20 cursor-pointer flex-col justify-center gap-1 border-l border-line px-3 py-3 first:border-l-0",
+                      mode === id
+                        ? "bg-signal/10 text-signal"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="gang-play-mode"
+                      className="sr-only peer"
+                      value={id}
+                      checked={mode === id}
+                      onChange={() => {
+                        haptic(5);
+                        setMode(id);
+                      }}
+                    />
+                    <span className="font-mono text-xs peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4">
+                      {label}
+                    </span>
+                    <span className="text-xs">
+                      {detail}
+                      {id === recommendedMode && (
+                        <span className="mt-1 block">Empfohlen</span>
+                      )}
+                    </span>
+                  </label>
+                ))}
+            </div>
+          </fieldset>
+        }
+        <div className="my-5">
+          <p className="mb-2 text-sm text-muted-foreground">Euer Zeitrahmen</p>
+          <div className="grid grid-cols-4 gap-2">
+            {DURATIONS.map((d) => (
+              <button
+                key={d.label}
+                type="button"
+                aria-pressed={budget === d.v}
+                onClick={() => setBudget(d.v)}
+                className={cn(
+                  "min-h-11 border p-2 text-sm",
+                  budget === d.v ? "border-signal text-signal" : "border-line",
+                )}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Etwa {pacing.estimatedMinutes} Minuten ·{" "}
+            {Object.entries(pacing.rounds)
+              .map(
+                ([id, n]) =>
+                  `${gangGame(id)?.title}: ${n} ${id === "secret-missions" ? "Auftrag pro Person" : "Runden"}`,
+              )
+              .join(" · ")}
+          </p>
+          {!pacing.fits && (
+            <p role="alert" className="mt-2 text-primary">
+              Schon eine Runde pro Spiel braucht länger. Wähle mehr Zeit oder
+              weniger Spiele.
+            </p>
+          )}
+          {onePhone && !shared && count > 12 && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Bei {count} Personen zählt die Weitergabezeit mit. Eigene Handys
+              verkürzen die Wartezeit.
+            </p>
+          )}
+        </div>
+        {!onePhone && client ? (
+          <>
+            <div
+              data-testid="everyone-in-setup"
+              className="mt-5 border-l-2 border-signal pl-4"
+            >
+              <p className="font-mono text-[0.65rem] tracking-[0.2em] text-signal">
+                {stage
+                  ? "BIG SCREEN · DER RAUM SPIELT"
+                  : recommendedMode === "everyone-in"
+                    ? "PASST ZU DIESEM GAME · EVERYONE IN"
+                    : "EVERYONE IN · OPTIONAL"}
+              </p>
+              <h2 className="font-display mt-2 text-[clamp(2.4rem,10vw,3.8rem)] leading-[0.9]">
+                {stage ? "Der TV wird zur Bühne." : "Jede:r mit eigenem Handy."}
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {stage
+                  ? "TV oder Laptop zeigt Fragen, Countdowns und Ergebnisse für alle. Mitspielende treten per QR-Code bei; ihre Handys sind die Controller."
+                  : "Du öffnest den Raum, die anderen treten per QR-Code bei. Geheime Rollen und Antworten bleiben bis zur Auflösung verdeckt."}
+              </p>
+            </div>
+            {hostAllowed ? (
+              <>
+                {queue.includes("music-drop") && (
+                  <p className="my-3 text-sm text-muted-foreground">
+                    MUSIC DROP spielt ihr hier als Song-Voting. Für das Hörspiel
+                    mit eurer Musik-App oder Audiodateien wählt TV / Couch.
+                  </p>
+                )}
+                <HostSetup
+                  client={client}
+                  queue={missionQueue(queue)}
+                  rounds={pacing.rounds}
+                  budgetMinutes={budget}
+                  entry={entry}
+                  bigScreen={stage}
+                  onReady={(s, snap) => onRoom(s, snap, stage)}
+                />
+              </>
+            ) : (
+              <HostAccessSheet />
+            )}
+          </>
+        ) : (
+          <>
+            <p className="mt-3 font-mono text-[0.65rem] tracking-[0.2em] text-signal">
+              {shared
+                ? display === "couch"
+                  ? "TV / COUCH · ALLE SPIELEN MIT"
+                  : "EIN HANDY · DER RAUM SPIELT"
+                : recommendedMode === "one-phone"
+                  ? "PASST ZU DIESEM GAME · ONE PHONE"
+                  : "ONE PHONE · ALTERNATIVE"}
+            </p>
+
+            <h2 className="font-display mt-3 text-[clamp(2.8rem,12vw,4.5rem)] leading-[0.9]">
+              Ein Gerät reicht.
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {shared
+                ? "Öffnet die Bühne auf Laptop oder TV, oder legt das Handy in die Mitte. Ihr spielt laut und gemeinsam. Niemand tritt einem Raum bei."
+                : "Geheime Karten sieht immer nur die Person, die gerade dran ist. Spiegelt diesen Modus nicht auf einen TV."}
+            </p>
+            <h3 className="font-display mt-8 text-3xl leading-[0.95]">
+              Wer spielt mit?
+            </h3>
+            <div className="mt-6">
+              <Stepper
+                value={count}
+                min={range[0]}
+                max={range[1]}
+                onChange={setCount}
+                label="Anzahl Spieler"
+              />
+            </div>
+            <p className="mt-2 font-mono text-xs text-muted-foreground">
+              {range[0]}–{range[1]} SPIELER MÖGLICH
+            </p>
+            {count <= NAMED_LIMIT && (!shared || count <= 4) ? (
+              <ul className="mt-6 grid gap-1 sm:grid-cols-2">
+                {Array.from({ length: count }, (_, i) => (
+                  <li key={i}>
+                    <label className="sr-only" htmlFor={`gp-${i}`}>
+                      Name Spieler {i + 1}
+                    </label>
+                    <input
+                      id={`gp-${i}`}
+                      value={names[i] ?? ""}
+                      maxLength={24}
+                      autoComplete="off"
+                      placeholder={`Spieler ${i + 1}`}
+                      onChange={(e) => {
+                        const n = [...names];
+                        n[i] = e.target.value;
+                        setNames(n);
+                      }}
+                      className="min-h-12 w-full border-0 border-b border-line bg-transparent px-1 text-base text-foreground placeholder:text-muted-foreground/60 focus:border-signal focus:outline-none"
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-6 text-sm text-muted-foreground">
+                {shared
+                  ? "Teams bilden wir gleich gemeinsam. Namen eintippen ist nicht nötig."
+                  : `Ab ${NAMED_LIMIT + 1} Leuten heißt ihr automatisch Spieler 1–${count}. Merkt euch eure Nummer.`}
+              </p>
+            )}
+            {hostAllowed ? (
+              <button
+                type="button"
+                disabled={!ok}
+                onClick={() => {
+                  haptic(12);
+                  onStart(roster(count, names), pacing.rounds, display);
+                }}
+                className={cn(primary, "mt-auto pt-0")}
+              >
+                {queue.length > 1 ? "Night starten" : "Los"}
+              </button>
+            ) : (
+              <div className="mt-auto pt-6">
+                <HostAccessSheet />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </Overlay>
+  );
+}
+
+function NightSetup({
+  onLaunch,
+  onClose,
+}: {
+  onLaunch: (
+    queue: GangGameId[],
+    count: number,
+    rounds?: RoundPlan,
+    budgetMinutes?: 15 | 30 | 60 | null,
+    mode?: PlayMode,
+  ) => void;
+  onClose: () => void;
+}) {
+  const [step, setStep] = useState(0);
+  const [count, setCount] = useState(6);
+  const [vibe, setVibe] = useState<Vibe | null>(null);
+  const [dur, setDur] = useState<number | null | undefined>(undefined);
+  const [sideQuests, setSideQuests] = useState(false);
+  const [individual, setIndividual] = useState(false);
+  const [tv, setTv] = useState(true);
+  const [energy, setEnergy] = useState<1 | 2 | 3 | 4 | 5>(3);
+  const [mods, setMods] = useState<GameCapability[]>([]);
+  const [seed] = useState(() => Math.floor(Math.random() * 2 ** 31));
+  const plan = useMemo(
+    () =>
+      step === 4 && vibe
+        ? directorNight({
+            vibe,
+            duration: (dur ?? null) as 15 | 30 | 60 | null,
+            players: count,
+            caps: mods,
+            seed,
+            energy,
+            devices: {
+              connectedDevices: individual ? count : 1,
+              hasBigScreen: tv,
+              inputPreference: individual ? "individual" : "shared",
+            },
+          })
+        : null,
+    [step, vibe, dur, count, mods, seed, individual, tv, energy],
+  );
+  const queue = [
+    ...(individual && sideQuests && count >= 3 && count <= 30
+      ? ["secret-missions"]
+      : []),
+    ...(plan?.gameIds ?? []),
+  ] as GangGameId[];
+  const Choice = ({
+    on,
+    label,
+    onClick,
+  }: {
+    on: boolean;
+    label: string;
+    onClick: () => void;
+  }) => (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={() => {
+        haptic(5);
+        onClick();
+      }}
+      className={cn(
+        "tap flex min-h-16 w-full items-center justify-between border-b border-line text-left font-display text-[clamp(2rem,9vw,3rem)] leading-none transition-colors",
+        on ? "text-signal" : "text-foreground/80",
+      )}
+    >
+      {label}
+      {on && <Check className="size-6" />}
+    </button>
+  );
+  const steps = [
+    {
+      q: "Wie viele seid ihr?",
+      body: (
+        <>
+          <Stepper
+            value={count}
+            min={2}
+            max={99}
+            onChange={setCount}
+            label="Anzahl Spieler"
+          />
+          <div className="mt-6 grid gap-2">
+            <button
+              type="button"
+              aria-pressed={!individual}
+              className="min-h-12 border border-line p-3 text-left"
+              onClick={() => setIndividual(false)}
+            >
+              Ein gemeinsames Gerät · alle spielen im Raum
+            </button>
+            <button
+              type="button"
+              aria-pressed={individual}
+              className="min-h-12 border border-line p-3 text-left"
+              onClick={() => setIndividual(true)}
+            >
+              Alle haben ein eigenes Handy
+            </button>
+            <label className="flex min-h-12 items-center gap-3">
+              <input
+                type="checkbox"
+                checked={tv}
+                onChange={(e) => setTv(e.target.checked)}
+              />
+              TV oder Laptop vorhanden
+            </label>
+          </div>
+        </>
+      ),
+      ok: true,
+    },
+    {
+      q: "Welcher Vibe?",
+      body: (
+        <>
+          {VIBES.map((v) => (
+            <Choice
+              key={v}
+              label={v}
+              on={vibe === v}
+              onClick={() => setVibe(v)}
+            />
+          ))}
+          <label className="mt-6 block text-sm">
+            Wie viel Energie habt ihr gerade? · {energy}/5
+            <input
+              className="mt-3 w-full"
+              type="range"
+              min={1}
+              max={5}
+              value={energy}
+              onChange={(e) =>
+                setEnergy(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)
+              }
+            />
+          </label>
+        </>
+      ),
+      ok: !!vibe,
+    },
+    {
+      q: "Wie lange?",
+      body: DURATIONS.map((d) => (
+        <Choice
+          key={d.label}
+          label={d.label}
+          on={dur === d.v}
+          onClick={() => setDur(d.v)}
+        />
+      )),
+      ok: dur !== undefined,
+    },
+    {
+      q: "Extras? Optional.",
+      body: (
+        <>
+          {individual && count >= 3 && count <= 30 && (
+            <Choice
+              label="Geheime Nebenmissionen"
+              on={sideQuests}
+              onClick={() => setSideQuests(!sideQuests)}
+            />
+          )}{" "}
+          {MODULES.map((m) => (
+            <Choice
+              key={m.label}
+              label={m.label}
+              on={mods.includes(m.cap)}
+              onClick={() =>
+                setMods(
+                  mods.includes(m.cap)
+                    ? mods.filter((x) => x !== m.cap)
+                    : [...mods, m.cap],
+                )
+              }
+            />
+          ))}
+        </>
+      ),
+      ok: true,
+    },
+  ];
+  return (
+    <Overlay
+      label={`START MY NIGHT · ${Math.min(step + 1, 5)}/5`}
+      onClose={onClose}
+    >
+      <div className="mt-1 flex gap-1" aria-hidden>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <span
+            key={i}
+            className={cn("h-0.5 flex-1", i <= step ? "bg-signal" : "bg-line")}
+          />
+        ))}
+      </div>
+      {step > 0 && (
+        <button
+          type="button"
+          onClick={() => setStep(step - 1)}
+          className="tap mt-2 flex min-h-11 items-center gap-2 self-start text-sm text-muted-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          Zurück
+        </button>
+      )}
+      {step < 4 ? (
+        <div className="flex flex-1 flex-col">
+          <h2 className="font-display mt-6 text-[clamp(2.8rem,12vw,4.5rem)] leading-[0.9]">
+            {steps[step]!.q}
+          </h2>
+          <div key={step} className="mt-6 motion-safe:animate-rise">
+            {steps[step]!.body}
+          </div>
+          <button
+            type="button"
+            disabled={!steps[step]!.ok}
+            onClick={() => {
+              haptic(10);
+              setStep(step + 1);
+            }}
+            className={cn(primary, "mt-auto")}
+          >
+            {step === 3 ? "Night zusammenstellen" : "Weiter"}
+          </button>
+        </div>
+      ) : (
+        <div
+          className="flex flex-1 flex-col motion-safe:animate-rise"
+          data-testid="night-summary"
+        >
+          <p className="mt-6 font-mono text-xs tracking-[0.2em] text-signal">
+            TONIGHT · {count} SPIELER · ~{plan?.estimatedMinutes ?? 0} MIN
+          </p>
+          <ol className="mt-4 border-t border-line">
+            {queue.map((id, i) => {
+              const g = gangGame(id)!;
+              return (
+                <li
+                  key={id}
+                  style={hueVars(g.hue)}
+                  className="flex min-h-14 items-center gap-3 border-b border-line"
+                >
+                  <span className="w-6 font-mono text-xs text-[var(--g)]">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate font-display text-2xl">
+                    {g.title}
+                  </span>
+                  <MotifArt motif={g.motif} className="w-10" />
+                </li>
+              );
+            })}
+          </ol>
+          {queue.length === 0 && (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Diese Kombi passt noch nicht. Ändere Gruppengröße oder Extras.
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={!queue.length}
+            onClick={() =>
+              onLaunch(
+                queue,
+                count,
+                plan?.roundsByGame,
+                (dur ?? null) as 15 | 30 | 60 | null,
+                individual ? "everyone-in" : tv ? "big-screen" : "one-phone",
+              )
+            }
+            className={cn(primary, "mt-auto")}
+          >
+            Night starten
+          </button>
+        </div>
+      )}
+    </Overlay>
+  );
+}
+
+function GameCard({
+  g,
+  big,
+  mix,
+  mixCount,
+  selected,
+  onOpen,
+  onToggle,
+}: {
+  g: GangGame;
+  big: boolean;
+  mix: boolean;
+  mixCount: number;
+  selected: boolean;
+  onOpen: () => void;
+  onToggle: () => void;
+}) {
+  const fits = fitsPlayers(g, mixCount);
+  const reason =
+    mixCount < g.min ? `Ab ${g.min} Spielern` : `Bis ${g.max} Spieler`;
+  return (
+    <li
+      style={hueVars(g.hue)}
+      className={cn(
+        "relative flex flex-col overflow-hidden border-t-2 bg-room p-5",
+        big ? "min-h-80 sm:col-span-2" : "min-h-56",
+        selected ? "border-signal" : "border-[var(--g)]",
+        mix && !fits && "opacity-50",
+      )}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-60"
+        style={{
+          background:
+            "radial-gradient(120% 80% at 100% 0%, var(--g-deep), transparent 60%)",
+        }}
+      />
+      <MotifArt
+        motif={g.motif}
+        className={cn("absolute right-3 top-8", big ? "w-40 sm:w-52" : "w-24")}
+      />
+      <div className="relative flex items-center justify-between gap-2">
+        <PlayableBadge g={g} />
+        <span className="font-mono text-xs text-muted-foreground">
+          {g.min}–{g.max} · {g.minutes[0]}–{g.minutes[1]} min
+        </span>
+      </div>
+      <h3
+        className={cn(
+          "relative mt-auto pt-16 font-display leading-[0.9] tracking-tight",
+          big ? "text-[clamp(2.4rem,10vw,4rem)]" : "text-3xl",
+        )}
+      >
+        {g.title}
+      </h3>
+      <p className="relative mt-2 max-w-sm text-foreground/85">{g.hook}</p>
+      <p className="relative mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+        {g.tags.map((t) => (
+          <span key={t} className="text-[var(--g)]">
+            #{t}
+          </span>
+        ))}
+      </p>
+      {mix ? (
+        fits ? (
+          <button
+            type="button"
+            aria-pressed={selected}
+            onClick={() => {
+              haptic(6);
+              onToggle();
+            }}
+            className={cn(
+              btn({ variant: selected ? "primary" : "outline", size: "sm" }),
+              "relative mt-4 self-start",
+              selected && "bg-signal text-signal-foreground hover:bg-signal/90",
+            )}
+          >
+            {selected ? (
+              <>
+                <Check className="size-4" /> Im Mix
+              </>
+            ) : (
+              `${g.title} zum Mix`
+            )}
+          </button>
+        ) : (
+          <p className="relative mt-4 text-xs text-muted-foreground">
+            {reason} – passt nicht zu {mixCount}.
+          </p>
+        )
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            haptic(6);
+            onOpen();
+          }}
+          aria-label={`${g.title} öffnen`}
+          className={cn(
+            btn({ size: "sm" }),
+            "relative mt-4 self-start bg-signal text-signal-foreground hover:bg-signal/90",
+          )}
+        >
+          Spielen
+        </button>
+      )}
+    </li>
+  );
+}
+
+function recommendPlayMode(queue: GangGameId[]): PlayMode {
+  const games = queue
+    .map((id) => gangGame(id))
+    .filter((g): g is GangGame => Boolean(g));
+  if (!games.length) return "one-phone";
+  if (queue.every(couchGame)) return "big-screen";
+  const preferred = games.map((g) => g.interactionModes[0]);
+  if (preferred.every((mode) => mode === "one-phone")) return "one-phone";
+  if (
+    preferred.some((mode) => mode === "everyone-in") &&
+    games.every((g) => g.interactionModes.includes("everyone-in"))
+  ) {
+    return "everyone-in";
+  }
+  if (
+    preferred.some((mode) => mode === "big-screen") &&
+    games.every((g) => g.interactionModes.includes("big-screen"))
+  ) {
+    return "big-screen";
+  }
+  if (games.every((g) => g.interactionModes.includes("one-phone")))
+    return "one-phone";
+  if (games.every((g) => g.interactionModes.includes("everyone-in")))
+    return "everyone-in";
+  return "one-phone";
+}
+
+const MODES = [
+  [
+    "BIG SCREEN",
+    "DER RAUM SPIELT",
+    "TV oder Laptop wird zur gemeinsamen Bühne für Fragen, Musik, Countdowns und Ergebnisse. Perfekt für Games, die vom ganzen Raum leben.",
+  ],
+  [
+    "ONE PHONE",
+    "EIN GERÄT REICHT",
+    "Ein Handy liegt in der Mitte oder führt durch die Runde. Ideal für Zurufen, Schätzen, Diskutieren, Bluffen und gemeinsame Entscheidungen.",
+  ],
+  [
+    "EVERYONE IN",
+    "WENN ES MEHR BRINGT",
+    "Bei geheimen Rollen, Buzzern oder privaten Antworten treten alle per QR-Code bei. Das eigene Handy wird Teil der Mechanik – nicht zur Pflicht.",
+  ],
+] as const;
+
+export function GangMode({
+  back,
+  hostAllowed = false,
+  initialGame,
+}: {
+  back?: React.ReactNode;
+  hostAllowed?: boolean;
+  initialGame?: GangGameId | undefined;
+}) {
+  const [flow, setFlow] = useState<Flow>(
+    initialGame ? { k: "sheet", id: initialGame } : null,
+  );
+  const [client, setClient] = useState<RoomClient | null>(null);
+  const [resume, setResume] = useState<StoredSession | null>(null);
+  useEffect(() => {
+    setClient(defaultRoomClient());
+    setResume(sessionStore.get("player"));
+  }, []);
+  const [night, setNight] = useState(false);
+  const [mix, setMix] = useState(false);
+  const [mixCount, setMixCount] = useState(5);
+  const [sel, setSel] = useState<GangGameId[]>([]);
+  const [tag, setTag] = useState<string | null>(null);
+  const list = useMemo(
+    () => (tag ? GANG_GAMES.filter((g) => g.tags.includes(tag)) : GANG_GAMES),
+    [tag],
+  );
+  const go = (id: string) =>
+    document.getElementById(id)?.scrollIntoView?.({
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  const move = (i: number, d: -1 | 1) => {
+    const n = [...sel];
+    [n[i], n[i + d]] = [n[i + d]!, n[i]!];
+    setSel(n);
+  };
+  const toggle = (id: GangGameId) =>
+    setSel(sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]);
+  const changeCount = (n: number) => {
+    setMixCount(n);
+    setSel((s) => s.filter((id) => fitsPlayers(gangGame(id)!, n)));
+  };
+  const mixRange = (): [number, number] => {
+    const gs = sel.map((id) => gangGame(id)!);
+    return [
+      Math.max(2, ...gs.map((g) => g.min)),
+      Math.min(99, ...gs.map((g) => g.max)),
+    ];
+  };
+
+  const PATHS = [
+    {
+      k: "01",
+      t: "START MY NIGHT",
+      d: "Gruppe, Vibe, Dauer – der Party Director baut euren Abend.",
+      on: () => {
+        haptic(10);
+        setNight(true);
+      },
+    },
+    {
+      k: "02",
+      t: "CHOOSE A GAME",
+      d: "Ein Spiel antippen, Spieler eintragen, los.",
+      on: () => {
+        setMix(false);
+        go("katalog");
+      },
+    },
+    {
+      k: "03",
+      t: "BUILD A MIX",
+      d: "Mehrere Spiele in deiner Reihenfolge.",
+      on: () => {
+        haptic(6);
+        setMix(true);
+        go("katalog");
+      },
+    },
+  ];
+
+  return (
+    <main className="min-h-svh overflow-x-hidden bg-room pb-40 text-foreground">
+      <header className="relative overflow-hidden safe-x safe-top">
+        <div className="mx-auto max-w-6xl">
+          <nav className="flex min-h-14 items-center justify-between">
+            {back}
+            <span className="font-mono text-xs tracking-[0.25em] text-signal">
+              NOCTURNE
+            </span>
+          </nav>
+          <div aria-hidden className="mt-6 flex h-16 items-end gap-1">
+            {Array.from({ length: 28 }, (_, i) => (
+              <span
+                key={i}
+                className="animate-gang-pulse w-full bg-signal"
+                style={{
+                  height: `${30 + ((i * 37) % 70)}%`,
+                  animationDelay: `${(i * 97) % 1400}ms`,
+                  opacity: 0.25 + ((i * 13) % 10) / 14,
+                }}
+              />
+            ))}
+          </div>
+          <p className="mt-6 font-mono text-xs tracking-[0.25em] text-signal">
+            GANG MODE · 2–99 PLAYERS · 16 SPIELE
+          </p>
+          <h1 className="font-display mt-3 text-[clamp(3.6rem,17vw,9rem)] leading-[0.82] tracking-tight">
+            Der ganze Raum
+            <br />
+            <em className="text-signal">wird zum Spiel.</em>
+          </h1>
+          <p className="mt-5 max-w-xl text-lg text-foreground/85">
+            Auf dem TV. Mit einem Handy. Oder mit allen. GANG MODE nutzt die
+            Spielweise, die zum Game passt – ohne Setup-Stress, ohne Regelrunde,
+            ohne dass automatisch jede:r auf einen eigenen Bildschirm muss.
+          </p>
+        </div>
+      </header>
+
+      <section
+        aria-labelledby="paths-h"
+        className="mx-auto mt-12 max-w-6xl safe-x"
+      >
+        <h2 id="paths-h" className="sr-only">
+          Drei Wege in die Nacht
+        </h2>
+        <ul className="grid border-t border-line sm:grid-cols-3 sm:border-t-0">
+          {PATHS.map((p) => (
+            <li key={p.k}>
+              <button
+                type="button"
+                onClick={p.on}
+                className="tap group flex min-h-32 w-full flex-col border-b border-line py-5 text-left sm:min-h-56 sm:border-b-0 sm:border-t-2 sm:border-t-signal sm:pr-6"
+              >
+                <span className="font-mono text-xs text-signal">{p.k}</span>
+                <span className="font-display mt-2 text-[clamp(2.2rem,9vw,3.2rem)] leading-[0.9] transition-transform duration-300 group-hover:translate-x-1">
+                  {p.t}
+                </span>
+                <span className="mt-2 text-sm text-muted-foreground">
+                  {p.d}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section
+        aria-labelledby="modes-h"
+        className="mx-auto mt-20 max-w-6xl safe-x"
+      >
+        <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground">
+          SO WIRD GESPIELT
+        </p>
+        <h2
+          id="modes-h"
+          className="font-display mt-2 text-[clamp(2.4rem,10vw,4rem)] leading-[0.95]"
+        >
+          Drei Spielweisen. Eine Game Night.
+        </h2>
+        <ol className="mt-8 grid gap-6 sm:grid-cols-3">
+          {MODES.map(([t, tag, d]) => (
+            <li key={t} className="border-l border-signal pl-4">
+              <p className="font-mono text-[0.65rem] tracking-[0.2em] text-signal">
+                {tag}
+              </p>
+              <h3 className="mt-2 font-display text-3xl">{t}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{d}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section
+        id="katalog"
+        aria-labelledby="katalog-h"
+        className="mx-auto mt-20 max-w-6xl scroll-mt-4 safe-x"
+      >
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="font-mono text-xs tracking-[0.2em] text-signal">
+              {mix ? "BUILD A MIX" : "CHOOSE A GAME"} · {GANG_GAMES.length}{" "}
+              SPIELE
+            </p>
+            <h2
+              id="katalog-h"
+              className="font-display mt-2 text-[clamp(2.4rem,10vw,4.5rem)] leading-[0.92]"
+            >
+              Der Katalog.
+            </h2>
+          </div>
+          <button
+            type="button"
+            aria-pressed={mix}
+            onClick={() => {
+              haptic(6);
+              setMix(!mix);
+            }}
+            className={btn({ variant: "outline", size: "sm" })}
+          >
+            {mix ? "Mix beenden" : "Mix bauen"}
+          </button>
+        </div>
+        {mix && (
+          <div className="mt-6 flex flex-wrap items-center gap-4">
+            <span className="font-mono text-xs tracking-[0.15em] text-muted-foreground">
+              IHR SEID
+            </span>
+            <Stepper
+              value={mixCount}
+              min={2}
+              max={99}
+              onChange={changeCount}
+              label="Spieler im Mix"
+            />
+          </div>
+        )}
+        <div
+          className="mt-6 -mx-1 flex gap-1 overflow-x-auto pb-2"
+          role="group"
+          aria-label="Nach Gefühl filtern"
+        >
+          {[null, ...GANG_TAGS].map((t) => (
+            <button
+              key={t ?? "all"}
+              type="button"
+              aria-pressed={tag === t}
+              onClick={() => setTag(t)}
+              className={cn(
+                "tap min-h-11 shrink-0 px-3 font-mono text-xs tracking-[0.15em] transition-colors",
+                tag === t
+                  ? "border-b-2 border-signal text-signal"
+                  : "text-muted-foreground",
+              )}
+            >
+              {t ? t.toUpperCase() : "ALLE"}
+            </button>
+          ))}
+        </div>
+        <ul className="mt-4 grid gap-px sm:grid-cols-2 lg:grid-cols-4">
+          {list.map((g, i) => (
+            <GameCard
+              key={g.id}
+              g={g}
+              big={i < 2}
+              mix={mix}
+              mixCount={mixCount}
+              selected={sel.includes(g.id)}
+              onOpen={() => setFlow({ k: "sheet", id: g.id })}
+              onToggle={() => toggle(g.id)}
+            />
+          ))}
+        </ul>
+        {list.length === 0 && (
+          <p className="py-10 text-muted-foreground">
+            Kein Spiel mit diesem Gefühl.
+          </p>
+        )}
+      </section>
+
+      <nav
+        aria-label="Spielanleitungen"
+        className="mx-auto mt-12 max-w-6xl safe-x"
+      >
+        <h2 className="eyebrow">Alle Regeln & Beispielrunden</h2>
+        <ul className="mt-3 flex flex-wrap gap-x-5">
+          {GANG_GAMES.map((g) => (
+            <li key={g.id}>
+              <a
+                href={`/gang/${g.id}`}
+                className="tap inline-flex min-h-12 items-center text-sm text-muted-foreground hover:text-foreground"
+              >
+                {g.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      {mix && (
+        <aside
+          aria-label="Dein Mix"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-signal/40 bg-room/95 backdrop-blur safe-x safe-bottom"
+        >
+          <div className="mx-auto max-w-6xl py-3">
+            {sel.length > 0 && (
+              <ol className="mb-3 max-h-[36svh] divide-y divide-line overflow-y-auto">
+                {sel.map((id, i) => {
+                  const g = gangGame(id)!;
+                  return (
+                    <li key={id} className="flex min-h-12 items-center gap-2">
+                      <span className="w-6 font-mono text-xs text-signal">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate font-display text-xl">
+                        {g.title}
+                      </span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        ~{avgMinutes(g)}′
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`${g.title} nach oben`}
+                        disabled={i === 0}
+                        onClick={() => move(i, -1)}
+                        className="tap flex size-11 items-center justify-center disabled:opacity-30"
+                      >
+                        <ArrowUp className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`${g.title} nach unten`}
+                        disabled={i === sel.length - 1}
+                        onClick={() => move(i, 1)}
+                        className="tap flex size-11 items-center justify-center disabled:opacity-30"
+                      >
+                        <ArrowDown className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`${g.title} entfernen`}
+                        onClick={() => toggle(id)}
+                        className="tap flex size-11 items-center justify-center"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1" aria-live="polite">
+                <p className="font-mono text-xs tracking-[0.15em] text-signal">
+                  {sel.length} {sel.length === 1 ? "SPIEL" : "SPIELE"} · ~
+                  {mixMinutes(sel)} MIN · {mixCount} SPIELER
+                </p>
+                <p
+                  className="truncate text-sm text-muted-foreground"
+                  data-testid="mix-order"
+                >
+                  {sel.length
+                    ? sel.map((id) => gangGame(id)!.title).join(" → ")
+                    : "Wähle Spiele für deinen Mix."}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={!sel.length}
+                onClick={() => {
+                  haptic(10);
+                  setFlow({
+                    k: "setup",
+                    queue: sel,
+                    range: mixRange(),
+                    count: mixCount,
+                    entry: "mix",
+                  });
+                }}
+                className={cn(
+                  btn({ size: "md" }),
+                  "shrink-0 bg-signal text-signal-foreground hover:bg-signal/90",
+                )}
+              >
+                Mix starten
+              </button>
+            </div>
+          </div>
+        </aside>
+      )}
+
+      {night && (
+        <NightSetup
+          onClose={() => setNight(false)}
+          onLaunch={(queue, count, rounds, budgetMinutes, preferredMode) => {
+            setNight(false);
+            setFlow({
+              k: "setup",
+              queue,
+              rounds,
+              budgetMinutes,
+              preferredMode,
+              range: [count, count],
+              count,
+              entry: "director",
+            });
+          }}
+        />
+      )}
+      {flow?.k === "sheet" &&
+        (() => {
+          const g = gangGame(flow.id)!;
+          return (
+            <GameSheet
+              g={g}
+              onClose={() => setFlow(null)}
+              onStart={() =>
+                setFlow({
+                  k: "setup",
+                  queue: [g.id],
+                  range: [g.min, g.max],
+                  count: Math.max(g.min, 4),
+                  entry: "catalog",
+                })
+              }
+            />
+          );
+        })()}
+      {flow?.k === "setup" && (
+        <PlayerSetup
+          queue={flow.queue}
+          rounds={flow.rounds}
+          budgetMinutes={flow.budgetMinutes}
+          range={flow.range}
+          initial={flow.count}
+          preferredMode={flow.preferredMode}
+          entry={flow.entry}
+          client={client}
+          hostAllowed={hostAllowed}
+          onClose={() => setFlow(null)}
+          onStart={(players, rounds, display) =>
+            setFlow({ k: "play", queue: flow.queue, players, rounds, display })
+          }
+          onRoom={(session, snap, bigScreen) => {
+            setResume(null);
+            setFlow({ k: "room", session, snap, bigScreen });
+          }}
+        />
+      )}
+      {flow?.k === "room" && client && (
+        <GangRoom
+          client={client}
+          session={flow.session}
+          initial={flow.snap}
+          bigScreen={flow.bigScreen}
+          onExit={() => {
+            setResume(sessionStore.get("player"));
+            setFlow(null);
+          }}
+        />
+      )}
+      {resume && !flow && client && (
+        <div className="fixed inset-x-0 top-0 z-40 border-b border-signal/40 bg-room/95 backdrop-blur safe-x safe-top">
+          <div className="mx-auto flex min-h-14 max-w-6xl items-center justify-between gap-3">
+            <span className="font-mono text-xs tracking-[0.2em] text-signal">
+              RAUM {resume.code} LÄUFT NOCH
+            </span>
+            <span className="flex gap-1">
+              <button
+                type="button"
+                onClick={() =>
+                  setFlow({
+                    k: "room",
+                    session: resume,
+                    snap: null,
+                    bigScreen: false,
+                  })
+                }
+                className={cn(
+                  btn({ size: "sm" }),
+                  "bg-signal text-signal-foreground",
+                )}
+              >
+                Zurück in den Raum
+              </button>
+              <button
+                type="button"
+                aria-label="Hinweis schließen"
+                onClick={() => setResume(null)}
+                className="tap flex size-11 items-center justify-center"
+              >
+                <X className="size-4" />
+              </button>
+            </span>
+          </div>
+        </div>
+      )}
+      {flow?.k === "play" &&
+        (flow.queue.every(couchGame) ? (
+          <GangSharedNight
+            queue={flow.queue}
+            display={flow.display ?? "couch"}
+            rounds={flow.rounds}
+            players={flow.players}
+            onExit={() => setFlow(null)}
+          />
+        ) : (
+          <GangPlayer
+            queue={flow.queue}
+            rounds={flow.rounds}
+            players={flow.players}
+            onExit={() => setFlow(null)}
+          />
+        ))}
+    </main>
+  );
+}

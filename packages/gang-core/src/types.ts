@@ -1,11 +1,7 @@
 export type GangEntryMode = "director" | "catalog" | "mix";
 
 export type InteractionMode =
-  | "one-phone"
-  | "everyone-in"
-  | "big-screen"
-  | "team-device"
-  | "mixed";
+  "one-phone" | "everyone-in" | "big-screen" | "team-device" | "mixed";
 
 export type ScaleBand = "duo-small" | "core-party" | "large-party" | "crowd";
 
@@ -61,6 +57,7 @@ export interface GangPreferences {
 export interface DeviceContext {
   connectedDevices: number;
   hasBigScreen: boolean;
+  inputPreference?: "shared" | "individual";
 }
 
 export interface DirectorHistoryItem {
@@ -73,6 +70,7 @@ export interface DirectorContext {
   preferences: GangPreferences;
   history: DirectorHistoryItem[];
   deviceContext: DeviceContext;
+  seed?: number;
 }
 
 export interface DirectorPick {
@@ -91,8 +89,11 @@ export interface GangPlan {
   entryMode: GangEntryMode;
   gameIds: string[];
   estimatedMinutes: number;
+  /** Actual round limits consumed by every runtime adapter. */
+  roundsByGame?: Record<string, number>;
+  budgetMinutes?: number | null;
+  modesByGame?: Record<string, InteractionMode>;
 }
-
 
 export type GangRoomPhase = "lobby" | "playing" | "paused" | "finished";
 
@@ -131,7 +132,13 @@ export interface GangRoomState {
 }
 
 export type GangRoomEvent =
-  | { type: "PLAYER_JOIN"; playerId: string; displayName: string; deviceId?: string; at: number }
+  | {
+      type: "PLAYER_JOIN";
+      playerId: string;
+      displayName: string;
+      deviceId?: string;
+      at: number;
+    }
   | { type: "PLAYER_LEAVE"; playerId: string; at: number }
   | { type: "PLAYER_SEEN"; playerId: string; at: number }
   | { type: "DEVICE_JOIN"; device: GangDevice; at: number }

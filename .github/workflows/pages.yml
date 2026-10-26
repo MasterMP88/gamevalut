@@ -49,10 +49,13 @@ jobs:
         with:
           enablement: true
 
+      - name: Package legacy public files only
+        run: node scripts/package-pages.mjs
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: .pages-public
 
       - name: Deploy to GitHub Pages
         id: deployment

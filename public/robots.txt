@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /tonight
+Disallow: /auth
+Disallow: /reset-password
+
+Sitemap: https://nocturne-games-for-two.lovable.app/sitemap.xml

@@ -34,6 +34,7 @@ function actionFor(state, playerId, index) {
     };
   }
 
+  if (view.stage === "private" && state.gameId === "after-dark") return {playerId, success:true};
   if (view.stage === "predict" || view.stage === "private") {
     const optionId = first ?? state.round.prompt.options?.[0] ?? "A";
     return { playerId, optionId, value: optionId };
@@ -84,7 +85,7 @@ function completeSession(playbook, playerCount, seed) {
   let guard = 0;
   let lastRound = 1;
 
-  while (!state.finished && guard < expectedRounds * 20) {
+  while (!state.finished && guard < expectedRounds * (playerCount * 6 + 12)) {
     guard += 1;
 
     // Public payloads for secret-role games must never contain any private payload.
@@ -129,7 +130,8 @@ function completeSession(playbook, playerCount, seed) {
 
   assert.equal(state.finished, true, `${playbook.id} did not finish; last round ${lastRound}`);
   assert.equal(state.roundNumber, expectedRounds, `${playbook.id} finished on wrong round`);
-  assert.ok(state.winnerIds.length >= 1, `${playbook.id} must resolve at least one winner/tied leader`);
+  const maxScore = Math.max(...Object.values(state.scores));
+  assert.equal(state.winnerIds.length > 0, maxScore > 0, `${playbook.id}: zero scores must not manufacture winners`);
   assert.ok(state.winnerIds.every((id) => state.players.some((p) => p.id === id)));
   return state;
 }

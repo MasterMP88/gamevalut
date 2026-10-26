@@ -24,11 +24,6 @@ export interface AccessDecision {
 
 export const GANG_GUESTS_REQUIRE_ACCOUNT = false;
 export const GANG_GUESTS_REQUIRE_PAYMENT = false;
-export const GANG_HOST_PRODUCT_KEYS: readonly ProductKey[] = [
-  "night_pass_72h",
-  "unlimited_monthly",
-  "unlimited_annual",
-];
 
 /** An active paid entitlement is usable only inside its optional time window. */
 export function isActiveEntitlement(
@@ -36,17 +31,8 @@ export function isActiveEntitlement(
   nowMs = Date.now(),
 ): boolean {
   if (entitlement.status !== "active") return false;
-
-  if (entitlement.startsAt) {
-    const startsAtMs = Date.parse(entitlement.startsAt);
-    if (!Number.isFinite(startsAtMs) || startsAtMs > nowMs) return false;
-  }
-
-  if (entitlement.endsAt) {
-    const endsAtMs = Date.parse(entitlement.endsAt);
-    if (!Number.isFinite(endsAtMs) || endsAtMs <= nowMs) return false;
-  }
-
+  if (entitlement.startsAt && (!Number.isFinite(Date.parse(entitlement.startsAt)) || Date.parse(entitlement.startsAt) > nowMs)) return false;
+  if (entitlement.endsAt && (!Number.isFinite(Date.parse(entitlement.endsAt)) || Date.parse(entitlement.endsAt) <= nowMs)) return false;
   return true;
 }
 
@@ -54,11 +40,7 @@ export function hasPaidAccess(
   entitlements: readonly Entitlement[],
   nowMs = Date.now(),
 ): boolean {
-  return entitlements.some(
-    (entitlement) =>
-      GANG_HOST_PRODUCT_KEYS.includes(entitlement.productKey as ProductKey) &&
-      isActiveEntitlement(entitlement, nowMs),
-  );
+  return entitlements.some((entitlement) => ["night_pass_72h", "unlimited_monthly", "unlimited_annual"].includes(entitlement.productKey) && isActiveEntitlement(entitlement, nowMs));
 }
 
 /**
@@ -92,7 +74,7 @@ export function accessForCoupleScene(
  */
 export function accessForGangHost(
   entitlements: readonly Entitlement[],
-  allowedHostProductKeys: readonly string[] = GANG_HOST_PRODUCT_KEYS,
+  allowedHostProductKeys: readonly string[],
   nowMs = Date.now(),
 ): AccessDecision {
   const allowed = entitlements.some(

@@ -1,3 +1,4 @@
+import { couchGame } from "./experience.js";
 import type {
   DeviceContext,
   GangGameDefinition,
@@ -7,49 +8,39 @@ import type {
 } from "./types.js";
 import { scaleBandFor } from "./catalog.js";
 
-/**
- * Premium device policy:
- * - BIG SCREEN is an enhancement of multi-device play, not a separate host-only mode.
- * - EVERYONE IN is only claimed when every active player has an input device.
- * - MIXED / TEAM DEVICE bridge partial device coverage.
- * - ONE PHONE is the final fallback, never the preferred multi-device experience.
- */
+/** Authored game fit wins over device count. A TV never makes private cards public. */
 export function preferredInteractionMode(
   game: GangGameDefinition,
   preferences: GangPreferences,
   devices: DeviceContext,
 ): InteractionMode {
   const allowed = new Set(game.interactionModes);
-  const band: ScaleBand = scaleBandFor(preferences.playerCount);
-  const everyPlayerHasDevice = devices.connectedDevices >= preferences.playerCount;
-  const hasSharedControllers = devices.connectedDevices >= Math.min(2, preferences.playerCount);
-
-  if (devices.hasBigScreen && hasSharedControllers && allowed.has("big-screen")) {
-    return "big-screen";
-  }
-  if (everyPlayerHasDevice && allowed.has("everyone-in")) {
+  if (couchGame(game.id) && devices.inputPreference !== "individual")
+    return devices.hasBigScreen ? "big-screen" : "one-phone";
+  if (
+    devices.connectedDevices >= preferences.playerCount &&
+    allowed.has("everyone-in")
+  )
     return "everyone-in";
-  }
-  if (devices.connectedDevices >= 2 && allowed.has("mixed")) {
-    return "mixed";
-  }
-  if (allowed.has("team-device") && preferences.playerCount >= 6) {
+  if (
+    devices.hasBigScreen &&
+    devices.connectedDevices >= 2 &&
+    allowed.has("big-screen")
+  )
+    return "big-screen";
+  if (devices.connectedDevices >= 2 && allowed.has("team-device"))
     return "team-device";
-  }
-  if (allowed.has("one-phone")) {
-    return "one-phone";
-  }
-
-  // Defensive fallbacks for unusually constrained game declarations.
-  if (band !== "duo-small" && allowed.has("team-device")) return "team-device";
-  return game.interactionModes[0]!;
+  if (devices.connectedDevices >= 2 && allowed.has("mixed")) return "mixed";
+  return "one-phone";
 }
 
 export function estimatedGameMinutes(game: GangGameDefinition): number {
   return Math.round((game.durationMinutes[0] + game.durationMinutes[1]) / 2);
 }
 
-export function targetGameCount(durationMinutes: GangPreferences["durationMinutes"]): number {
+export function targetGameCount(
+  durationMinutes: GangPreferences["durationMinutes"],
+): number {
   if (durationMinutes === null) return 6;
   if (durationMinutes <= 15) return 2;
   if (durationMinutes <= 30) return 4;
