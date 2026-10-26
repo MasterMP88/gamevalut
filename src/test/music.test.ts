@@ -34,7 +34,8 @@ describe("PASS//THE AUX registry", () => {
     const pool = poolFor(GAMES_BY_ID["pass-the-aux"], SCENES);
     expect(pool.length).toBeGreaterThanOrEqual(40);
     expect(pool.every((s) => s.type === "MUSIC" && s.music)).toBe(true);
-    for (const m of ["solo", "duet", "guess", "speed", "consensus"]) expect(pool.filter((s) => s.music?.mode === m).length, m).toBeGreaterThanOrEqual(6);\n    expect(pool.filter((s) => s.music?.signature).length).toBeGreaterThanOrEqual(40);
+    for (const m of ["solo", "duet", "guess", "speed", "consensus"]) expect(pool.filter((s) => s.music?.mode === m).length, m).toBeGreaterThanOrEqual(6);
+    expect(pool.filter((s) => s.music?.signature).length).toBeGreaterThanOrEqual(40);
     for (const g of GAMES.filter((x) => x.id !== "pass-the-aux")) expect(poolFor(g, SCENES).some((s) => s.type === "MUSIC"), g.id).toBe(false);
   });
 });
