@@ -7,7 +7,8 @@ import { HostAccessSheet } from "@/components/commerce/HostAccessSheet";
 import { ENDINGS } from "@/components/player/EndScreen";
 import { EnergyField } from "@/components/player/EnergyField";
 import { fill, nightSignature } from "@/lib/game/engine";
-import { GAMES_BY_ID } from "@/lib/game/games";\nimport { MUSIC_VIBES } from "@/lib/game/music-scenes";
+import { GAMES_BY_ID } from "@/lib/game/games";
+import { MUSIC_VIBES } from "@/lib/game/music-scenes";
 import type { ConsentSettings, GameId, MusicReaction } from "@/lib/game/types";
 import { recordSeen, seenIds } from "@/lib/content-history";
 import {
