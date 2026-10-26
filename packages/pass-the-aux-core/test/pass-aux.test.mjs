@@ -16,6 +16,7 @@ const solo = makeAuxRound({ id: "r1", type: "SOLO_PICK", promptIndex: 0, activeP
 const duet = makeAuxRound({ id: "r2", type: "DUET_PICK", promptIndex: 0, activePlayer: 0 });
 const guess = makeAuxRound({ id: "r3", type: "GUESS", promptIndex: 0, activePlayer: 1 });
 const speed = makeAuxRound({ id: "r4", type: "SPEED_PICK", promptIndex: 0, activePlayer: 0 });
+const consensus = makeAuxRound({ id: "r5", type: "CONSENSUS", promptIndex: 0, activePlayer: 0 });
 const pickA = { title: "Song A", artist: "Artist A" };
 const pickB = { title: "Song B", artist: "Artist B" };
 
@@ -65,9 +66,9 @@ test("guess round collects prediction before revealing the hidden song", () => {
   s = auxReducer(s, { type: "CONFIRM_HANDOFF" });
   assert.equal(s.current?.stage, "PREDICTION");
   assert.equal(visibleAuxRound(s)?.prediction, null);
-  s = auxReducer(s, { type: "SUBMIT_PREDICTION", prediction: "unerwartet" });
+  s = auxReducer(s, { type: "SUBMIT_PREDICTION", prediction: "chaos" });
   assert.equal(s.current?.stage, "REVEAL");
-  assert.equal(visibleAuxRound(s)?.prediction, "unerwartet");
+  assert.equal(visibleAuxRound(s)?.prediction, "chaos");
 });
 
 test("speed expiry never fails or blocks picking", () => {
@@ -107,7 +108,7 @@ test("exact same song is detected automatically without a reaction choice", () =
   assert.deepEqual(s.reactions, ["MATCH"]);
 });
 
-test("different duet songs complete without requiring any reaction", () => {
+test("different duet songs require a human reveal verdict", () => {
   let s = createAuxSession(["A", "B"]);
   s = auxReducer(s, { type: "LOAD_ROUND", round: duet });
   s = auxReducer(s, { type: "START_PICK" });
@@ -115,9 +116,13 @@ test("different duet songs complete without requiring any reaction", () => {
   s = auxReducer(s, { type: "CONFIRM_HANDOFF" });
   s = auxReducer(s, { type: "SUBMIT_PICK", player: 1, pick: pickB });
   s = auxReducer(s, { type: "CONFIRM_HANDOFF" });
+  const before = s;
   s = auxReducer(s, { type: "COMPLETE_ROUND" });
-  assert.equal(s.current?.reaction, null);
-  assert.deepEqual(s.reactions, []);
+  assert.equal(s.current?.stage, before.current?.stage);
+  s = auxReducer(s, { type: "SET_REACTION", reaction: "PLOT_TWIST" });
+  s = auxReducer(s, { type: "COMPLETE_ROUND" });
+  assert.equal(s.current?.reaction, "PLOT_TWIST");
+  assert.deepEqual(s.reactions, ["PLOT_TWIST"]);
   assert.equal(s.current?.stage, "COMPLETE");
 });
 
@@ -171,10 +176,11 @@ test("reset clears tracklist and private round state", () => {
 test("deck alternates mechanics and creates requested number of rounds", () => {
   const deck = buildAuxDeck(12);
   assert.equal(deck.length, 12);
-  assert.deepEqual(deck.slice(0, 4).map((x) => x.type), [
+  assert.deepEqual(deck.slice(0, 5).map((x) => x.type), [
     "SOLO_PICK",
     "DUET_PICK",
     "GUESS",
     "SPEED_PICK",
+    "CONSENSUS",
   ]);
 });
