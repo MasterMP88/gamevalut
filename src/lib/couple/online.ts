@@ -6,7 +6,7 @@ import {
   reducer,
   nightSignature,
 } from "../game/engine";
-import { GAMES_BY_ID } from "../game/games";
+import { GAMES_BY_ID } from "../game/games";\nimport { sameSong } from "../music/provider";
 import type { Action } from "../game/engine";
 import type {
   ConsentSettings,
@@ -395,17 +395,27 @@ export function actPair(
         missionDone: f.result?.missionDone ?? false,
       });
     if (sc?.type === "MUSIC" && s.musicRound) {
+      const mode = sc.music?.mode ?? "solo";
+      const exactMatch =
+        mode === "duet" &&
+        sameSong(s.musicRound.picks[0], s.musicRound.picks[1]);
+      const reactionOwner = mode === "guess" ? me : you;
       const allowedReactions: MusicReaction[] = [
-        "match",
         "same-energy",
         "twist",
         "explains",
         "no-questions",
         "read-hit",
       ];
-      const reaction = allowedReactions.includes(you["reaction"] as MusicReaction)
-        ? (you["reaction"] as MusicReaction)
+      const humanReaction = allowedReactions.includes(
+        reactionOwner["reaction"] as MusicReaction,
+      )
+        ? (reactionOwner["reaction"] as MusicReaction)
         : null;
+      const reaction: MusicReaction | null = exactMatch ? "match" : humanReaction;
+      // Blind duet differences and READ//THE TRACK need a real human verdict.
+      if (mode === "duet" && !exactMatch && !reaction) return f;
+      if (mode === "guess" && !reaction) return f;
       const state = reducer(
         reducer(s, { type: "MUSIC", round: { ...s.musicRound, reaction } }),
         { type: "DONE" },
@@ -423,6 +433,33 @@ export function actPair(
   }
   if (f.phase !== "answer" || !sc) return f;
   if (requiredPair(f).some((id) => by.get(id)?.["timedOut"])) {
+    if (sc.type === "MUSIC" && sc.music?.mode === "speed") {
+      // QUICK DRAW has no fail state. After the deadline, reopen the same scene
+      // without a clock and turn the miss into the SECOND THOUGHT rule.
+      const expired = reducer(s, {
+        type: "MUSIC",
+        round: {
+          sceneNumber: s.sceneNumber,
+          stage: "pick",
+          picks: [null, null],
+          prediction: null,
+          reaction: null,
+          speedExpired: true,
+        },
+      });
+      const current = expired.current
+        ? {
+            ...expired.current,
+            duration: undefined,
+            helper:
+              "SECOND THOUGHT · Der erste Gedanke war zu langsam. Nimm jetzt bewusst deinen zweiten.",
+          }
+        : null;
+      return move(
+        { ...f, state: { ...expired, current }, result: null },
+        "answer",
+      );
+    }
     if (sc.type === "TIMER" || (sc.type === "MISSION" && sc.duration))
       return move(
         {
@@ -488,6 +525,7 @@ export function actPair(
       first = track(me),
       second = mode === "duet" ? track(you) : null;
     if (!first || (mode === "duet" && !second)) return apply({ type: "SKIP" });
+    const exactMatch = mode === "duet" && !!second && sameSong(first, second);
     state = reducer(state, {
       type: "MUSIC",
       round: {
@@ -495,20 +533,28 @@ export function actPair(
         stage: "reveal",
         picks: [first, second],
         prediction: mode === "guess" ? text(you) : null,
-        reaction: null,
-        speedExpired: mode === "speed" && you["timedOut"] === true,
+        reaction: exactMatch ? "match" : null,
+        speedExpired: s.musicRound?.speedExpired ?? false,
       },
     });
     // Song strings are deliberately not copied into the saved runtime. The explicit sealed picks
     // travel through the short-lived room; finished personal tracklists remain on the host device.
     result = {
-      label: "Euer Soundtrack",
+      label:
+        exactMatch
+          ? "SAME BRAIN"
+          : mode === "guess"
+            ? "READ//THE TRACK"
+            : mode === "consensus"
+              ? "ONE ROOM · ONE TRACK"
+              : "Euer Reveal",
+      match: exactMatch,
       lines: [
         first.title + (first.artist ? ` — ${first.artist}` : ""),
         ...(second
           ? [second.title + (second.artist ? ` — ${second.artist}` : "")]
           : []),
-        ...(mode === "guess" ? [`Vermutung: ${text(you)}`] : []),
+        ...(mode === "guess" ? [`Read: ${text(you)}`] : []),
       ],
     };
   } else if (sc.type === "CHOICE") {
