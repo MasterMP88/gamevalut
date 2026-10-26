@@ -2,6 +2,8 @@
 
 Der Audit-PR #31 enthält die vollständige React-/TanStack-App, neun Paarspiele, 16 GANG-Spiele, Couch-Modus, DJ-Musikmodus und die erweiterten Inhaltsbanken. Vor dieser Integration lag auf `main` (`49938e0`) lediglich der ältere statische Player samt Core-Paketen. „Im Repo umgesetzt“ bedeutete bisher deshalb nicht „auf main“ oder „auf der veröffentlichten Website“.
 
+**Abgeschlossen:** PR #31 wurde nach vier erfolgreichen GitHub-Prüfungen am 26.10.2026 mit Merge-Commit `680214b0b389d3fd79af072b53459603e3b0a43f` in `main` übernommen. Der vollständige App-Quellcode liegt damit auf `main`; die Lovable-Website wurde dadurch nicht synchronisiert oder neu veröffentlicht.
+
 ## Verbindliche Grenzen
 
 | Stand | Bedeutung | Nachweis |
@@ -13,6 +15,8 @@ Der Audit-PR #31 enthält die vollständige React-/TanStack-App, neun Paarspiele
 
 Ein erfolgreicher GitHub-Pages-Deploy prüft nur den älteren statischen Player. Die React-App nutzt Serverfunktionen und kann nicht als statisches Repository-Verzeichnis ausgeliefert werden.
 
+Der Pages-Lauf auf dem Merge-Commit (`40297069798`) bestand Core-Build und 160 Tests, scheiterte danach jedoch bei der Pages-Einrichtung: Die Pages-Site ist nicht vorhanden und das Workflow-Token darf sie nicht anlegen (`Resource not accessible by integration`). Das ist eine ausstehende Repository-Einstellung, kein App-Buildfehler. Es wurde keine neue Pages-Site veröffentlicht.
+
 ## Vorbereitung der Zusammenführung
 
 - Root-Lockfile ohne lokale Workspace-Links neu erzeugen und mit einer frischen `npm ci`-Installation prüfen; App-CI löscht den Lockfile nicht mehr.
@@ -23,7 +27,7 @@ Ein erfolgreicher GitHub-Pages-Deploy prüft nur den älteren statischen Player.
 
 ## Noch eigenständig abzunehmen
 
-- Lovable-Projekteinstellungen: GitHub-Ziel und synchronisierter Branch müssen im bestehenden Projekt bestätigt werden. Der Connector liest Dateien, bietet aber keine Einstellung der GitHub-Verbindung. Beim Browsercheck war das private Projekt ohne Anmeldung nicht zugänglich.
+- Lovable-Projekteinstellungen: Die bestehende Sitzung wurde wiederhergestellt und **Einstellungen → Git** im bestehenden Projekt geprüft. Die Oberfläche zeigt die Einrichtung einer neuen Verbindung, kein verbundenes Repository und keinen synchronisierten Branch. Sie weist ausdrücklich darauf hin, dass beim Verbinden ein neues Repository erstellt wird und der Import eines bestehenden Repositories nicht unterstützt wird. Deshalb wurde keine neue Verbindung angelegt: Der Nutzer verlangt ausschließlich das vorhandene `MasterMP88/gamevalut`. Ein mit diesem Repository kompatibler Synchronisierungsweg im bestehenden Lovable-Projekt bleibt erforderlich. Der Connector bietet weder direkte Dateiänderungen noch eine Einstellung der GitHub-Verbindung; kostenpflichtige Lovable-Logikimporte sind nicht autorisiert.
 - Stripe: ausstehende Commerce-Migration, sichere Server-Secrets, Webhook-Zustellung und Sandbox-Kauf/Refund. Keine echte Kundenbelastung für Prüfungen. Details in `commerce-operations.md`.
 - MUSIC DROP: DJ bedient seine Musik-App separat. Keine behauptete direkte Spotify-/Apple-Music-Verbindung; Anbieterbedingungen und echte Aktivierung bleiben eigene Voraussetzungen.
 - Reale Mobilgeräte, TV-Lesbarkeit, Kamera/Audio, Reconnect/Hostwechsel, 99-Geräte-Last und menschliche Spieleabende bleiben gesonderte Nachweise.
