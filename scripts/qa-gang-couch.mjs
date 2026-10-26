@@ -28,7 +28,7 @@ try {
   );
   await writeFile(
     files[1],
-    `import React from 'react';import {createRoot} from 'react-dom/client';import {CouchPlayer} from './components/gang/CouchPlayer';import type {GangGameId} from './lib/gang/core/playbooks';import './styles.css';const p=new URLSearchParams(location.search);createRoot(document.getElementById('root')!).render(<CouchPlayer gameId={(p.get('game')||'the-majority') as GangGameId} count={Number(p.get('n')||6)} rounds={2} onExit={()=>{document.body.dataset['exited']='true'}}/>);`,
+    `import React from 'react';import {createRoot} from 'react-dom/client';import {CouchPlayer} from './components/gang/CouchPlayer';import type {GangGameId} from './lib/gang/core/playbooks';import './styles.css';const p=new URLSearchParams(location.search);createRoot(document.getElementById('root')!).render(<CouchPlayer gameId={(p.get('game')||'the-majority') as GangGameId} count={Number(p.get('n')||6)} display={p.get('display')==='phone'?'phone':'couch'} rounds={2} onExit={()=>{document.body.dataset['exited']='true'}}/>);`,
   );
   await writeFile(
     files[2],
@@ -70,6 +70,7 @@ try {
     "the-line",
     "bad-answers-only",
     "music-drop",
+    "music-drop-dj",
     "panic-button",
     "team-chaos",
     "chain-reaction",
@@ -103,9 +104,16 @@ try {
     { width: 1440, height: 1000 },
     { width: 1920, height: 1080 },
   ])
-    for (const id of ids) {
-      const count =
-        id === "hot-seat"
+    for (const scenario of ids) {
+      const dj = scenario === "music-drop-dj";
+      const id = dj ? "music-drop" : scenario;
+      const count = dj
+        ? viewport.width === 390
+          ? 2
+          : viewport.width === 1440
+            ? 8
+            : 99
+        : id === "hot-seat"
           ? 15
           : id === "team-chaos"
             ? 30
@@ -119,12 +127,28 @@ try {
         errors.push(`${id}/${viewport.width}: ${e.message}`),
       );
       await page.goto(
-        `http://127.0.0.1:4176/couch-qa.html?game=${id}&n=${count}`,
+        `http://127.0.0.1:4176/couch-qa.html?game=${id}&n=${count}&display=${viewport.width === 390 ? "phone" : "couch"}`,
       );
       await page
         .getByRole("button", { name: "Los geht’s", exact: true })
         .waitFor();
-      if (id === "music-drop") {
+      if (dj) {
+        assert.equal(
+          await page
+            .getByRole("button", { name: "Los geht’s", exact: true })
+            .isEnabled(),
+          true,
+        );
+        assert.equal(await page.locator("input[type=file]").count(), 0);
+        await page.screenshot({
+          path: path.join(out, `music-drop-dj-ready-${viewport.width}.png`),
+          fullPage: true,
+        });
+      }
+      if (id === "music-drop" && !dj) {
+        await page
+          .getByRole("button", { name: "Eigene Audiodateien", exact: true })
+          .click();
         assert.equal(
           await page
             .getByRole("button", { name: "Los geht’s", exact: true })
@@ -168,7 +192,7 @@ try {
         assert.equal(overflow, false, `${id}/${viewport.width} overflow`);
         if (round === 0) {
           await page.screenshot({
-            path: path.join(out, `${id}-${viewport.width}.png`),
+            path: path.join(out, `${scenario}-${viewport.width}.png`),
             fullPage: true,
           });
         }
@@ -183,6 +207,40 @@ try {
             await page
               .getByRole("button", { name: "Gültig · weiter", exact: true })
               .click();
+        } else if (dj) {
+          assert.equal(await page.locator("audio").count(), 0);
+          const first = count === 2 ? "Person 2" : "Team A";
+          assert.equal(
+            await page
+              .getByRole("button", { name: first, exact: true })
+              .isDisabled(),
+            true,
+          );
+          await page
+            .getByRole("button", {
+              name: "Musik läuft · Raten öffnen",
+              exact: true,
+            })
+            .click();
+          await page.getByRole("button", { name: first, exact: true }).click();
+          if (count > 2 && round === 0) {
+            await page
+              .getByRole("button", {
+                name: "Daneben · Steal öffnen",
+                exact: true,
+              })
+              .click();
+            await page
+              .getByRole("button", { name: "Team B", exact: true })
+              .click();
+          }
+          await page
+            .getByRole("button", { name: "Richtig erkannt", exact: true })
+            .click();
+          assert.match(
+            await page.locator("body").innerText(),
+            /Person 1, Bühne frei/,
+          );
         } else if (id === "music-drop") {
           assert.equal(
             (await page.locator("body").innerText()).includes("Hidden Song"),
@@ -289,6 +347,7 @@ try {
       );
       report.push({
         game: id,
+        ...(id === "music-drop" ? { musicMode: dj ? "dj" : "local" } : {}),
         width: viewport.width,
         players: count,
         rounds: 3,

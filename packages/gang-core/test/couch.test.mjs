@@ -183,6 +183,60 @@ test("music has one claim per team, a wrong claim opens the steal, and resolutio
   assert.equal(s.result.delta.t2, 1);
   assert.equal(reduceCouch(s, { type: "MUSIC_JUDGE", correct: true }), s);
 });
+test("external DJ never belongs to a guessing team, at every group boundary and DJ position", () => {
+  for (const count of [2, 3, 4, 5, 6, 8, 9, 10, 15, 16, 17, 30, 31, 32, 99]) {
+    for (const index of [0, count - 1]) {
+      const s = start("music-drop", count, {
+        musicMode: "dj",
+        musicDjIndex: index,
+      });
+      const members = s.teams.flatMap((t) => t.members);
+      assert.equal(s.musicDj.member, index + 1);
+      assert.equal(members.length, count - 1);
+      assert.equal(new Set(members).size, count - 1);
+      assert.ok(!members.includes(index + 1));
+      assert.ok(s.teams.length <= 6);
+      assert.ok(
+        Math.max(...s.teams.map((t) => t.members.length)) -
+          Math.min(...s.teams.map((t) => t.members.length)) <=
+          1,
+      );
+      assert.equal(s.deadline, null, "no simulated external playback clock");
+      assert.equal(
+        reduceCouch(s, { type: "MUSIC_CLAIM", teamId: s.teams[0].id }),
+        s,
+      );
+      assert.equal(reduceCouch(s, { type: "RESOLVE" }), s);
+    }
+  }
+  for (const index of [-1, 2, 0.5, NaN])
+    assert.throws(() =>
+      start("music-drop", 2, { musicMode: "dj", musicDjIndex: index }),
+    );
+});
+test("external DJ confirmation resets each round; solo miss, skip, finale and encore cannot deadlock", () => {
+  let s = start("music-drop", 2, { musicMode: "dj", rounds: 2 });
+  s = reduceCouch(s, { type: "MUSIC_HEARD" });
+  s = reduceCouch(s, { type: "MUSIC_CLAIM", teamId: s.teams[0].id });
+  s = reduceCouch(s, { type: "MUSIC_JUDGE", correct: false });
+  assert.equal(s.phase, "reveal");
+  s = reduceCouch(s, { type: "NEXT", at: 1 });
+  assert.deepEqual(Object.values(s.scores), [0]);
+  s = reduceCouch(s, { type: "NEXT", at: 2 });
+  assert.equal(s.musicHeard, false);
+  s = reduceCouch(s, { type: "NEXT", at: 3 });
+  s = reduceCouch(s, { type: "MUSIC_HEARD" });
+  s = resolve(s);
+  s = reduceCouch(s, { type: "FINISH" });
+  assert.deepEqual(Object.values(s.scores), [4]);
+  s = reduceCouch(s, { type: "ENCORE", at: 4 });
+  assert.equal(s.musicHeard, false);
+  s = reduceCouch(s, { type: "NEXT", at: 5 });
+  s = reduceCouch(s, { type: "SKIP" });
+  s = reduceCouch(s, { type: "FINISH" });
+  assert.equal(s.phase, "finale");
+  assert.deepEqual(Object.values(s.scores), [4]);
+});
 test("skip never awards points, early finish never invents a result, line never invents correct personality scores", () => {
   for (const id of ids) {
     let s = start(id);

@@ -492,7 +492,7 @@ function PlayerSetup({
                 {queue.includes("music-drop") && (
                   <p className="my-3 text-sm text-muted-foreground">
                     MUSIC DROP spielt ihr hier als Song-Voting. Für das Hörspiel
-                    mit euren Audiodateien wählt TV / Couch.
+                    mit eurer Musik-App oder Audiodateien wählt TV / Couch.
                   </p>
                 )}
                 <HostSetup
