@@ -20,7 +20,7 @@ Das Repo enthält **16 spielbare GANG-Titel** sowie den weiterhin gesperrten TIM
 | WHO'S THAT? | BIG SCREEN / Couch; ONE PHONE gleichwertig | 3–99 | 74 | 5–10 Min. |
 | THE LINE | BIG SCREEN / Couch; ONE PHONE gleichwertig | 4–99 | 62 | 5–10 Min. |
 | BAD ANSWERS ONLY | BIG SCREEN / Couch; ONE PHONE gleichwertig | 3–99 | 66 | 6–12 Min. |
-| MUSIC DROP | BIG SCREEN / Couch; ONE PHONE gleichwertig | 2–99 | Eigene Audiodateien / 30 Voting-Prompts | 8–16 Min. |
+| MUSIC DROP | BIG SCREEN / Couch; ONE PHONE mit App-Wechsel | 2–99 | Eigene Musik-App via DJ; Audiodateien optional / 30 Voting-Prompts | 8–16 Min. |
 | PANIC BUTTON | BIG SCREEN / Couch; ONE PHONE gleichwertig | 2–99 | 62 | 5–10 Min. |
 | HOT SEAT | BIG SCREEN / Couch; ONE PHONE gleichwertig | 3–20 | 92 | 6–14 Min. |
 | TEAM CHAOS | BIG SCREEN / Couch; ONE PHONE gleichwertig | 6–99 | 48 | 8–16 Min. |
@@ -167,23 +167,23 @@ Die Richtdauer beschreibt ein einzelnes Spiel. Der Director plant 15/30/60 Minut
 
 **10-Sekunden-Regel:** Hört den Ausschnitt. Hand hoch statt Handy raus. Die erste richtige Antwort bringt Punkte; nach einem Fehler darf der Rest übernehmen.
 
-**Loop:** Ein längerer Ausschnitt eurer mitgebrachten Audiodateien. → Weniger Hörzeit und nur ein Versuch pro Team. → Falscher Zuruf öffnet den Steal für alle anderen.
+**Loop:** DJ wählen → bekannten Track in der eigenen Musik-App starten → Raten freigeben → Handzeichen, ein Versuch je Rateteam → falscher Zuruf öffnet den Steal → DJ löst laut auf. Schwierigere Tracks steigern den Druck. Musik läuft separat; App-Wechsel pausiert diese Runde nicht. Lokale Audiodateien sind eine optionale Variante mit automatischen Ausschnitten.
 
-**Finale:** Zwei Sekunden. Doppelter Drop. Alternative: Letzter Steal: eine zweite Chance für den Rest. Danach optional genau ein Encore.
+**Finale:** Letzter Track, doppelte Punkte. Bei lokalen Dateien: zwei Sekunden Hörzeit. Danach optional genau ein Encore. Die externe Musik-App bleibt vollständig unter Kontrolle des DJs.
 
-**Wertung / Interaktion:** Ersttreffer zwei Punkte, erfolgreicher Steal einen; Finale doppelt. Ein Versuch je Team. Alle falsch oder Auflösen ohne Treffer: null. Lokale Dateien sind die tatsächlichen Hörinhalte, die 30 Social-Prompts gehören nur zur Song-Voting-Variante.
+**Wertung / Interaktion:** Ersttreffer zwei Punkte, erfolgreicher Steal einen; Finale doppelt. Ein Versuch je Rateteam. Alle falsch oder Auflösen ohne Treffer: null. Der DJ ist für die ganze Session aus allen Rateteams ausgeschlossen. Ohne Bestätigung hörbarer Musik keine Tippvergabe; Skip bleibt möglich. Die 30 Social-Prompts gehören weiterhin zur separaten Song-Voting-Variante.
 
-**Private/Public-Grenze:** Dateiname und Lösung bleiben bis zum Reveal aus dem Spielbild. Audio bleibt lokal. Bestehendes Song-Voting ist eine separate Variante.
+**Private/Public-Grenze:** NOCTURNE greift weder auf Streamingkonto noch Songdaten zu. Der DJ hält die Musik-App verdeckt; bei Bildschirmspiegelung verwendet er ein separates Musikgerät. Auf einem gemeinsamen Handy funktioniert der Wechsel zwischen Apps. Der DJ nennt die Lösung erst beim Reveal. Bei lokalen Dateien erscheint der Dateiname erst dann. Pause/Exit in NOCTURNE stoppt ausschließlich lokale Audioausgabe, nie die externe App.
 
 | Gruppengröße | Konkrete Mechanik |
 |---|---|
-| 2–4 | Zwei bis vier erkennen einzeln. |
-| 5–8 | Zwei Teams, Sprecher wechseln. |
-| 9–15 | Drei Teams mit Handzeichen. |
-| 16–30 | Vier Teams, Host entscheidet Reihenfolge. |
-| 31–99 | Sechs Sektoren, Captains buzzen per Handzeichen. |
+| 2–4 | Ein DJ, übrige Personen raten einzeln. Zu zweit persönlicher Score des Ratenden. |
+| 5–8 | Ein DJ; vier Einzelratende oder zwei Teams, Sprecher wechseln. |
+| 9–15 | Ein DJ; zwei bis drei Teams mit Handzeichen. |
+| 16–30 | Ein DJ; drei bis vier Teams, Host entscheidet Reihenfolge. |
+| 31–99 | Ein DJ; vier bis sechs Sektoren, Captains buzzen per Handzeichen. |
 
-**Replay:** Lokaler, deduplizierter Audiostapel; ungehörte Dateien vor alten. Keine Aufnahme und kein Upload. Die genannten Finalvarianten sind teils neue Wertungen, teils moderierte Spielauflagen; keine versteckte automatische Spracherkennung.
+**Replay:** DJ wählt ungespielte Tracks selbst; ohne Songdaten kann NOCTURNE hier keine automatische Wiederholungsprüfung leisten. Beim Neustart lässt sich der DJ wechseln. Die Dateivariante behält den deduplizierten Audiostapel und bevorzugt ungehörte Dateien. Keine Aufnahme, kein Upload, keine automatische Spracherkennung. Direkte Streaming-Anbindung ist damit nicht implementiert; Voraussetzungen und Anbietergrenzen stehen in `docs/music-integration.md`.
 
 **Technische Prüfung:** Core-Matrix über alle unterstützten Größenbänder; Browser-Durchläufe auf 390/1440/1920px mit zwei Runden, Encore, Skip, Finale und Neustart.
 
@@ -504,7 +504,7 @@ Ausgeführt auf diesem Änderungssatz:
 - TypeScript und Produktionsbuild bestanden. Gezielter ESLint-Lauf ohne Fehler; vier bestehende Hook/Fast-Refresh-Warnungen in GangPlayer/GangRoom bleiben.
 - Browser: 27 Sessions / 81 Runden, 0 Laufzeitfehler; reale WAV-Decodierung aus Testdateien und keine horizontale Überbreite. Reproduzierbar mit `GANG_QA_BROWSER=/path/to/chromium node scripts/qa-gang-couch.mjs`; Playwright muss installiert sein. Das Skript erzeugt und entfernt seine eigenen temporären Vite-Fixtures.
 
-Die Couch-Bühne läuft auf dem Hostgerät, optional per HDMI/Casting gespiegelt. Ein separater Smartphone-Ferncontroller und automatische Smart-TV-Kopplung sind nicht Bestandteil dieser Änderung. MUSIC DROP benötigt mindestens zwei lokale Audiodateien; Audio, Metadaten und Lösungen werden nicht zu einem Musikdienst hochgeladen. Ohne Dateien wird kein funktionsloser Hörmodus gestartet.
+Die Couch-Bühne läuft auf dem Hostgerät, optional per HDMI/Casting gespiegelt. Ein separater Smartphone-Ferncontroller und automatische Smart-TV-Kopplung sind nicht Bestandteil dieser Änderung. MUSIC DROP startet standardmäßig mit DJ und separat bedienter Musik-App; keine Audiodateien nötig. Die optionale Dateivariante verlangt weiterhin mindestens zwei lokale Audiodateien. Es gibt keine direkte Spotify-/Apple-Music-Verbindung in MUSIC DROP und keine Übertragung von Audio, Metadaten oder Lösungen zu Musikdiensten.
 
 Die neue Couch-Session liegt im Speicher; Inhaltsverlauf überlebt neue Sessions, ein Browser-Reload stellt eine laufende Couch-Runde nicht wieder her. Netzwerk-Recovery bleibt im bestehenden privaten Raumtransport.
 

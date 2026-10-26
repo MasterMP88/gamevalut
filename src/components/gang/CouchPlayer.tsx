@@ -30,6 +30,7 @@ import {
   type CouchAction,
   type CouchState,
   type CouchVibe,
+  type CouchMusicMode,
 } from "@/lib/gang/core/couch";
 import { GANG_EXPERIENCES, groupBand } from "@/lib/gang/core/experience";
 import type { GangGameId } from "@/lib/gang/core/playbooks";
@@ -156,6 +157,8 @@ export function CouchPlayer({
     Math.floor(Math.random() * 2147483647),
   );
   const [vibe, setVibe] = useState<CouchVibe>("lively");
+  const [musicMode, setMusicMode] = useState<CouchMusicMode>("dj");
+  const [musicDjIndex, setMusicDjIndex] = useState(0);
   const [state, dispatch] = useReducer(
     (
       s: CouchState,
@@ -166,6 +169,8 @@ export function CouchPlayer({
             seed: number;
             rounds?: number | undefined;
             vibe: CouchVibe;
+            musicMode?: CouchMusicMode;
+            musicDjIndex?: number;
           },
     ) =>
       a.type === "RESTART"
@@ -177,6 +182,8 @@ export function CouchPlayer({
             seed: a.seed,
             seen: seenIds(),
             vibe: a.vibe,
+            musicMode: a.musicMode ?? musicMode,
+            musicDjIndex: a.musicDjIndex ?? musicDjIndex,
           })
         : reduceCouch(s, a),
     null,
@@ -188,6 +195,8 @@ export function CouchPlayer({
         rounds,
         seed,
         seen: seenIds(),
+        musicMode,
+        musicDjIndex,
       }),
   );
   const [clock, setClock] = useState(Date.now());
@@ -218,7 +227,17 @@ export function CouchPlayer({
     contract = GANG_EXPERIENCES[gameId],
     prompt = couchPrompt(state),
     kind = couchInput(gameId);
-  const track = tracks[state.index];
+  const djMode = kind === "music" && state.musicMode === "dj";
+  const track = !djMode ? tracks[state.index] : undefined;
+  const musicReady = djMode ? state.musicHeard : heard;
+  const guessingCount = state.teams.reduce(
+    (sum, t) => sum + t.members.length,
+    0,
+  );
+  const selectedRounds =
+    kind === "music" && musicMode === "local"
+      ? Math.min(rounds ?? 6, tracks.length)
+      : rounds;
   const next = () => dispatch({ type: "NEXT", at: Date.now() });
   const seconds =
     state.deadline === null
@@ -231,7 +250,8 @@ export function CouchPlayer({
   const scores = state.teams
     .slice()
     .sort((a, b) => (state.scores[b.id] ?? 0) - (state.scores[a.id] ?? 0));
-  const remainingAudio = kind !== "music" || state.index + 1 < tracks.length;
+  const remainingAudio =
+    kind !== "music" || djMode || state.index + 1 < tracks.length;
 
   useEffect(() => {
     setCounts([]);
@@ -259,6 +279,8 @@ export function CouchPlayer({
   useEffect(() => {
     const pause = () => {
       if (document.hidden) {
+        // Switching to the DJ's independent music app is part of this mode.
+        if (stateRef.current.musicMode === "dj") return;
         dispatch({ type: "PAUSE", at: Date.now() });
         stopAudio();
       }
@@ -518,6 +540,7 @@ export function CouchPlayer({
             </h2>
             <p className="my-4 text-white/70">
               Ihr könnt den Zwischenstand feiern oder direkt aussteigen.
+              {djMode && " Die Musik stoppt ihr in eurer Musik-App."}
             </p>
             <div className="flex flex-wrap gap-3">
               <button
@@ -560,14 +583,21 @@ export function CouchPlayer({
                     {contract.fantasy}
                   </h1>
                   <p className="mt-6 text-lg text-white/65">
-                    Laptop öffnen oder auf den TV spiegeln. Eine Person bedient,
-                    alle spielen. Keine Handys weiterreichen.
+                    {djMode
+                      ? "NOCTURNE auf den TV oder Laptop. Euer DJ bedient die Musik-App separat, die anderen raten. Auf einem Handy geht’s mit App-Wechsel."
+                      : "Laptop öffnen oder auf den TV spiegeln. Eine Person bedient, alle spielen. Keine Handys weiterreichen."}
                   </p>
                 </div>
                 <div className="self-center rounded-3xl border border-white/15 bg-white/5 p-5 sm:p-8">
                   <h2 className="text-xl font-semibold">Eure Aufstellung</h2>
                   <p className="mt-3 text-white/70">
-                    {contract.scale[groupBand(count)]}
+                    {djMode
+                      ? `${state.musicDj!.name} legt auf und zählt nicht zu den Rateteams. ${guessingCount === 1 ? "Zu zweit: Wie viele Tracks erkennst du?" : `${guessingCount} raten mit.`}`
+                      : kind === "music"
+                        ? guessingCount <= 4
+                          ? "Alle raten einzeln. Hand hoch, wenn ihr den Track kennt."
+                          : `${state.teams.length} Rateteams. Sprecher wechseln; Handzeichen entscheidet, wer beginnt.`
+                        : contract.scale[groupBand(count)]}
                   </p>
                   <div className="my-4 flex flex-wrap gap-2">
                     {state.teams.map((t) => (
@@ -576,80 +606,161 @@ export function CouchPlayer({
                         className="rounded-full bg-white/10 px-3 py-2 text-sm"
                       >
                         {t.name}
-                        {count > 4 ? ` · ${t.members.length}` : ""}
+                        {guessingCount > 4 ? ` · ${t.members.length}` : ""}
                       </span>
                     ))}
                   </div>
-                  {count > 4 && (
+                  {guessingCount > 4 && (
                     <p className="text-sm text-white/65">
-                      Zählt reihum von 1 bis {state.teams.length}. Gleiche
-                      Nummer, gleiches Team. Sprecher wechseln bei jedem
-                      Auftritt.
+                      {djMode ? "Ohne DJ: " : ""}Zählt reihum von 1 bis{" "}
+                      {state.teams.length}. Gleiche Nummer, gleiches Team.
+                      Sprecher wechseln bei jedem Auftritt.
                     </p>
                   )}
-                  <fieldset className="mt-6">
-                    <legend className="mb-2 text-sm text-white/65">
-                      Euer Tempo
-                    </legend>
-                    <div className="flex gap-2">
-                      {(["relaxed", "lively"] as const).map((v) => (
-                        <button
-                          key={v}
-                          className={cn(
-                            actionClass,
-                            v === vibe &&
-                              "border-lime-300 text-[var(--couch-accent)]",
-                          )}
-                          aria-pressed={v === vibe}
-                          onClick={() => {
-                            setVibe(v);
-                            dispatch({
-                              type: "RESTART",
-                              seed,
-                              rounds:
-                                kind === "music"
-                                  ? Math.min(rounds ?? 6, tracks.length)
-                                  : rounds,
-                              vibe: v,
-                            });
-                          }}
-                        >
-                          {v === "relaxed" ? "Entspannt" : "Mit Druck"}
-                        </button>
-                      ))}
-                    </div>
-                  </fieldset>
+                  {kind !== "music" && (
+                    <fieldset className="mt-6">
+                      <legend className="mb-2 text-sm text-white/65">
+                        Euer Tempo
+                      </legend>
+                      <div className="flex gap-2">
+                        {(["relaxed", "lively"] as const).map((v) => (
+                          <button
+                            key={v}
+                            className={cn(
+                              actionClass,
+                              v === vibe &&
+                                "border-lime-300 text-[var(--couch-accent)]",
+                            )}
+                            aria-pressed={v === vibe}
+                            onClick={() => {
+                              setVibe(v);
+                              dispatch({
+                                type: "RESTART",
+                                seed,
+                                rounds: selectedRounds,
+                                vibe: v,
+                              });
+                            }}
+                          >
+                            {v === "relaxed" ? "Entspannt" : "Mit Druck"}
+                          </button>
+                        ))}
+                      </div>
+                    </fieldset>
+                  )}
                   {kind === "music" && (
                     <div className="mt-6 border-t border-white/15 pt-5">
-                      <label
-                        className="block text-base font-semibold"
-                        htmlFor="couch-audio"
-                      >
-                        Eure Musik mitbringen
-                      </label>
-                      <p className="my-2 text-sm text-white/65">
-                        Wählt mindestens zwei eigene Audiodateien. Dateinamen
-                        sind die Auflösung – am besten „Artist – Titel“. Alles
-                        bleibt auf diesem Gerät. Kein Upload, kein
-                        Streaming-Login.
-                      </p>
-                      <input
-                        id="couch-audio"
-                        className="w-full min-w-0 text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-lime-300 file:px-3 file:py-3 file:text-black"
-                        type="file"
-                        accept="audio/*,.mp3,.m4a,.ogg,.wav,.flac,.aac"
-                        multiple
-                        onChange={(e) => selectFiles(e.target.files)}
-                      />
-                      <p className="mt-2 text-sm text-[var(--couch-accent)]">
-                        {tracks.length
-                          ? `${tracks.length} Tracks bereit · ${state.rounds} Drops`
-                          : "Ohne Audio startet kein Hörspiel."}
-                      </p>
+                      <fieldset>
+                        <legend className="mb-3 font-semibold">
+                          Wo läuft eure Musik?
+                        </legend>
+                        <div className="flex flex-wrap gap-2">
+                          {(["dj", "local"] as const).map((mode) => (
+                            <button
+                              key={mode}
+                              className={cn(
+                                actionClass,
+                                musicMode === mode &&
+                                  "border-lime-300 text-[var(--couch-accent)]",
+                              )}
+                              aria-pressed={musicMode === mode}
+                              onClick={() => {
+                                stopAudio();
+                                setAudioError("");
+                                setHeard(false);
+                                setMusicMode(mode);
+                                dispatch({
+                                  type: "RESTART",
+                                  seed,
+                                  vibe,
+                                  musicMode: mode,
+                                  rounds:
+                                    mode === "local"
+                                      ? Math.min(rounds ?? 6, tracks.length)
+                                      : rounds,
+                                });
+                              }}
+                            >
+                              {mode === "dj"
+                                ? "Musik-App · DJ legt auf"
+                                : "Eigene Audiodateien"}
+                            </button>
+                          ))}
+                        </div>
+                      </fieldset>
+                      {djMode ? (
+                        <div className="mt-4 space-y-3">
+                          <p className="text-sm text-white/70">
+                            Euer DJ spielt Musik in der gewohnten App, etwa
+                            Apple Music oder Spotify. Play, Pause und Songwahl
+                            bleiben dort. NOCTURNE verbindet sich nicht mit dem
+                            Dienst.
+                          </p>
+                          <label className="flex flex-col gap-2 text-sm">
+                            Wer legt auf?
+                            <select
+                              value={musicDjIndex}
+                              className="min-h-12 rounded-lg bg-[#282a2f] p-3"
+                              onChange={(e) => {
+                                const index = Number(e.target.value);
+                                setMusicDjIndex(index);
+                                dispatch({
+                                  type: "RESTART",
+                                  seed,
+                                  vibe,
+                                  rounds,
+                                  musicDjIndex: index,
+                                });
+                              }}
+                            >
+                              {Array.from({ length: count }, (_, i) => (
+                                <option key={i} value={i}>
+                                  {names[i] || `Person ${i + 1}`}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <p className="text-sm text-white/65">
+                            Wählt Tracks, die heute noch nicht dran waren.
+                            Musik-App und Songanzeige bleiben vor den Ratenden
+                            verborgen. Bei Bildschirmspiegelung die Musik über
+                            ein separates Gerät bedienen.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="mt-4">
+                          <label
+                            className="block text-base font-semibold"
+                            htmlFor="couch-audio"
+                          >
+                            Eure Musik mitbringen
+                          </label>
+                          <p className="my-2 text-sm text-white/65">
+                            Wählt mindestens zwei eigene Audiodateien.
+                            Dateinamen sind die Auflösung – am besten „Artist –
+                            Titel“. Alles bleibt auf diesem Gerät. Kein Upload.
+                            Downloads aus Streaming-Apps sind keine
+                            importierbaren Audiodateien.
+                          </p>
+                          <input
+                            id="couch-audio"
+                            className="w-full min-w-0 text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-lime-300 file:px-3 file:py-3 file:text-black"
+                            type="file"
+                            accept="audio/*,.mp3,.m4a,.ogg,.wav,.flac,.aac"
+                            multiple
+                            onChange={(e) => selectFiles(e.target.files)}
+                          />
+                          <p className="mt-2 text-sm text-[var(--couch-accent)]">
+                            {tracks.length
+                              ? `${tracks.length} Tracks bereit · ${state.rounds} Drops`
+                              : "Ohne Audio startet kein Hörspiel."}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                   <button
-                    disabled={kind === "music" && tracks.length < 2}
+                    disabled={kind === "music" && !djMode && tracks.length < 2}
                     className={primary + " mt-6 w-full"}
                     onClick={next}
                   >
@@ -670,7 +781,11 @@ export function CouchPlayer({
                   tabIndex={-1}
                   className="outline-none mt-6 font-sans font-semibold tracking-tight text-[clamp(1.8rem,4vw,3.4rem)] leading-tight"
                 >
-                  {state.phase === "explain" ? contract.rule : couchCue(state)}
+                  {state.phase === "explain"
+                    ? djMode
+                      ? "DJ legt auf. Hand hoch, Titel oder Interpret nennen. Zwei Punkte für den Ersttreffer, einen für den Steal. DJ löst laut auf."
+                      : contract.rule
+                    : couchCue(state)}
                 </h2>
                 {kind === "majority" || kind === "spotlight" ? (
                   <p className="mt-6 text-lg text-white/65">
@@ -715,6 +830,11 @@ export function CouchPlayer({
                     >
                       Kurz durchatmen.
                     </h2>
+                    {djMode && (
+                      <p className="mt-4 text-white/65">
+                        Die Musik pausiert ihr separat in eurer Musik-App.
+                      </p>
+                    )}
                     <button
                       className={primary + " mt-6"}
                       onClick={() =>
@@ -805,24 +925,54 @@ export function CouchPlayer({
                       )}
                       {kind === "music" && (
                         <div className="mt-6">
-                          <button
-                            className={primary + " flex items-center gap-3"}
-                            onClick={() =>
-                              playing ? stopAudio() : void playAudio()
-                            }
-                          >
-                            <Volume2 className="size-5" />
-                            {playing
-                              ? "Ausschnitt stoppen"
-                              : `${couchSeconds(state)} Sekunden hören`}
-                          </button>
+                          {djMode ? (
+                            <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
+                              <p className="font-semibold">
+                                {state.musicDj!.name} am DJ-Pult
+                              </p>
+                              <p className="mt-2 text-white/65">
+                                Wählt einen neuen Track in eurer Musik-App.
+                                Starten und Stoppen übernimmt euer DJ. Die
+                                Songanzeige bleibt verdeckt.
+                              </p>
+                              {!state.musicHeard ? (
+                                <button
+                                  className={primary + " mt-4"}
+                                  onClick={() =>
+                                    dispatch({ type: "MUSIC_HEARD" })
+                                  }
+                                >
+                                  Musik läuft · Raten öffnen
+                                </button>
+                              ) : (
+                                <p
+                                  role="status"
+                                  className="mt-3 text-[var(--couch-accent)]"
+                                >
+                                  Ohren auf. Wer weiß es?
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <button
+                              className={primary + " flex items-center gap-3"}
+                              onClick={() =>
+                                playing ? stopAudio() : void playAudio()
+                              }
+                            >
+                              <Volume2 className="size-5" />
+                              {playing
+                                ? "Ausschnitt stoppen"
+                                : `${couchSeconds(state)} Sekunden hören`}
+                            </button>
+                          )}
                           <p className="mt-4 text-white/65">
                             {state.musicClaim
                               ? `${state.teams.find((t) => t.id === state.musicClaim)?.name}: Titel oder Interpret nennen.`
                               : "Wer war zuerst? Host wählt nach dem Handzeichen."}
                           </p>
                           {state.musicClaim ? (
-                            <div className="mt-4 flex gap-3">
+                            <div className="mt-4 flex flex-wrap gap-3">
                               <button
                                 className={primary}
                                 onClick={() =>
@@ -843,7 +993,10 @@ export function CouchPlayer({
                                   })
                                 }
                               >
-                                Daneben · Steal öffnen
+                                {state.teams.length - state.musicMisses.length >
+                                1
+                                  ? "Daneben · Steal öffnen"
+                                  : "Daneben · auflösen"}
                               </button>
                             </div>
                           ) : (
@@ -853,7 +1006,8 @@ export function CouchPlayer({
                                   key={t.id}
                                   className={actionClass}
                                   disabled={
-                                    !heard || state.musicMisses.includes(t.id)
+                                    !musicReady ||
+                                    state.musicMisses.includes(t.id)
                                   }
                                   onClick={() => {
                                     stopAudio();
@@ -1051,7 +1205,9 @@ export function CouchPlayer({
                           )}
                           <button
                             className={primary + " mt-5"}
-                            disabled={!validResolve}
+                            disabled={
+                              !validResolve || (kind === "music" && !musicReady)
+                            }
                             onClick={doResolve}
                           >
                             {kind === "music"
@@ -1107,6 +1263,12 @@ export function CouchPlayer({
                 {kind === "music" && track && !state.result?.skipped && (
                   <p className="mx-auto mt-7 max-w-4xl break-words text-2xl text-lime-200 sm:text-4xl">
                     {track.title}
+                  </p>
+                )}
+                {djMode && !state.result?.skipped && (
+                  <p className="mx-auto mt-7 max-w-4xl text-2xl text-lime-200 sm:text-4xl">
+                    {state.musicDj!.name}, Bühne frei: Titel und Interpret laut
+                    auflösen.
                   </p>
                 )}
                 {state.result?.revealText && (
@@ -1272,13 +1434,10 @@ export function CouchPlayer({
                       dispatch({
                         type: "RESTART",
                         seed: fresh,
-                        rounds:
-                          kind === "music"
-                            ? Math.min(rounds ?? 6, tracks.length)
-                            : rounds,
+                        rounds: selectedRounds,
                         vibe,
                       });
-                      if (kind === "music")
+                      if (kind === "music" && !djMode)
                         setTracks((old) => {
                           const history = seenIds();
                           return [...old].sort(

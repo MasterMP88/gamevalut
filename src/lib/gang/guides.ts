@@ -415,23 +415,23 @@ const COUCH_GUIDES: Partial<typeof DEVICE_GUIDES> = {
   "music-drop": {
     goal: "Du erkennst den Song. Eine halbe Sekunde vor den anderen.",
     steps: [
-      "Bringt mindestens zwei Audiodateien auf dem Hostgerät mit. Sie bleiben dort und werden nicht hochgeladen.",
-      "Hört den Ausschnitt. Hand hoch: Der Host gibt dem ersten Team den Versuch. Dateiname und Lösung bleiben bis zur Auflösung verborgen.",
+      "Eine Person legt in ihrer gewohnten Musik-App auf, etwa Apple Music oder Spotify. Sie rät in dieser Session nicht mit. NOCTURNE steuert die Musik-App nicht.",
+      "Die Musik läuft? Raten öffnen, Hand hoch. Der DJ gibt dem ersten Rateteam den Versuch und hält die Songanzeige verborgen. Bei TV-Spiegelung die Musik auf einem separaten Gerät bedienen.",
       "Ein Fehler öffnet den Steal für die übrigen Teams. Pro Team ein Versuch, dann auflösen.",
     ],
     example: [
-      "Zwölf Sekunden zum Warmwerden. Die Teams hören gemeinsam.",
+      "Euer DJ startet einen bekannten Track. Die Teams hören gemeinsam.",
       "Team A hebt zuerst die Hand, liegt aber falsch.",
-      "Team B erkennt den Song und holt den Steal. Im Finale reichen zwei Sekunden.",
+      "Team B erkennt den Song und holt den Steal. Der DJ löst laut auf. Im Finale zählen die Punkte doppelt.",
     ],
     input:
-      "Eigene Audiodateien, Handzeichen und gesprochene Antwort. Kein Streaming-Abonnement eingebunden.",
+      "Musik-App separat bedienen, Handzeichen und gesprochene Antwort. Auf einem Handy per App-Wechsel; keine automatische Dienst-Verbindung. Alternativ eigene Audiodateien direkt abspielen.",
     replay:
-      "Ungehörte Dateien werden bevorzugt. Eure Musik bestimmt den Schwierigkeitsgrad; keine Datei wird in derselben Session zweimal gespielt.",
+      "DJ wählt neue Tracks und vermeidet Wiederholungen selbst; NOCTURNE kennt diese Songauswahl nicht. Nach der Session könnt ihr den DJ wechseln. Bei lokalen Dateien werden ungehörte bevorzugt und keine innerhalb der Session wiederholt.",
     scoring:
-      "Ersttreffer zwei Punkte, Steal einen. Im Finale beides doppelt. Wer falsch lag, wartet auf den nächsten Track.",
+      "Ersttreffer zwei Punkte, Steal einen. Im Finale beides doppelt. Wer falsch lag, wartet auf den nächsten Track. DJ bekommt keine Punkte; zu zweit sammelt die ratende Person ihren eigenen Score.",
     finale:
-      "Zwei Sekunden hören, doppelte Punkte. Danach optional genau ein weiterer Track, wenn noch einer übrig ist.",
+      "Letzter Track, doppelte Punkte. Bei lokalen Dateien nur zwei Sekunden hören. Danach optional ein weiterer Track. Euer DJ steuert die Musik weiterhin selbst.",
   },
   "chain-reaction": {
     goal: "Vom Staubsauger nach Atlantis. Hauptsache, die Verbindung hält.",

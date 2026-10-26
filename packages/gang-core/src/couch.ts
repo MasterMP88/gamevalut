@@ -8,6 +8,7 @@ import { couchGame, GANG_EXPERIENCES, groupBand } from "./experience.js";
 export type CouchPhase =
   "ready" | "explain" | "play" | "reveal" | "score" | "transition" | "finale";
 export type CouchVibe = "relaxed" | "lively";
+export type CouchMusicMode = "local" | "dj";
 export type CouchInput =
   | "majority"
   | "titles"
@@ -53,6 +54,9 @@ export interface CouchState {
   remaining: number | null;
   musicClaim: string | null;
   musicMisses: string[];
+  musicMode: CouchMusicMode;
+  musicDj: { member: number; name: string } | null;
+  musicHeard: boolean;
   encore: boolean;
   finaleVariant: 0 | 1;
 }
@@ -73,6 +77,7 @@ export type CouchAction =
   | { type: "TURN"; valid: boolean; at: number }
   | { type: "TIMEOUT"; at: number }
   | { type: "MUSIC_CLAIM"; teamId: string }
+  | { type: "MUSIC_HEARD" }
   | { type: "MUSIC_JUDGE"; correct: boolean };
 
 export const couchRange = (id: GangGameId): [number, number] => {
@@ -312,6 +317,8 @@ export function createCouchSession(input: {
   seen?: readonly string[];
   names?: readonly string[];
   vibe?: CouchVibe;
+  musicMode?: CouchMusicMode;
+  musicDjIndex?: number;
 }): CouchState {
   if (!couchGame(input.gameId))
     throw new RangeError("This game needs private devices.");
@@ -340,7 +347,40 @@ export function createCouchSession(input: {
       bucket(ai) - bucket(bi) || hash(input.seed, a.id) - hash(input.seed, b.id)
     );
   });
-  const teams = couchTeams(input.playerCount, input.names);
+  const musicMode =
+    input.gameId === "music-drop" ? (input.musicMode ?? "local") : "local";
+  const djIndex = input.musicDjIndex ?? 0;
+  if (
+    musicMode === "dj" &&
+    (!Number.isInteger(djIndex) || djIndex < 0 || djIndex >= input.playerCount)
+  )
+    throw new RangeError("Invalid DJ.");
+  const musicDj =
+    musicMode === "dj"
+      ? {
+          member: djIndex + 1,
+          name:
+            input.names?.[djIndex]?.trim().slice(0, 24) ||
+            `Person ${djIndex + 1}`,
+        }
+      : null;
+  const members = Array.from(
+    { length: input.playerCount },
+    (_, i) => i + 1,
+  ).filter((member) => member !== musicDj?.member);
+  const teams = musicDj
+    ? couchTeams(
+        members.length,
+        members.length <= 4
+          ? members.map(
+              (member) => input.names?.[member - 1] || `Person ${member}`,
+            )
+          : [],
+      ).map((t) => ({
+        ...t,
+        members: t.members.map((member) => members[member - 1]!),
+      }))
+    : couchTeams(input.playerCount, input.names);
   const requested =
     input.rounds ??
     (input.gameId === "hot-seat" ? Math.min(input.playerCount, 12) : 6);
@@ -374,6 +414,9 @@ export function createCouchSession(input: {
     remaining: null,
     musicClaim: null,
     musicMisses: [],
+    musicMode,
+    musicDj,
+    musicHeard: false,
     encore: false,
     finaleVariant: (hash(input.seed, "finale") % 2) as 0 | 1,
   };
@@ -439,6 +482,10 @@ export function couchSpokesperson(s: CouchState, t: CouchTeam): number {
 }
 
 export function couchCue(s: CouchState): string {
+  if (s.gameId === "music-drop" && s.musicMode === "dj")
+    return couchIsFinal(s)
+      ? "Letzter Track, doppelte Punkte. Die Musik steuert euer DJ in der Musik-App."
+      : `${s.musicDj!.name} legt auf. Hand hoch: Titel oder Interpret nennen. Ein Versuch pro Rateteam.`;
   if (couchIsFinal(s))
     return GANG_EXPERIENCES[s.gameId].finales[s.finaleVariant];
   return (
@@ -561,6 +608,7 @@ export function reduceCouch(s: CouchState, a: CouchAction): CouchState {
       turnResults: [],
       musicClaim: null,
       musicMisses: [],
+      musicHeard: false,
     };
   }
   if (a.type === "NEXT") {
@@ -598,6 +646,7 @@ export function reduceCouch(s: CouchState, a: CouchAction): CouchState {
         turnResults: [],
         musicClaim: null,
         musicMisses: [],
+        musicHeard: false,
       };
     }
     return s;
@@ -649,8 +698,11 @@ export function reduceCouch(s: CouchState, a: CouchAction): CouchState {
       deadline: a.at + couchSeconds(s) * 1000,
     };
   }
+  if (a.type === "MUSIC_HEARD" && kind === "music" && s.musicMode === "dj")
+    return s.musicHeard ? s : { ...s, musicHeard: true };
   if (a.type === "MUSIC_CLAIM" && kind === "music") {
     return !s.musicClaim &&
+      (s.musicMode !== "dj" || s.musicHeard) &&
       !s.musicMisses.includes(a.teamId) &&
       s.teams.some((t) => t.id === a.teamId)
       ? { ...s, musicClaim: a.teamId }
@@ -683,7 +735,9 @@ export function reduceCouch(s: CouchState, a: CouchAction): CouchState {
       result(s, [], "Gleicher Raum. Erstaunlich andere Welt.", 0),
     );
   if (kind === "music")
-    return finishRound(s, result(s, [], "Ein Track für die Wiederentdeckung."));
+    return s.musicMode === "dj" && !s.musicHeard
+      ? s
+      : finishRound(s, result(s, [], "Ein Track für die Wiederentdeckung."));
   if (kind === "majority") {
     const n = couchPrompt(s).options?.length ?? 0;
     if (

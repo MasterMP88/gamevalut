@@ -279,22 +279,24 @@ export const GANG_EXPERIENCES: Record<GangGameId, GangExperience> = {
     preferred: "big-screen",
     couch: true,
     minutes: [8, 16],
-    warmup: "Ein längerer Ausschnitt eurer mitgebrachten Audiodateien.",
-    escalation: "Weniger Hörzeit und nur ein Versuch pro Team.",
+    warmup:
+      "Euer DJ legt einen bekannten Track in der Musik-App auf. Alternativ spielt ihr mit eigenen Audiodateien.",
+    escalation:
+      "Schwierigere Tracks und nur ein Versuch pro Rateteam. Bei lokalen Dateien wird die Hörzeit kürzer.",
     peak: "Falscher Zuruf öffnet den Steal für alle anderen.",
     finales: [
-      "Zwei Sekunden. Doppelter Drop.",
+      "Letzter Track. Doppelter Drop. Bei lokalen Dateien: zwei Sekunden.",
       "Letzter Steal: eine zweite Chance für den Rest.",
     ],
     scale: [
-      "Zwei bis vier erkennen einzeln.",
-      "Zwei Teams, Sprecher wechseln.",
-      "Drei Teams mit Handzeichen.",
-      "Vier Teams, Host entscheidet Reihenfolge.",
-      "Sechs Sektoren, Captains buzzen per Handzeichen.",
+      "Im DJ-Modus legt eine Person auf, die übrigen raten einzeln. Zu zweit: eine persönliche Musik-Challenge.",
+      "DJ spielt nicht mit. Bis vier Ratende einzeln, darüber zwei Teams.",
+      "DJ spielt nicht mit. Zwei bis drei Rateteams mit Handzeichen.",
+      "DJ spielt nicht mit. Drei bis vier Rateteams, Host entscheidet Reihenfolge.",
+      "DJ spielt nicht mit. Vier bis sechs Sektoren, Captains buzzen per Handzeichen.",
     ],
     privateInfo:
-      "Dateiname und Lösung bleiben bis zum Reveal aus dem Spielbild. Audio bleibt lokal. Bestehendes Song-Voting ist eine separate Variante.",
+      "DJ bedient die Musik-App separat; deren Songanzeige bleibt vor Ratenden verborgen. Keine Dienst-Verbindung, kein Upload. Lokale Dateinamen erscheinen erst beim Reveal. Song-Voting bleibt eine separate Variante.",
   }),
   "time-drop": contract({
     fantasy: "Ein Song landet genau da, wo deine Erinnerung ihn vermutet.",
