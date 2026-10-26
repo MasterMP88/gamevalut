@@ -15,6 +15,7 @@ import type {
   SessionState,
   Track,
   PowerUp,
+  MusicReaction,
 } from "../game/types";
 import type { CollectedAction, RoomSnapshot } from "../gang/room-client";
 
@@ -394,10 +395,16 @@ export function actPair(
         missionDone: f.result?.missionDone ?? false,
       });
     if (sc?.type === "MUSIC" && s.musicRound) {
-      const reaction = ["match", "twist", "explains"].includes(
-        String(you["reaction"]),
-      )
-        ? (you["reaction"] as "match" | "twist" | "explains")
+      const allowedReactions: MusicReaction[] = [
+        "match",
+        "same-energy",
+        "twist",
+        "explains",
+        "no-questions",
+        "read-hit",
+      ];
+      const reaction = allowedReactions.includes(you["reaction"] as MusicReaction)
+        ? (you["reaction"] as MusicReaction)
         : null;
       const state = reducer(
         reducer(s, { type: "MUSIC", round: { ...s.musicRound, reaction } }),
@@ -489,6 +496,7 @@ export function actPair(
         picks: [first, second],
         prediction: mode === "guess" ? text(you) : null,
         reaction: null,
+        speedExpired: mode === "speed" && you["timedOut"] === true,
       },
     });
     // Song strings are deliberately not copied into the saved runtime. The explicit sealed picks
