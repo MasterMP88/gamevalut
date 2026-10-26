@@ -109,7 +109,7 @@ export const MUSIC_SCENES: Scene[] = [
   // ——— SIGNATURE: AUX SWAP · choose for the other person
   ...signatureDeck("aux-swap", "solo", [
     ["AUX SWAP · Main Character", "Wähle die Einlaufmusik für {you}. Nicht nett sein – treffend.", "cheeky", 1],
-    ["AUX SWAP · Montag", "Welcher Song würde {you} montags erstaunlich gut retten?", "funny", 1],
+    ["AUX SWAP · Montag", "Montagmorgen mit {you}: welcher Song rettet die Lage erstaunlich gut?", "funny", 1],
     ["AUX SWAP · Geheime Stärke", "Ein Track für eine Seite von {you}, die andere zu selten sehen.", "deep", 2],
     ["AUX SWAP · Karaoke", "Du meldest {you} ungefragt zum Karaoke an. Welcher Song?", "funny", 1],
     ["AUX SWAP · Urlaub", "Der erste Track in {you}s perfektem Urlaub. Du entscheidest.", "funny", 2],
@@ -124,11 +124,11 @@ export const MUSIC_SCENES: Scene[] = [
   ...signatureDeck("red-flag", "duet", [
     ["RED FLAG · Sofortiges Urteil", "Ein Song, bei dem du jemanden kurz beurteilen würdest. Beide blind.", "cheeky", 1],
     ["RED FLAG · Auto-DJ", "Ein Track, der beim ersten Date im Auto riskant wäre. Beide wählen.", "funny", 1],
-    ["RED FLAG · Hochzeits-DJ", "Welcher Song wäre auf einer Hochzeit unverzeihlich – und trotzdem lustig?", "funny", 2],
+    ["RED FLAG · Hochzeits-DJ", "Hochzeit, falscher Moment: Welcher Track wäre unverzeihlich – und trotzdem lustig?", "funny", 2],
     ["RED FLAG · Zu ernst", "Ein Track, den Menschen viel zu ernst nehmen. Beide blind.", "cheeky", 2],
     ["RED FLAG · Ex-Alarm", "Ein Song, bei dem eine sehr spezifische Geschichte im Raum stehen könnte.", "cheeky", 3],
     ["RED FLAG · Gym Crime", "Der Track, bei dem du im Gym innerlich sofort urteilst.", "funny", 1],
-    ["RED FLAG · Party vorbei", "Welcher Song kann eine gute Party in zehn Sekunden ruinieren?", "funny", 2],
+    ["RED FLAG · Party vorbei", "Eine gute Party kippt in zehn Sekunden. Welcher Track war schuld?", "funny", 2],
     ["RED FLAG · Guilty Defense", "Ein Song, den du gegen jede Kritik verteidigen würdest. Leider.", "cheeky", 2],
     ["RED FLAG · Zu viel Gefühl", "Ein Track, der emotional gefährlicher ist, als er klingt.", "deep", 3],
     ["RED FLAG · Kein Kommentar", "Ein Song, bei dem dein Musikgeschmack vor Gericht müsste.", "funny", 3],
@@ -164,12 +164,12 @@ export const MUSIC_SCENES: Scene[] = [
 
   // ——— SIGNATURE: LAST TRACK · preferred by the engine for a planned final scene
   ...signatureDeck("last-track", "consensus", [
-    ["LAST TRACK · Abspann", "Wenn diese Nacht jetzt endet: Welcher Song läuft im Abspann?", "deep", 3],
-    ["LAST TRACK · Licht an", "Gleich geht das Licht an. Welcher Song bekommt die letzten Minuten?", "deep", 3],
-    ["LAST TRACK · Noch nicht", "Der letzte Track – aber einer, bei dem ihr eigentlich noch nicht gehen wollt.", "cheeky", 3],
-    ["LAST TRACK · Morgen weiß es", "Welcher Song soll morgen sofort wieder nach heute klingen?", "deep", 3],
-    ["LAST TRACK · Keine Worte", "Kein Fazit. Nur ein gemeinsamer letzter Song.", "deep", 3],
-    ["LAST TRACK · Side N//", "Euer Record braucht einen Schlusstrack. Einigt euch auf den einzigen richtigen.", "cheeky", 3],
+    ["LAST TRACK · Abspann", "Wenn diese Nacht jetzt endet: Welcher Song läuft im Abspann?", "deep", 2],
+    ["LAST TRACK · Licht an", "Gleich geht das Licht an. Welcher Song bekommt die letzten Minuten?", "deep", 2],
+    ["LAST TRACK · Noch nicht", "Der letzte Track – aber einer, bei dem ihr eigentlich noch nicht gehen wollt.", "cheeky", 2],
+    ["LAST TRACK · Morgen weiß es", "Morgen soll ein Track sofort wieder nach heute klingen. Welcher?", "deep", 2],
+    ["LAST TRACK · Keine Worte", "Kein Fazit. Nur ein gemeinsamer letzter Song.", "deep", 2],
+    ["LAST TRACK · Side N//", "Euer Record braucht einen Schlusstrack. Einigt euch auf den einzigen richtigen.", "cheeky", 2],
   ]),
 ];
 
