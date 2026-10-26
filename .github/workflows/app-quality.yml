@@ -53,7 +53,7 @@ jobs:
         env:
           WRANGLER_SEND_METRICS: "false"
         run: |
-          npm run preview -- --host 127.0.0.1 --port 4182 > /tmp/nocturne-preview.log 2>&1 &
+          npm run preview -- --port 4182 > /tmp/nocturne-preview.log 2>&1 &
           preview_pid=$!
           trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 60); do
