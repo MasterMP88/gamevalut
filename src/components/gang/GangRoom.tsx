@@ -18,6 +18,7 @@ import {
   activeInputIds,
   advanceShow,
   applyCollected,
+  applyAfterDarkWithdrawals,
   buildPublic,
   endNight,
   isFacState,
@@ -323,8 +324,24 @@ export function GangRoom({
     data: Record<string, unknown> | null;
   } | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [withdrawnKey, setWithdrawnKey] = useState<string | null>(null);
 
   const pub = readPublic(snap);
+  useEffect(() => {
+    if (!pub?.afterDarkKey || pub.kind !== "play" || session.role === "display")
+      return;
+    let stopped = false;
+    const key = pub.afterDarkKey;
+    void client
+      .afterDarkControl(token, key)
+      .then((r) => {
+        if (!stopped && r.withdrawn) setWithdrawnKey(key);
+      })
+      .catch(() => {});
+    return () => {
+      stopped = true;
+    };
+  }, [pub?.afterDarkKey, pub?.kind, client, token, session.role]);
   const photos = useRoomPhotos(client, token, pub?.view?.cards ?? []);
   const stageKey = snap ? `${snap.roundKey}#${snap.stage}` : "";
 
@@ -351,28 +368,37 @@ export function GangRoom({
 
   const inFlight = useRef<Promise<void> | null>(null);
   const userQueued = useRef(false);
-  const run = useCallback(async (fn: () => Promise<unknown>, background = false) => {
-    if (background && (busy.current || userQueued.current)) return;
-    if (!background) {
-      if (userQueued.current) return;
-      userQueued.current = true;
-      if (inFlight.current) await inFlight.current;
-    }
-    busy.current = true;
-    const task = (async () => {
-      try { await fn(); setErr(null); }
-      catch (e) { setErr(roomErrorText(e)); }
-      finally { busy.current = false; }
-    })();
-    inFlight.current = task;
-    await task;
-    if (inFlight.current === task) inFlight.current = null;
-    if (!background) userQueued.current = false;
-  }, []);
+  const run = useCallback(
+    async (fn: () => Promise<unknown>, background = false) => {
+      if (background && (busy.current || userQueued.current)) return;
+      if (!background) {
+        if (userQueued.current) return;
+        userQueued.current = true;
+        if (inFlight.current) await inFlight.current;
+      }
+      busy.current = true;
+      const task = (async () => {
+        try {
+          await fn();
+          setErr(null);
+        } catch (e) {
+          setErr(roomErrorText(e));
+        } finally {
+          busy.current = false;
+        }
+      })();
+      inFlight.current = task;
+      await task;
+      if (inFlight.current === task) inFlight.current = null;
+      if (!background) userQueued.current = false;
+    },
+    [],
+  );
 
   // Facilitator loop: failover load, drop-outs, auto-collect + advance.
   useEffect(() => {
-    if (!snap?.isFacilitator || !pub || pub.kind === "lobby" || busy.current) return;
+    if (!snap?.isFacilitator || !pub || pub.kind === "lobby" || busy.current)
+      return;
     void run(async () => {
       let fac = facRef.current;
       if (!fac && pub.kind !== "lobby") {
@@ -381,6 +407,14 @@ export function GangRoom({
         fac = facRef.current = loaded;
       }
       if (!fac || fac.kind !== "play" || !fac.rt) return;
+      if (fac.rt.gameId === "after-dark") {
+        const controls = await client.afterDarkControl(token, fac.rt.id);
+        const next = applyAfterDarkWithdrawals(fac, controls.playerIds);
+        if (next !== fac) {
+          await publish(next, snap);
+          return;
+        }
+      }
       if (fac.missions && missionVersion.current !== snap.version) {
         const events = await client.missionEvents(token, fac.missions.id);
         missionVersion.current = snap.version;
@@ -671,59 +705,60 @@ export function GangRoom({
       (pub.gameId === "draw-this" &&
         view.repeatable &&
         view.activePlayerId === me);
-    body = !inRoster ? (
-      <Waiting
-        title="Du schaust diese Runde zu."
-        sub="Beim nächsten Spiel bist du automatisch dabei."
-      />
-    ) : view.input === "none" ? (
-      <ShowStage
-        game={game}
-        pub={pub}
-        view={view}
-        me={me}
-        fac={fac}
-        onAdvance={() => facAct(advanceShow)}
-      />
-    ) : mustAct ? (
-      <ControllerInput
-        key={stageKey}
-        photos={photos}
-        game={game}
-        pub={pub}
-        view={view}
-        me={me}
-        priv={priv?.key === stageKey ? priv.data : null}
-        roundKey={snap.roundKey ?? ""}
-        onSend={send}
-      />
-    ) : (
-      <>
+    body =
+      !inRoster || (pub.afterDarkKey && pub.afterDarkKey === withdrawnKey) ? (
         <Waiting
-          title={
-            submitted
-              ? "Versiegelt · warte auf die anderen"
-              : view.input === "teams"
-                ? "Die Runde trägt das Ergebnis ein."
-                : "Diese Phase spielen die anderen."
-          }
-          sub={
-            progress
-              ? `${progress.submitted}/${progress.required} abgegeben`
-              : undefined
-          }
+          title="Du schaust diese Runde zu."
+          sub="Beim nächsten Spiel bist du automatisch dabei."
         />
-        {fac && (
-          <button
-            type="button"
-            onClick={forceOn}
-            className="tap mx-auto mt-4 flex min-h-11 items-center px-3 text-sm text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Nicht mehr warten · weiter
-          </button>
-        )}
-      </>
-    );
+      ) : view.input === "none" ? (
+        <ShowStage
+          game={game}
+          pub={pub}
+          view={view}
+          me={me}
+          fac={fac}
+          onAdvance={() => facAct(advanceShow)}
+        />
+      ) : mustAct ? (
+        <ControllerInput
+          key={stageKey}
+          photos={photos}
+          game={game}
+          pub={pub}
+          view={view}
+          me={me}
+          priv={priv?.key === stageKey ? priv.data : null}
+          roundKey={snap.roundKey ?? ""}
+          onSend={send}
+        />
+      ) : (
+        <>
+          <Waiting
+            title={
+              submitted
+                ? "Versiegelt · warte auf die anderen"
+                : view.input === "teams"
+                  ? "Die Runde trägt das Ergebnis ein."
+                  : "Diese Phase spielen die anderen."
+            }
+            sub={
+              progress
+                ? `${progress.submitted}/${progress.required} abgegeben`
+                : undefined
+            }
+          />
+          {fac && (
+            <button
+              type="button"
+              onClick={forceOn}
+              className="tap mx-auto mt-4 flex min-h-11 items-center px-3 text-sm text-muted-foreground underline-offset-4 hover:underline"
+            >
+              Nicht mehr warten · weiter
+            </button>
+          )}
+        </>
+      );
   } else body = <Waiting title="Gleich geht's los." />;
 
   return (
@@ -740,6 +775,26 @@ export function GangRoom({
     >
       {body}
       {pub.gameId === "after-dark" &&
+        pub.kind === "play" &&
+        pub.afterDarkKey &&
+        pub.afterDarkKey !== withdrawnKey &&
+        pub.roster.some((p) => p.id === me) && (
+          <button
+            type="button"
+            className={btn({ variant: "ghost", size: "lg" })}
+            onClick={() =>
+              void run(async () => {
+                await client.afterDarkControl(token, pub.afterDarkKey!, true);
+                setWithdrawnKey(pub.afterDarkKey!);
+                await refresh();
+              })
+            }
+          >
+            Für den Rest von AFTER DARK nur zuschauen
+          </button>
+        )}
+      {pub.gameId === "after-dark" &&
+        pub.afterDarkKey !== withdrawnKey &&
         view &&
         !["private", "perform", "reveal", "score"].includes(view.stage) &&
         pub.requiredPlayerIds.includes(me) &&
@@ -948,7 +1003,8 @@ function Lobby({
   const ok = queueFits(pub.queue, players.length) && (pacing?.fits ?? true);
   const adult = pub.queue.includes("after-dark");
   const [consent, setConsent] = useState(false);
-  const [optionalMechanics, setOptionalMechanics] = useState<GangOptionalMechanics>({});
+  const [optionalMechanics, setOptionalMechanics] =
+    useState<GangOptionalMechanics>({});
   const [copied, setCopied] = useState<string | null>(null);
   const jUrl = joinUrl(origin(), snap.code);
   const sUrl = screenUrl(origin(), snap.code);
@@ -1106,7 +1162,11 @@ function Lobby({
               Ich bin 18+. Alle anderen entscheiden auf ihrem eigenen Handy.
             </label>
           )}
-          <OptionalMechanics games={pub.queue} value={optionalMechanics} onChange={setOptionalMechanics} />
+          <OptionalMechanics
+            games={pub.queue}
+            value={optionalMechanics}
+            onChange={setOptionalMechanics}
+          />
           {!ok && (
             <p className="mb-2 text-sm text-muted-foreground">
               {players.length < lo
@@ -1394,7 +1454,36 @@ function ControllerInput({
         )}
 
       {view.input === "position" ? (
-        <div className="mt-6"><label className="block text-sm">Dein Platz von links nach rechts<select className="mt-3 min-h-14 w-full rounded-xl border border-line bg-room px-4 text-foreground" value={pick ?? ""} onChange={e => setPick(e.target.value)}><option value="" disabled>Position wählen</option>{cards.map(c=><option key={c.key} value={c.key}>Position {c.label}</option>)}</select></label><p className="mt-3 text-sm text-muted-foreground">Jede Position darf nur einmal vorkommen. Einigt euch im Raum, bevor ihr abgebt.</p><button disabled={!pick} onClick={()=>pick && onSend("pick",{key:pick})} className={cn(primary,"mt-6")}>Position bestätigen</button></div>
+        <div className="mt-6">
+          <label className="block text-sm">
+            Dein Platz von links nach rechts
+            <select
+              className="mt-3 min-h-14 w-full rounded-xl border border-line bg-room px-4 text-foreground"
+              value={pick ?? ""}
+              onChange={(e) => setPick(e.target.value)}
+            >
+              <option value="" disabled>
+                Position wählen
+              </option>
+              {cards.map((c) => (
+                <option key={c.key} value={c.key}>
+                  Position {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Jede Position darf nur einmal vorkommen. Einigt euch im Raum, bevor
+            ihr abgebt.
+          </p>
+          <button
+            disabled={!pick}
+            onClick={() => pick && onSend("pick", { key: pick })}
+            className={cn(primary, "mt-6")}
+          >
+            Position bestätigen
+          </button>
+        </div>
       ) : view.input === "options" ? (
         <>
           <div
@@ -1402,49 +1491,58 @@ function ControllerInput({
             aria-label="Optionen"
             className="mt-6 border-t border-line"
           >
-            {cards.filter(c => !(gid === "the-line" && view.stage === "predict" && c.key === me)).map((c, i) => (
-              <button
-                key={c.key}
-                type="button"
-                role="radio"
-                aria-checked={pick === c.key}
-                onClick={() => {
-                  haptic(5);
-                  setPick(c.key);
-                }}
-                className={cn(
-                  "tap relative flex min-h-16 w-full items-center gap-4 border-b border-line py-3 pl-1 text-left transition-colors",
-                  pick !== null && pick !== c.key && "opacity-45",
-                )}
-              >
-                <span
+            {cards
+              .filter(
+                (c) =>
+                  !(
+                    gid === "the-line" &&
+                    view.stage === "predict" &&
+                    c.key === me
+                  ),
+              )
+              .map((c, i) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={pick === c.key}
+                  onClick={() => {
+                    haptic(5);
+                    setPick(c.key);
+                  }}
                   className={cn(
-                    "absolute left-0 top-0 h-full w-[3px] origin-top scale-y-0 bg-[var(--g)] transition-transform duration-300",
-                    pick === c.key && "scale-y-100",
+                    "tap relative flex min-h-16 w-full items-center gap-4 border-b border-line py-3 pl-1 text-left transition-colors",
+                    pick !== null && pick !== c.key && "opacity-45",
                   )}
-                  aria-hidden
-                />
-                <span className="w-7 shrink-0 pl-2 font-mono text-xs text-muted-foreground">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span className="min-w-0 flex-1 break-words font-display text-2xl leading-tight">
-                  {c.photoId && photos[c.photoId] && (
-                    <img
-                      src={photos[c.photoId]}
-                      alt={c.label || "Anonymes Fotomotiv"}
-                      className="mb-3 max-h-64 w-full rounded-md object-contain"
-                    />
-                  )}
-                  {c.label}
-                </span>
-                {pick === c.key && (
-                  <Check
-                    className="size-5 shrink-0 text-[var(--g)]"
+                >
+                  <span
+                    className={cn(
+                      "absolute left-0 top-0 h-full w-[3px] origin-top scale-y-0 bg-[var(--g)] transition-transform duration-300",
+                      pick === c.key && "scale-y-100",
+                    )}
                     aria-hidden
                   />
-                )}
-              </button>
-            ))}
+                  <span className="w-7 shrink-0 pl-2 font-mono text-xs text-muted-foreground">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="min-w-0 flex-1 break-words font-display text-2xl leading-tight">
+                    {c.photoId && photos[c.photoId] && (
+                      <img
+                        src={photos[c.photoId]}
+                        alt={c.label || "Anonymes Fotomotiv"}
+                        className="mb-3 max-h-64 w-full rounded-md object-contain"
+                      />
+                    )}
+                    {c.label}
+                  </span>
+                  {pick === c.key && (
+                    <Check
+                      className="size-5 shrink-0 text-[var(--g)]"
+                      aria-hidden
+                    />
+                  )}
+                </button>
+              ))}
           </div>
           <button
             type="button"
@@ -1770,7 +1868,8 @@ function ShowStage({
           +{res.scoreDelta[me]} FÜR DICH
         </p>
       )}
-      {(!["the-line", "after-dark"].includes(game.id) || (game.id === "the-line" && pub.optionalMechanics?.linePredictions)) && (
+      {(!["the-line", "after-dark"].includes(game.id) ||
+        (game.id === "the-line" && pub.optionalMechanics?.linePredictions)) && (
         <Leaders pub={pub} me={me} />
       )}
       {fac ? (

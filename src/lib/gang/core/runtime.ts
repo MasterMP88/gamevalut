@@ -744,6 +744,43 @@ export function requiredPlayerIds(state: GangRuntimeState): string[] {
   return eligibleForStage(state);
 }
 
+/** Withdrawal is independent of whose turn it is and whether an answer was sealed.
+ * Removes unrevealed contributions for this round; already public results cannot be unshared. */
+export function withdrawAfterDark(
+  state: GangRuntimeState,
+  playerId: string,
+): GangRuntimeState {
+  if (
+    state.gameId !== "after-dark" ||
+    state.finished ||
+    !state.players.some((p) => p.id === playerId) ||
+    state.declinedIds?.includes(playerId)
+  )
+    return state;
+  const declinedIds = [...(state.declinedIds ?? []), playerId];
+  const stageSubmissions = Object.fromEntries(
+    Object.entries(state.round.stageSubmissions).map(([stage, actions]) => [
+      stage,
+      Object.fromEntries(
+        Object.entries(actions).filter(([id]) => id !== playerId),
+      ),
+    ]),
+  );
+  const privateByPlayer = Object.fromEntries(
+    Object.entries(state.round.privateByPlayer).filter(
+      ([id]) => id !== playerId,
+    ),
+  );
+  return {
+    ...state,
+    declinedIds,
+    round: { ...state.round, stageSubmissions, privateByPlayer },
+    ...(state.players.length - declinedIds.length < 2
+      ? { finished: true, winnerIds: [] }
+      : {}),
+  };
+}
+
 export function submitGangAction(
   state: GangRuntimeState,
   action: GangRuntimeAction,
@@ -1623,6 +1660,8 @@ export function privateGangView(
   playerId: string,
 ): GangPrivatePayload | null {
   if (!state.players.some((player) => player.id === playerId)) return null;
+  if (state.gameId === "after-dark" && state.declinedIds?.includes(playerId))
+    return null;
   if (state.gameId === "draw-this" && stageOf(state) === "answer") {
     const base = state.round.privateByPlayer[playerId] ?? {};
     if (base.active)

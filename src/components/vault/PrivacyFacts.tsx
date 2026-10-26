@@ -1,15 +1,87 @@
 /** Product data handling, shared by the short dialog and the public explanation. */
 export function PrivacyFacts() {
-  return <ul className="space-y-5 text-[15px] leading-relaxed text-muted-foreground">
-    <li><strong className="text-foreground">Ein gemeinsames Handy:</strong> Eure laufende Paarnacht bleibt zunächst im Tab. Ein Neuladen verliert nicht ausdrücklich gesicherte Antworten, Echo-Notizen und Songlisten. Der Browser merkt sich separat Inhalts-IDs und Zeitpunkte, damit bekannte Fragen später wiederkommen.</li>
-    <li><strong className="text-foreground">Mit Account:</strong> Wir sichern den strukturellen Paar-Spielstand: Spiel, Szene, Punkte, Einstellungen, Namen und Inhaltsverlauf. Getippte Echo-Notizen, private Anker und die persönliche Tracklist gehören nicht zum automatischen Spielstand.</li>
-    <li><strong className="text-foreground">Mehrere Geräte:</strong> Namen, Eingaben, geheime Karten, Songtitel und gegebenenfalls Fotos werden für die laufende Runde durch einen privaten Raum übertragen. Andere Mitspielende sehen sie erst in der vorgesehenen Phase. Das Host-Gerät verarbeitet die Regeln und braucht dafür Zugriff auf die Rundendaten. Ein Raum läuft nach 12 Stunden ab; die automatische Bereinigung löscht ihn und seine zugehörigen Daten spätestens beim nächsten Lauf nach weiteren fünf Minuten.</li>
-    <li><strong className="text-foreground">Fotos:</strong> PHOTO HUNT verkleinert Bilder vor dem Senden und erstellt sie ohne ursprüngliche Bildmetadaten neu. Nach der Freigabe sieht die Runde die Galerie. Andere können sichtbare Inhalte selbst abfotografieren oder speichern; eine spätere Raumlöschung entfernt solche Kopien nicht.</li>
-    <li><strong className="text-foreground">Momente sichern:</strong> Freitext wird nur dann dauerhaft als Saved Moment gespeichert, wenn du das ausdrücklich auswählst. Diese Momente lassen sich in Tonight einzeln löschen. Echo-Notizen im laufenden Spiel kannst du unter „Gemerkte Momente“ ansehen und entfernen.</li>
-    <li><strong className="text-foreground">Vom Gast zum Account:</strong> Wenn du „Account erstellen & sichern“ wählst, hält dieser Browser einen bereinigten Spielstand bis zu zwei Stunden vor, damit die E-Mail-Bestätigung auch in einem neuen Tab funktioniert. Er enthält keine Echo-Notizen oder Songliste.</li>
-    <li><strong className="text-foreground">Director:</strong> Der kuratierte Director funktioniert ohne KI-Anfrage. Falls die serverseitige KI-Erweiterung freigeschaltet ist, kann sie Namen, Spielgrenzen, letzte Szenentitel und höchstens sechs nicht-private Anker verarbeiten. Private oder sensible Anker sind ausgeschlossen. Bei fehlender Freigabe oder einem Fehler wählt der Director lokale Inhalte.</li>
-    <li><strong className="text-foreground">Verlauf und Gerätewechsel:</strong> Ein Account synchronisiert gesehene Inhalts-IDs. Ohne Account bleibt dieser Verlauf auf dem Gerät. Kein endlicher Fragenvorrat kann dauerhaft neue Inhalte garantieren: Ungespieltes kommt zuerst, danach das am längsten Zurückliegende.</li>
-    <li><strong className="text-foreground">Verbindung:</strong> Ein bereits geladenes Spiel auf einem Handy kann lokale Inhalte weiter nutzen. Mehrgeräte-Räume, Cloud-Sicherung, Zahlungen und externe Musikdienste brauchen eine Internetverbindung.</li>
-    <li><strong className="text-foreground">Eure Grenzen:</strong> Körperliche Aufgaben brauchen gegenseitige Zustimmung. Überspringen kostet keine Punkte. Berührung, Sinnliches und Drinks sind bei Paarspielen zunächst aus; AFTER DARK verlangt persönliche Zustimmung.</li>
-  </ul>;
+  return (
+    <ul className="space-y-5 text-[15px] leading-relaxed text-muted-foreground">
+      <li>
+        <strong className="text-foreground">Ein gemeinsames Handy:</strong> Eure
+        laufende Paarnacht bleibt zunächst im Tab. Ein Neuladen verliert nicht
+        ausdrücklich gesicherte Antworten, Echo-Notizen und Songlisten. Der
+        Browser merkt sich separat Inhalts-IDs und Zeitpunkte, damit bekannte
+        Fragen später wiederkommen.
+      </li>
+      <li>
+        <strong className="text-foreground">Couch-Abende:</strong> Der aktuelle
+        gemeinsame Spielstand einschließlich Teamnamen, Punkten und
+        Fragenreihenfolge lässt sich in diesem Browser-Tab bis zu zwölf Stunden
+        wiederherstellen. Er wird bei Accountwechsel oder bewusstem Verlassen
+        entfernt. Nach Neuladen startet ein laufender Timer pausiert.
+        Musikdateien und Abspieladressen werden nicht gespeichert; für lokale
+        Tracks wählt ihr denselben Ordner erneut.
+      </li>
+      <li>
+        <strong className="text-foreground">Mit Account:</strong> Wir sichern
+        den strukturellen Paar-Spielstand: Spiel, Szene, Punkte, Einstellungen,
+        Namen und Inhaltsverlauf. Getippte Echo-Notizen, private Anker und die
+        persönliche Tracklist gehören nicht zum automatischen Spielstand.
+      </li>
+      <li>
+        <strong className="text-foreground">Mehrere Geräte:</strong> Namen,
+        Eingaben, geheime Karten, Songtitel und gegebenenfalls Fotos werden für
+        die laufende Runde durch einen privaten Raum übertragen. Andere
+        Mitspielende sehen sie erst in der vorgesehenen Phase. Das Host-Gerät
+        verarbeitet die Regeln und braucht dafür Zugriff auf die Rundendaten.
+        Ein Raum läuft nach 12 Stunden ab; die automatische Bereinigung löscht
+        ihn und seine zugehörigen Daten spätestens beim nächsten Lauf nach
+        weiteren fünf Minuten.
+      </li>
+      <li>
+        <strong className="text-foreground">Fotos:</strong> PHOTO HUNT
+        verkleinert Bilder vor dem Senden und erstellt sie ohne ursprüngliche
+        Bildmetadaten neu. Nach der Freigabe sieht die Runde die Galerie. Andere
+        können sichtbare Inhalte selbst abfotografieren oder speichern; eine
+        spätere Raumlöschung entfernt solche Kopien nicht.
+      </li>
+      <li>
+        <strong className="text-foreground">Momente sichern:</strong> Freitext
+        wird nur dann dauerhaft als Saved Moment gespeichert, wenn du das
+        ausdrücklich auswählst. Diese Momente lassen sich in Tonight einzeln
+        löschen. Echo-Notizen im laufenden Spiel kannst du unter „Gemerkte
+        Momente“ ansehen und entfernen.
+      </li>
+      <li>
+        <strong className="text-foreground">Vom Gast zum Account:</strong> Wenn
+        du „Account erstellen & sichern“ wählst, hält dieser Browser einen
+        bereinigten Spielstand bis zu zwei Stunden vor, damit die
+        E-Mail-Bestätigung auch in einem neuen Tab funktioniert. Er enthält
+        keine Echo-Notizen oder Songliste.
+      </li>
+      <li>
+        <strong className="text-foreground">Director:</strong> Der kuratierte
+        Director funktioniert ohne KI-Anfrage. Falls die serverseitige
+        KI-Erweiterung freigeschaltet ist, kann sie Namen, Spielgrenzen, letzte
+        Szenentitel und höchstens sechs nicht-private Anker verarbeiten. Private
+        oder sensible Anker sind ausgeschlossen. Bei fehlender Freigabe oder
+        einem Fehler wählt der Director lokale Inhalte.
+      </li>
+      <li>
+        <strong className="text-foreground">Verlauf und Gerätewechsel:</strong>{" "}
+        Ein Account synchronisiert gesehene Inhalts-IDs. Ohne Account bleibt
+        dieser Verlauf auf dem Gerät. Kein endlicher Fragenvorrat kann dauerhaft
+        neue Inhalte garantieren: Ungespieltes kommt zuerst, danach das am
+        längsten Zurückliegende.
+      </li>
+      <li>
+        <strong className="text-foreground">Verbindung:</strong> Ein bereits
+        geladenes Spiel auf einem Handy kann lokale Inhalte weiter nutzen.
+        Mehrgeräte-Räume, Cloud-Sicherung, Zahlungen und externe Musikdienste
+        brauchen eine Internetverbindung.
+      </li>
+      <li>
+        <strong className="text-foreground">Eure Grenzen:</strong> Körperliche
+        Aufgaben brauchen gegenseitige Zustimmung. Überspringen kostet keine
+        Punkte. Berührung, Sinnliches und Drinks sind bei Paarspielen zunächst
+        aus; AFTER DARK verlangt persönliche Zustimmung.
+      </li>
+    </ul>
+  );
 }

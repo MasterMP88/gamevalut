@@ -136,13 +136,15 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     return { offerKey: p.offerKey, accessToken: p.accessToken };
   })
   .handler(async ({ data }) => {
-    const { verifyUser, stripeCustomerFor, stripeClient, accessSnapshot } =
+    const { verifyUser, stripeCustomerFor, accessSnapshot } =
       await import("./stripe.server");
+    const { createReservedCheckout } =
+      await import("./checkout-reservation.server");
     const user = await verifyUser(data.accessToken);
     return runCheckout(data.offerKey, user, originOf(), {
       snapshot: accessSnapshot,
       customer: stripeCustomerFor,
-      create: (params) => stripeClient().checkout.sessions.create(params),
+      create: createReservedCheckout,
     });
   });
 

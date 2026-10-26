@@ -19,6 +19,7 @@ import {
   privateGangView,
   publicGangView,
   submitGangAction,
+  withdrawAfterDark,
   type GangRoundResolution,
   type GangRuntimeAction,
   type GangRuntimePlayer,
@@ -93,6 +94,7 @@ export interface OnlineView {
 }
 
 export interface OnlinePublic {
+  afterDarkKey?: string;
   optionalMechanics?: GangOptionalMechanics | undefined;
   v: 1;
   kind: "lobby" | "play" | "finale" | "end";
@@ -152,7 +154,12 @@ export function inputKind(rt: GangRuntimeState): InputKind {
   if (["chain-reaction", "panic-button"].includes(g) && stage === "perform")
     return "done";
   if (g === "team-chaos" && stage === "react") return "teams";
-  if (g === "the-line" && stage === "perform" && rt.optionalMechanics?.linePredictions) return "position";
+  if (
+    g === "the-line" &&
+    stage === "perform" &&
+    rt.optionalMechanics?.linePredictions
+  )
+    return "position";
   if ((g === "team-chaos" || g === "the-line") && stage === "perform")
     return "done";
   if ((g === "after-dark" || g === "secret-missions") && stage === "perform")
@@ -217,7 +224,10 @@ export function buildCards(rt: GangRuntimeState): {
   const isPlayer =
     opts.length > 0 && opts.every((o) => rt.players.some((p) => p.id === o));
   return {
-    cards: opts.map((o) => ({ key: o, label: o === "__skip__" ? "Tipp auslassen" : name(o) || o })),
+    cards: opts.map((o) => ({
+      key: o,
+      label: o === "__skip__" ? "Tipp auslassen" : name(o) || o,
+    })),
     map: {},
   };
 }
@@ -339,16 +349,21 @@ export function buildPublic(
     qi: fac.qi,
     gameId,
     roster:
-      rt?.players.map((p) => ({
-        id: p.id,
-        name: p.name,
-        ...(p.teamId ? { teamId: p.teamId } : {}),
-      })) ?? [],
+      rt?.players
+        .filter(
+          (p) => rt.gameId !== "after-dark" || !rt.declinedIds?.includes(p.id),
+        )
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          ...(p.teamId ? { teamId: p.teamId } : {}),
+        })) ?? [],
     scores: rt?.scores ?? {},
     requiredPlayerIds: required,
     view,
     winnerIds: rt?.winnerIds ?? [],
     tracks,
+    ...(rt?.gameId === "after-dark" ? { afterDarkKey: rt.id } : {}),
     ...(gameId === "whos-that" && fac.kind === "finale"
       ? { titles: fac.history.flatMap((h) => h.revealItems ?? []) }
       : {}),
@@ -587,6 +602,15 @@ function withResolution(fac: FacState, next: GangRuntimeState): FacState {
       ? [...fac.history, res]
       : fac.history;
   return { ...fac, rt: next, history, kind: next.finished ? "finale" : "play" };
+}
+
+export function applyAfterDarkWithdrawals(
+  fac: FacState,
+  ids: string[],
+): FacState {
+  if (!fac.rt || fac.rt.gameId !== "after-dark") return fac;
+  const rt = ids.reduce(withdrawAfterDark, fac.rt);
+  return rt === fac.rt ? fac : withResolution(fac, rt);
 }
 
 /** Facilitator-only reveal / next-round advance. */

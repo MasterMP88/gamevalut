@@ -361,8 +361,23 @@ export function createRoomClient(rpc: Rpc) {
         p_player_token: token,
         p_photo_ids: ids,
       }),
-    pairControl: (token: string, roundKey: string, stage: string, kind?: "skip" | "pause" | "finish") =>
-      call<string[] | { accepted: boolean }>("couple_control", { p_player_token: token, p_round_key: roundKey, p_stage: stage, p_kind: kind ?? null }),
+    pairControl: (
+      token: string,
+      roundKey: string,
+      stage: string,
+      kind?: "skip" | "pause" | "finish",
+    ) =>
+      call<string[] | { accepted: boolean }>("couple_control", {
+        p_player_token: token,
+        p_round_key: roundKey,
+        p_stage: stage,
+        p_kind: kind ?? null,
+      }),
+    afterDarkControl: (token: string, gameKey: string, withdraw = false) =>
+      call<{ withdrawn: boolean; playerIds: string[] }>(
+        "gang_after_dark_control",
+        { p_player_token: token, p_game_key: gameKey, p_withdraw: withdraw },
+      ),
     loadRuntime: (token: string) =>
       call<Record<string, unknown> | null>("gang_load_runtime", {
         p_player_token: token,
@@ -383,6 +398,8 @@ export function defaultRoomClient(): RoomClient {
 }
 
 export const ROOM_ERROR_COPY: Record<string, string> = {
+  consent_changed:
+    "Eine Spielentscheidung hat sich geändert. Der Spielstand wird aktualisiert.",
   room_not_found: "Diesen Raum gibt es nicht (mehr). Prüf den Code.",
   host_access_required:
     "Für einen neuen Raum brauchst du einen aktiven Host-Zugang. Einladungen bleiben kostenlos.",
@@ -396,7 +413,8 @@ export const ROOM_ERROR_COPY: Record<string, string> = {
   stale_stage:
     "Die Zeit oder diese Phase ist vorbei. Der Spielstand wird aktualisiert.",
   room_full: "Der Raum ist voll.",
-  room_limit_reached: "Du hast bereits fünf offene Räume. Beende erst einen bestehenden Abend.",
+  room_limit_reached:
+    "Du hast bereits fünf offene Räume. Beende erst einen bestehenden Abend.",
   display_name_invalid: "Bitte einen Namen mit 1–32 Zeichen.",
   invalid_player_token: "Deine Sitzung ist abgelaufen. Tritt neu bei.",
 };

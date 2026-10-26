@@ -28,7 +28,7 @@ try {
   );
   await writeFile(
     files[1],
-    `import React from 'react';import {createRoot} from 'react-dom/client';import {CouchPlayer} from './components/gang/CouchPlayer';import type {GangGameId} from './lib/gang/core/playbooks';import './styles.css';const p=new URLSearchParams(location.search);createRoot(document.getElementById('root')!).render(<CouchPlayer gameId={(p.get('game')||'the-majority') as GangGameId} count={Number(p.get('n')||6)} display={p.get('display')==='phone'?'phone':'couch'} rounds={2} onExit={()=>{document.body.dataset['exited']='true'}}/>);`,
+    `import React from 'react';import {createRoot} from 'react-dom/client';import {CouchPlayer,GangSharedNight} from './components/gang/CouchPlayer';import {readCouchCheckpoint} from './lib/gang/couch-resume';import type {GangGameId} from './lib/gang/core/playbooks';import './styles.css';const p=new URLSearchParams(location.search);createRoot(document.getElementById('root')!).render(p.has('recovery')?<GangSharedNight queue={['panic-button','the-line']} players={Array.from({length:6},(_,i)=>({id:'p'+i,name:'Person '+(i+1)}))} checkpoint={readCouchCheckpoint()??undefined} onExit={()=>{document.body.dataset['exited']='true'}}/>:<CouchPlayer gameId={(p.get('game')||'the-majority') as GangGameId} count={Number(p.get('n')||6)} display={p.get('display')==='phone'?'phone':'couch'} rounds={2} onExit={()=>{document.body.dataset['exited']='true'}}/>);`,
   );
   await writeFile(
     files[2],
@@ -355,24 +355,81 @@ try {
       });
       await page.close();
     }
+  const recoveryChecks = [];
+  for (const width of [390, 1440, 1920]) {
+    const page = await browser.newPage({
+      viewport: { width, height: 900 },
+      reducedMotion: "reduce",
+    });
+    page.on("pageerror", (e) => errors.push(`recovery/${width}: ${e.message}`));
+    await page.goto("http://127.0.0.1:4176/couch-qa.html?recovery=1");
+    await page.getByRole("button", { name: "Los geht’s", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Runde starten", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Gültig · weiter", exact: true })
+      .click();
+    const before = await page.evaluate(() =>
+      JSON.parse(sessionStorage.getItem("nocturne.couch.resume")),
+    );
+    await page.reload();
+    await page.getByText("Kurz durchatmen.", { exact: true }).waitFor();
+    const after = await page.evaluate(() =>
+      JSON.parse(sessionStorage.getItem("nocturne.couch.resume")),
+    );
+    assert.equal(after.state.paused, true);
+    assert.deepEqual(after.state.deck, before.state.deck);
+    assert.equal(
+      await page
+        .getByTestId("couch-player")
+        .evaluate((el) => el.scrollWidth > el.clientWidth + 1),
+      false,
+      `recovery/${width} overflow`,
+    );
+    assert.deepEqual(after.state.turnResults, before.state.turnResults);
+    assert.deepEqual(after.state.scores, before.state.scores);
+    await page.screenshot({
+      path: path.join(out, `recovery-${width}.png`),
+      fullPage: true,
+    });
+    await page
+      .getByRole("button", { name: "Weiter geht’s", exact: true })
+      .click();
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Gültig · weiter", exact: true })
+        .isEnabled(),
+      true,
+    );
+    recoveryChecks.push({
+      width,
+      status: "pass",
+      paused: true,
+      deckPreserved: true,
+      scoresPreserved: true,
+    });
+    await page.close();
+  }
   assert.deepEqual(errors, []);
   await writeFile(
     path.join(out, "report.json"),
-    JSON.stringify({ checks: report, errors }, null, 2),
+    JSON.stringify({ checks: report, recoveryChecks, errors }, null, 2),
   );
   console.log(
     JSON.stringify({
       sessions: report.length,
       rounds: report.length * 3,
+      reloads: recoveryChecks.length,
       errors,
     }),
   );
 } finally {
-  await browser?.close();
-  server?.kill();
   await Promise.all(
     files.map((f, i) =>
       originals[i] ? writeFile(f, originals[i]) : unlink(f).catch(() => {}),
     ),
   );
+  server?.kill();
+  await browser?.close();
 }

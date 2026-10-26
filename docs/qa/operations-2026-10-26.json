@@ -1,0 +1,244 @@
+{
+  "checks": [
+    {
+      "game": "the-majority",
+      "width": 390,
+      "players": 6,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "whos-that",
+      "width": 390,
+      "players": 6,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "the-line",
+      "width": 390,
+      "players": 9,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "bad-answers-only",
+      "width": 390,
+      "players": 6,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "music-drop",
+      "musicMode": "local",
+      "width": 390,
+      "players": 6,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "music-drop",
+      "musicMode": "dj",
+      "width": 390,
+      "players": 2,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "panic-button",
+      "width": 390,
+      "players": 6,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "team-chaos",
+      "width": 390,
+      "players": 30,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "chain-reaction",
+      "width": 390,
+      "players": 6,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "hot-seat",
+      "width": 390,
+      "players": 15,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "the-majority",
+      "width": 1440,
+      "players": 6,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "whos-that",
+      "width": 1440,
+      "players": 6,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "the-line",
+      "width": 1440,
+      "players": 9,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "bad-answers-only",
+      "width": 1440,
+      "players": 6,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "music-drop",
+      "musicMode": "local",
+      "width": 1440,
+      "players": 6,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "music-drop",
+      "musicMode": "dj",
+      "width": 1440,
+      "players": 8,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "panic-button",
+      "width": 1440,
+      "players": 6,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "team-chaos",
+      "width": 1440,
+      "players": 30,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "chain-reaction",
+      "width": 1440,
+      "players": 6,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "hot-seat",
+      "width": 1440,
+      "players": 15,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "the-majority",
+      "width": 1920,
+      "players": 99,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "whos-that",
+      "width": 1920,
+      "players": 99,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "the-line",
+      "width": 1920,
+      "players": 99,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "bad-answers-only",
+      "width": 1920,
+      "players": 99,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "music-drop",
+      "musicMode": "local",
+      "width": 1920,
+      "players": 99,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "music-drop",
+      "musicMode": "dj",
+      "width": 1920,
+      "players": 99,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "panic-button",
+      "width": 1920,
+      "players": 99,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "team-chaos",
+      "width": 1920,
+      "players": 30,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "chain-reaction",
+      "width": 1920,
+      "players": 99,
+      "rounds": 3,
+      "status": "pass"
+    },
+    {
+      "game": "hot-seat",
+      "width": 1920,
+      "players": 15,
+      "rounds": 3,
+      "status": "pass"
+    }
+  ],
+  "recoveryChecks": [
+    {
+      "width": 390,
+      "status": "pass",
+      "paused": true,
+      "deckPreserved": true,
+      "scoresPreserved": true
+    },
+    {
+      "width": 1440,
+      "status": "pass",
+      "paused": true,
+      "deckPreserved": true,
+      "scoresPreserved": true
+    },
+    {
+      "width": 1920,
+      "status": "pass",
+      "paused": true,
+      "deckPreserved": true,
+      "scoresPreserved": true
+    }
+  ],
+  "errors": []
+}

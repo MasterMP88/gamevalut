@@ -1,4 +1,13 @@
-import { localAudioDeck, MAX_LOCAL_AUDIO_FILES } from "@/lib/gang/local-audio";
+import {
+  writeCouchCheckpoint,
+  clearCouchCheckpoint,
+  type CouchCheckpoint,
+} from "@/lib/gang/couch-resume";
+import {
+  localAudioDeck,
+  localAudioId,
+  MAX_LOCAL_AUDIO_FILES,
+} from "@/lib/gang/local-audio";
 import {
   useEffect,
   useReducer,
@@ -55,17 +64,23 @@ export function GangSharedNight({
   rounds,
   onExit,
   display = "couch",
+  checkpoint,
 }: {
   queue: GangGameId[];
   players: GangRuntimePlayer[];
   rounds?: Record<string, number> | undefined;
   onExit: () => void;
   display?: "couch" | "phone";
+  checkpoint?: CouchCheckpoint | undefined;
 }) {
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(checkpoint?.index ?? 0);
+  const exit = () => {
+    clearCouchCheckpoint();
+    onExit();
+  };
   const id = queue[index];
   const advance = () =>
-    index + 1 < queue.length ? setIndex(index + 1) : onExit();
+    index + 1 < queue.length ? setIndex(index + 1) : exit();
   if (!id) return null;
   if (!couchGame(id))
     return (
@@ -84,7 +99,19 @@ export function GangSharedNight({
       count={players.length}
       names={players.length <= 4 ? players.map((p) => p.name) : []}
       rounds={rounds?.[id]}
-      onExit={onExit}
+      onExit={exit}
+      restored={checkpoint?.index === index ? checkpoint : undefined}
+      onCheckpoint={(state, audioIds) =>
+        writeCouchCheckpoint({
+          queue,
+          index,
+          players,
+          rounds,
+          display,
+          state,
+          audioIds,
+        })
+      }
       onNext={index + 1 < queue.length ? advance : undefined}
       nextTitle={gangGame(queue[index + 1] ?? "")?.title}
       display={display}
@@ -138,6 +165,8 @@ export function CouchPlayer({
   onNext,
   nextTitle,
   display = "couch",
+  restored,
+  onCheckpoint,
 }: {
   gameId: GangGameId;
   count: number;
@@ -146,14 +175,20 @@ export function CouchPlayer({
   onExit: () => void;
   onNext?: (() => void) | undefined;
   nextTitle?: string | undefined;
+  restored?: CouchCheckpoint | undefined;
+  onCheckpoint?: ((state: CouchState, audioIds: string[]) => void) | undefined;
   display?: "couch" | "phone";
 }) {
-  const [seed, setSeed] = useState(() =>
-    Math.floor(Math.random() * 2147483647),
+  const [seed, setSeed] = useState(
+    () => restored?.state.seed ?? Math.floor(Math.random() * 2147483647),
   );
-  const [vibe, setVibe] = useState<CouchVibe>("lively");
-  const [musicMode, setMusicMode] = useState<CouchMusicMode>("dj");
-  const [musicDjIndex, setMusicDjIndex] = useState(0);
+  const [vibe, setVibe] = useState<CouchVibe>(restored?.state.vibe ?? "lively");
+  const [musicMode, setMusicMode] = useState<CouchMusicMode>(
+    restored?.state.musicMode ?? "dj",
+  );
+  const [musicDjIndex, setMusicDjIndex] = useState(
+    (restored?.state.musicDj?.member ?? 1) - 1,
+  );
   const [state, dispatch] = useReducer(
     (
       s: CouchState,
@@ -183,6 +218,7 @@ export function CouchPlayer({
         : reduceCouch(s, a),
     null,
     () =>
+      restored?.state ??
       createCouchSession({
         gameId,
         playerCount: count,
@@ -202,6 +238,16 @@ export function CouchPlayer({
   const [winners, setWinners] = useState<string[]>([]);
   const [confirmExit, setConfirmExit] = useState(false);
   const [tracks, setTracks] = useState<LocalTrack[]>([]);
+  const [recoveryAudioIds, setRecoveryAudioIds] = useState(
+    restored?.audioIds ?? [],
+  );
+  const needsAudio =
+    gameId === "music-drop" &&
+    state.musicMode === "local" &&
+    recoveryAudioIds.length > 0 &&
+    tracks.length === 0;
+  const checkpointRef = useRef(onCheckpoint);
+  checkpointRef.current = onCheckpoint;
   const [audioError, setAudioError] = useState("");
   const [playing, setPlaying] = useState(false);
   const [heard, setHeard] = useState(false);
@@ -211,8 +257,24 @@ export function CouchPlayer({
   const trackRef = useRef(tracks);
   trackRef.current = tracks;
   const stopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioIdsRef = useRef<string[]>([]);
+  audioIdsRef.current = tracks.length
+    ? tracks.map((t) => t.id)
+    : recoveryAudioIds;
   const stateRef = useRef(state);
   stateRef.current = state;
+  useEffect(() => {
+    checkpointRef.current?.(state, audioIdsRef.current);
+  }, [state, tracks]);
+  useEffect(() => {
+    const save = () =>
+      checkpointRef.current?.(
+        reduceCouch(stateRef.current, { type: "PAUSE", at: Date.now() }),
+        audioIdsRef.current,
+      );
+    window.addEventListener("pagehide", save);
+    return () => window.removeEventListener("pagehide", save);
+  }, []);
   const stopAudio = () => {
     audio.current?.pause();
     setPlaying(false);
@@ -275,7 +337,8 @@ export function CouchPlayer({
     const pause = () => {
       if (document.hidden) {
         // Switching to the DJ's independent music app is part of this mode.
-        if (stateRef.current.musicMode === "dj") return;
+        if (gameId === "music-drop" && stateRef.current.musicMode === "dj")
+          return;
         dispatch({ type: "PAUSE", at: Date.now() });
         stopAudio();
       }
@@ -333,6 +396,32 @@ export function CouchPlayer({
 
   function selectFiles(files: FileList | null) {
     stopAudio();
+    if (needsAudio) {
+      const filesById = new Map(
+        Array.from(files ?? []).map((file) => [localAudioId(file), file]),
+      );
+      if (
+        recoveryAudioIds.slice(state.index).some((id) => !filesById.has(id))
+      ) {
+        setAudioError(
+          "Wählt denselben Musikordner erneut. Es fehlen noch Tracks für die restlichen Runden.",
+        );
+        return;
+      }
+      setTracks(
+        recoveryAudioIds.map((id) => {
+          const file = filesById.get(id);
+          return {
+            id,
+            title: file?.name.replace(/\.[^.]+$/, "").replace(/_/g, " ") ?? "",
+            url: file ? URL.createObjectURL(file) : "",
+          };
+        }),
+      );
+      setRecoveryAudioIds([]);
+      setAudioError("");
+      return;
+    }
     tracks.forEach((t) => URL.revokeObjectURL(t.url));
     const seen = seenIds();
     const chosen = localAudioDeck(Array.from(files ?? []), seen, seed);
@@ -474,6 +563,7 @@ export function CouchPlayer({
             {state.phase === "play" && (
               <button
                 className={actionClass + " p-3"}
+                disabled={needsAudio}
                 aria-label={state.paused ? "Weiterspielen" : "Pause"}
                 onClick={() => {
                   stopAudio();
@@ -507,6 +597,26 @@ export function CouchPlayer({
           <p role="status" className="text-sm text-white/60">
             {screenError}
           </p>
+        )}
+        {needsAudio && (
+          <section
+            className="rounded-xl border border-white/20 p-4"
+            aria-label="Musik wieder verbinden"
+          >
+            <p>
+              Euer Spielstand ist wieder da. Wählt denselben Musikordner erneut,
+              damit die restlichen Tracks in derselben Reihenfolge
+              weiterspielen. Audiodateien bleiben auf eurem Gerät.
+            </p>
+            <input
+              className="mt-3 min-h-12 max-w-full"
+              type="file"
+              accept="audio/*,.mp3,.m4a,.ogg,.wav,.flac,.aac"
+              multiple
+              aria-label="Musikordner wieder verbinden"
+              onChange={(e) => selectFiles(e.target.files)}
+            />
+          </section>
         )}
         {confirmExit ? (
           <section className="my-auto mx-auto w-full max-w-xl rounded-3xl border border-white/20 bg-[#181a1d] p-6">
@@ -802,7 +912,7 @@ export function CouchPlayer({
                     <h2
                       data-phase-heading
                       tabIndex={-1}
-                      className="outline-none font-sans font-semibold tracking-tight text-6xl"
+                      className="outline-none font-sans font-semibold tracking-tight text-[clamp(2rem,8vw,3.75rem)] break-words"
                     >
                       Kurz durchatmen.
                     </h2>
@@ -813,6 +923,7 @@ export function CouchPlayer({
                     )}
                     <button
                       className={primary + " mt-6"}
+                      disabled={needsAudio}
                       onClick={() =>
                         dispatch({ type: "RESUME", at: Date.now() })
                       }
