@@ -5,6 +5,7 @@ node_modules/
 dist/
 dist-test/
 coverage/
+.pages-public/
 .env
 .env.*
 !.env.example

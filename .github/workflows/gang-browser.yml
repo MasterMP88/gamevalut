@@ -6,6 +6,8 @@ on:
       - "gang/**"
       - "packages/gang-core/**"
       - ".github/workflows/gang-browser.yml"
+      - ".github/workflows/pages.yml"
+      - "scripts/package-pages.mjs"
 
 jobs:
   verify:
@@ -30,3 +32,7 @@ jobs:
           ! grep -Eiq 'PROTOTYPE|IN DEVELOPMENT|MULTIPLAYER RUNTIME.*COMING NEXT|heute noch nichts spielbar' gang/index.html gang/*.js
           grep -q 'ONE PHONE' gang/home.js
           grep -q 'id="catalog"' gang/home.js
+      - name: Verify static Pages artifact
+        run: |
+          node scripts/package-pages.mjs
+          node scripts/verify-pages.mjs

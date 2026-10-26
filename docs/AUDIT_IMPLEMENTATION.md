@@ -1,5 +1,7 @@
 # NOCTURNE – Umsetzung der Gesamtprüfung vom 25.10.2026
 
+> Integrationsschritt 26.10.2026: Geprüfter App-Quellcode wird mit PR #31 nach `main` übernommen. Das ist von der Lovable-Synchronisierung und Live-Veröffentlichung getrennt. Die nachfolgenden Zwischenstände bleiben als Verlauf erhalten; aktuelle Grenzen stehen in [main-integration-2026.md](main-integration-2026.md).
+
 Autorisiert: sämtliche Audit-Punkte und vollständige Spielerfahrung aller bestehenden Titel.
 Ausgangsstand Website: `16b8c9f72e19f62683d4b5fee3043a4457b3d9bb`; Core-Repo: `56669aa`.
 Dieser Branch führt den aktuellen Website-Code und die kanonischen Core-Pakete zusammen.

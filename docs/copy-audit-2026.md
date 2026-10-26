@@ -146,7 +146,7 @@ Alle vier Gates waren bei der Abnahme dieses Audits grün.
 
 ### Infrastruktur-Hinweis
 
-Das bestehende Root-`package-lock.json` enthält nicht portable lokale Links auf `../nocturne-audit-source/node_modules/...`. Das App-Quality-Gate installiert deshalb aktuell reproduzierbar aus `package.json` mit npm 11, ohne dieses Legacy-Lockfile zu verwenden. Das Lockfile sollte in einem separaten Infrastruktur-Cleanup sauber neu erzeugt werden; es ist kein Copy- oder Gameplay-Problem.
+Bei dieser Copy-Abnahme enthielt das Root-`package-lock.json` lokale Links auf ein anderes Arbeitsverzeichnis. Der Integrationsschritt vom 26.10.2026 ersetzt diese durch reguläre Registry-Pakete und prüft eine vollständig frische `npm ci`-Installation. Das App-Quality-Gate verwendet anschließend den versionierten Lockfile, statt ihn zu löschen. Siehe `docs/main-integration-2026.md`.
 
 ## Release-Kriterium
 
