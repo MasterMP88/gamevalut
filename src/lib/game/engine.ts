@@ -1,6 +1,6 @@
 import { ECHO_TEMPLATES, SCENES } from "./scenes";
 import { DETOURS, DIRECTOR_CUTS, MILESTONES, TEMPO_CUES, TEMPO_ORDER } from "./specials";
-import { GAMES_BY_ID, poolFor } from "./games";
+import { GAMES_BY_ID, poolFor } from "./games";\nimport { AUX_SIGNATURE_CADENCE } from "./music-scenes";\nimport { sameSong } from "@/lib/music/provider";
 import type {
   MusicRound,
   TrackEntry,
@@ -181,8 +181,27 @@ export function pickLocal(state: SessionState): { scene: Scene; seed: number } {
     const oldestPool = pool.filter((s) => order.lastIndexOf(s.id) <= oldest + Math.max(2, Math.floor(pool.length / 5)));
     if (oldestPool.length) pool = oldestPool;
   }
-  // A signature beat every third scene; retain consent and unseen boundaries.
-  if (state.sceneNumber % 3 === 0) {
+  // PASS//THE AUX owns its rhythm: every fifth beat deliberately breaks the normal loop.
+  // Planned final scenes prefer LAST TRACK so a timed night lands instead of merely stopping.
+  if (game.id === "pass-the-aux") {
+    const next = state.sceneNumber + 1;
+    const finalBeat = !!state.targetScenes && next === state.targetScenes;
+    if (finalBeat) {
+      const finals = pool.filter((s) => s.music?.signature === "last-track");
+      if (finals.length) pool = finals;
+    } else if (next >= AUX_SIGNATURE_CADENCE && next % AUX_SIGNATURE_CADENCE === 0) {
+      const signatures = pool.filter((s) => s.music?.signature && s.music.signature !== "last-track");
+      if (signatures.length) pool = signatures;
+    } else {
+      const regular = pool.filter((s) => !s.music?.signature);
+      if (next <= 3 && regular.length) pool = regular;
+      else {
+        const withoutFinale = pool.filter((s) => s.music?.signature !== "last-track");
+        if (withoutFinale.length) pool = withoutFinale;
+      }
+    }
+  } else if (state.sceneNumber % 3 === 0) {
+    // Other games keep the general owned-signature cadence.
     const owned = pool.filter((s) => s.only?.length === 1 && s.only[0] === game.id);
     if (owned.length) pool = owned;
   }
@@ -194,6 +213,21 @@ export function pickLocal(state: SessionState): { scene: Scene; seed: number } {
   const last = state.log[state.log.length - 1];
   const lastScene = state.current;
   const mixCounts = game.ai ? typeCounts(state) : null;
+  const recentAuxModes =
+    game.id === "pass-the-aux"
+      ? state.usedIds
+          .slice(-3)
+          .map((id) => SCENES.find((scene) => scene.id === id)?.music?.mode)
+          .filter((mode): mode is NonNullable<typeof mode> => !!mode)
+      : [];
+  const auxPreferredModes =
+    tp <= 0
+      ? ["speed", "solo"]
+      : tp === 1
+        ? ["guess", "duet", "speed"]
+        : tp === 2
+          ? ["duet", "guess", "consensus"]
+          : ["duet", "consensus", "solo"];
 
   let best: Scene | null = null;
   let bestScore = -Infinity;
@@ -206,6 +240,15 @@ export function pickLocal(state: SessionState): { scene: Scene; seed: number } {
     if (state.usedIds.includes(s.id)) score -= 12;
     if (state.recentIds.includes(s.id)) score -= 40;
     if (recentTypes.includes(s.type) && s.type !== "QUESTION") score -= 2;
+    if (game.id === "pass-the-aux" && s.music) {
+      if (auxPreferredModes.includes(s.music.mode)) score += 5;
+      const lastMode = recentAuxModes.at(-1);
+      if (lastMode === s.music.mode) score -= 5;
+      if (recentAuxModes.length >= 2 && recentAuxModes.slice(-2).every((mode) => mode === s.music!.mode)) score -= 30;
+      // READ ME should appear early enough to teach the social read mechanic; consensus lands later.
+      if (state.sceneNumber >= 2 && state.sceneNumber <= 6 && s.music.mode === "guess") score += 4;
+      if (state.sceneNumber < 3 && s.music.mode === "consensus") score -= 12;
+    }
     // ——— game-specific dramaturgy
     if (game.id === "roxy-after-dark") {
       if (s.type === "QUESTION" && qIn(state, SPARK_Q_WINDOW - 1) >= SPARK_Q_MAX) score -= 50;
@@ -584,7 +627,20 @@ export function roundTracks(state: SessionState): TrackEntry[] {
     if (!t || !title) return;
     if (i === 1 && mode !== "duet") return;
     const artist = t.artist?.trim().slice(0, 60) || undefined;
-    out.push({ ...t, title, artist, n: state.sceneNumber, owner: owners[i]!, prompt, mode, ...(r.reaction ? { reaction: r.reaction } : {}) });
+    const reaction =
+      r.reaction ??
+      (mode === "duet" && sameSong(r.picks[0], r.picks[1]) ? "match" : null);
+    out.push({
+      ...t,
+      title,
+      artist,
+      n: state.sceneNumber,
+      owner: owners[i]!,
+      prompt,
+      mode,
+      ...(scene.music?.signature ? { signature: scene.music.signature } : {}),
+      ...(reaction ? { reaction } : {}),
+    });
   });
   return out;
 }
