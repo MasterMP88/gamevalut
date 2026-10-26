@@ -196,11 +196,23 @@ export function pickLocal(state: SessionState): { scene: Scene; seed: number } {
       if (signatures.length) pool = signatures;
     } else {
       const regular = pool.filter((s) => !s.music?.signature);
-      if (next <= 3 && regular.length) pool = regular;
-      else {
-        const withoutFinale = pool.filter((s) => s.music?.signature !== "last-track");
-        if (withoutFinale.length) pool = withoutFinale;
-      }
+      if (regular.length) pool = regular;
+      // Four regular beats deliberately change social rhythm before each signature beat:
+      // instinct/identity → read → blind duel → open choice. If a mode's unseen
+      // stock is exhausted, the unseen boundary wins and the broader regular pool remains.
+      const slot = next % AUX_SIGNATURE_CADENCE;
+      const directedModes =
+        slot === 1
+          ? ["speed", "solo"]
+          : slot === 2
+            ? ["guess"]
+            : slot === 3
+              ? ["duet"]
+              : ["solo", "consensus", "guess"];
+      const directed = pool.filter(
+        (s) => s.music && directedModes.includes(s.music.mode),
+      );
+      if (directed.length) pool = directed;
     }
   } else if (state.sceneNumber % 3 === 0) {
     // Other games keep the general owned-signature cadence.
