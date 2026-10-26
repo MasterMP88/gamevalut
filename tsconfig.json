@@ -3,6 +3,8 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "vite.config.ts",
+    "nitro.config.ts",
+    "server/**/*.ts",
     "vitest.config.ts",
     "eslint.config.js"
   ],

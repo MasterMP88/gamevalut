@@ -40,3 +40,5 @@ Lokaler Abschlussstand: **331 App-Tests**, **163 GANG-Core-Tests**, TypeScript u
 
 
 Die Produktionsvorschau startet den erzeugten Cloudflare-Worker jetzt direkt mit einer fest versionierten Wrangler-CLI. Der vorherige Vite-Preview-Befehl suchte eine nicht erzeugte `dist/server/server.js`. Die lokale Sandbox verweigert `uv_interface_addresses`; die Worker-Abnahme läuft deshalb zusätzlich im bestehenden App-CI-Workflow auf dem GitHub-Runner, ausschließlich mit Dummy-Public-Konfiguration und ohne Stripe-Schlüssel.
+
+Der neue Worker-Check fand zusätzlich einen produktionskritischen Routingfehler: Nitro hatte die separate Legacy-`index.html` als Catch-all erkannt und für Seiten, Sitemap und Zahlungsendpunkte dieselbe Demo mit HTTP 200 geliefert. `nitro.config.ts`/`server/ssr.ts` routen jetzt explizit an TanStack. Der Deployment-Check prüft außerdem Seiteninhalte und MIME-Typen. Der gebaute Worker liefert lokal echte HTML-Seiten, XML-Sitemap, JSON-Status und HTTP 400 für den unsignierten Webhook.

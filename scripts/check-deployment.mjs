@@ -16,12 +16,22 @@ const request = (p, options = {}) =>
     signal: AbortSignal.timeout(15000),
     redirect: "error",
   });
-for (const path of ["/", "/gang", "/privatsphaere", "/sitemap.xml"]) {
+for (const [path, expected] of [
+  ["/", /NOCTURNE/],
+  ["/gang", /GANG/],
+  ["/privatsphaere", /Privatsphäre/],
+  ["/sitemap.xml", /<urlset\s/],
+]) {
   try {
     const res = await request(path);
     assert.equal(res.status, 200);
     const body = await res.text();
     assert.ok(body.length > 100);
+    assert.match(body, expected);
+    assert.match(
+      res.headers.get("content-type") || "",
+      path.endsWith(".xml") ? /application\/xml/ : /text\/html/,
+    );
     checks.push({ path, pass: true });
   } catch {
     checks.push({ path, pass: false });
