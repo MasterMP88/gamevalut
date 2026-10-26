@@ -1,8 +1,8 @@
 name: Deploy Game Vault to GitHub Pages
 
 on:
-  push:
-    branches: ["main"]
+  # Historical static player only. Active development and hosting moved to
+  # MasterMP88/nocturne-games-for-two and the existing Lovable project.
   workflow_dispatch:
 
 permissions:

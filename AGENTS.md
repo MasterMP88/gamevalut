@@ -1,3 +1,7 @@
+## Repository moved — 2026-10-26
+
+The user explicitly approved migration to `MasterMP88/nocturne-games-for-two`, which is now the only active implementation repository and syncs `main` to the existing Lovable project `155bbb23-db01-432e-a4f3-287aa8f3e015`. The complete source and Git history through `5c59902` were merged there in PR #1. Do not implement further product changes in this old repository; continue in the connected repository and read its current AGENTS.md. This repository remains available for provenance. Do not delete or rewrite its history.
+
 <!-- LOVABLE:BEGIN -->
 > [!IMPORTANT]
 > This project is connected to [Lovable](https://lovable.dev). Avoid rewriting

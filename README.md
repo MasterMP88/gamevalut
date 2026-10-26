@@ -1,5 +1,7 @@
 # NOCTURNE / GameNights
 
+> **Umgezogen am 26.10.2026:** Das aktive Repository ist [MasterMP88/nocturne-games-for-two](https://github.com/MasterMP88/nocturne-games-for-two). Es ist mit dem bestehenden Lovable-Projekt auf `main` synchronisiert. App, Cores, Inhalte, Tests, Migrationen, Dokumentation und die vollständige Git-Historie wurden mit [Migration PR #1](https://github.com/MasterMP88/nocturne-games-for-two/pull/1) übernommen. Alle neuen Änderungen und PRs gehören dorthin. Dieses Repository bleibt als Herkunftsnachweis erhalten; die folgenden Hinweise beschreiben den bisherigen Stand.
+
 Aktuelle React-/TanStack-Website und kanonische Spiel- und Commerce-Cores in einem Repository.
 
 Entwicklung mit Node.js 22 und npm 11; die CI verwendet denselben versionierten Lockfile-Stand.
