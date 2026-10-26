@@ -1,0 +1,32 @@
+{
+  "origin": "https://nocturne-games-for-two.lovable.app",
+  "checkedAt": "2026-10-26T09:37:01.139Z",
+  "checks": [
+    {
+      "path": "/",
+      "pass": true
+    },
+    {
+      "path": "/gang",
+      "pass": true
+    },
+    {
+      "path": "/privatsphaere",
+      "pass": false
+    },
+    {
+      "path": "/sitemap.xml",
+      "pass": true
+    },
+    {
+      "path": "/api/public/health",
+      "pass": false
+    },
+    {
+      "path": "/api/public/stripe/webhook",
+      "pass": true,
+      "unsignedRejected": true
+    }
+  ],
+  "limitation": "Does not certify signed delivery, payment fulfillment, real devices or human playtests."
+}

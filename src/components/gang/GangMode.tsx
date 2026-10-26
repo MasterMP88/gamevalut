@@ -1,3 +1,8 @@
+import {
+  readCouchCheckpoint,
+  clearCouchCheckpoint,
+  type CouchCheckpoint,
+} from "@/lib/gang/couch-resume";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { GangGuide } from "./GangGuide";
 import { couchGame, GANG_EXPERIENCES } from "@/lib/gang/core/experience";
@@ -80,6 +85,7 @@ type Flow =
     }
   | {
       k: "play";
+      checkpoint?: CouchCheckpoint | undefined;
       display?: "couch" | "phone";
       queue: GangGameId[];
       players: GangRuntimePlayer[];
@@ -1043,9 +1049,11 @@ export function GangMode({
   );
   const [client, setClient] = useState<RoomClient | null>(null);
   const [resume, setResume] = useState<StoredSession | null>(null);
+  const [couchResume, setCouchResume] = useState<CouchCheckpoint | null>(null);
   useEffect(() => {
     setClient(defaultRoomClient());
     setResume(sessionStore.get("player"));
+    setCouchResume(readCouchCheckpoint());
   }, []);
   const [night, setNight] = useState(false);
   const [mix, setMix] = useState(false);
@@ -1472,6 +1480,43 @@ export function GangMode({
           }}
         />
       )}
+      {couchResume && !flow && !resume && (
+        <aside
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-signal/40 bg-room p-4 safe-bottom"
+          aria-label="Spiel fortsetzen"
+        >
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+            <p>
+              {gangGame(couchResume.state.gameId)?.title} · Runde{" "}
+              {couchResume.state.index + 1} · Euer Spielstand ist noch da.
+            </p>
+            <button
+              className={btn()}
+              onClick={() =>
+                setFlow({
+                  k: "play",
+                  queue: couchResume.queue,
+                  players: couchResume.players,
+                  rounds: couchResume.rounds,
+                  display: couchResume.display,
+                  checkpoint: couchResume,
+                })
+              }
+            >
+              Abend fortsetzen
+            </button>
+            <button
+              className={btn({ variant: "outline" })}
+              onClick={() => {
+                clearCouchCheckpoint();
+                setCouchResume(null);
+              }}
+            >
+              Spielstand verwerfen
+            </button>
+          </div>
+        </aside>
+      )}
       {resume && !flow && client && (
         <div className="fixed inset-x-0 top-0 z-40 border-b border-signal/40 bg-room/95 backdrop-blur safe-x safe-top">
           <div className="mx-auto flex min-h-14 max-w-6xl items-center justify-between gap-3">
@@ -1512,10 +1557,14 @@ export function GangMode({
         (flow.queue.every(couchGame) ? (
           <GangSharedNight
             queue={flow.queue}
+            checkpoint={flow.checkpoint}
             display={flow.display ?? "couch"}
             rounds={flow.rounds}
             players={flow.players}
-            onExit={() => setFlow(null)}
+            onExit={() => {
+              setCouchResume(null);
+              setFlow(null);
+            }}
           />
         ) : (
           <GangPlayer

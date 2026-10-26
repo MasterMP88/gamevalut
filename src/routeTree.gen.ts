@@ -22,6 +22,7 @@ import { Route as CheckoutStartRouteImport } from './routes/checkout.start'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
 import { Route as GameSlugRouteImport } from './routes/game.$slug'
 import { Route as GangSlugRouteImport } from './routes/gang_.$slug'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe/webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -88,6 +89,11 @@ const GangSlugRoute = GangSlugRouteImport.update({
   path: '/gang/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe/webhook',
   path: '/api/public/stripe/webhook',
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/checkout/success': typeof CheckoutSuccessRoute
   '/game/$slug': typeof GameSlugRoute
   '/gang/$slug': typeof GangSlugRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/checkout/success': typeof CheckoutSuccessRoute
   '/game/$slug': typeof GameSlugRoute
   '/gang/$slug': typeof GangSlugRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesById {
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/checkout/success': typeof CheckoutSuccessRoute
   '/game/$slug': typeof GameSlugRoute
   '/gang_/$slug': typeof GangSlugRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRouteTypes {
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/checkout/success'
     | '/game/$slug'
     | '/gang/$slug'
+    | '/api/public/health'
     | '/api/public/stripe/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/checkout/success'
     | '/game/$slug'
     | '/gang/$slug'
+    | '/api/public/health'
     | '/api/public/stripe/webhook'
   id:
     | '__root__'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/checkout/success'
     | '/game/$slug'
     | '/gang_/$slug'
+    | '/api/public/health'
     | '/api/public/stripe/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -203,6 +215,7 @@ export interface RootRouteChildren {
   CheckoutSuccessRoute: typeof CheckoutSuccessRoute
   GameSlugRoute: typeof GameSlugRoute
   GangSlugRoute: typeof GangSlugRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
 }
 
@@ -299,6 +312,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GangSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/stripe/webhook': {
       id: '/api/public/stripe/webhook'
       path: '/api/public/stripe/webhook'
@@ -333,6 +353,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutSuccessRoute: CheckoutSuccessRoute,
   GameSlugRoute: GameSlugRoute,
   GangSlugRoute: GangSlugRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport

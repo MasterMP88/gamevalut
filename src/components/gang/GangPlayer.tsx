@@ -40,7 +40,7 @@ import { btn } from "@/components/vault/Btn";
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import { MotifArt, hueVars } from "./MotifArt";
-import { submitGangAction } from "@/lib/gang/core/runtime";
+import { submitGangAction, withdrawAfterDark } from "@/lib/gang/core/runtime";
 import { majorityResult, type MajorityResultData } from "@/lib/gang/majority";
 export { majorityResult, type MajorityResultData };
 
@@ -423,7 +423,7 @@ export function GangPlayer({
           }
           onSubmit={(next) => {
             haptic(8);
-            if (next) setRt(next);
+            if (next) apply(next);
             markDone(current);
           }}
           onSkip={() => {
@@ -990,9 +990,20 @@ function PassTurn({
     }
   };
   const head = (
-    <p className="mt-6 font-mono text-xs tracking-[0.2em] text-muted-foreground">
-      NUR FÜR {name.toUpperCase()}
-    </p>
+    <>
+      <p className="mt-6 font-mono text-xs tracking-[0.2em] text-muted-foreground">
+        NUR FÜR {name.toUpperCase()}
+      </p>
+      {gid === "after-dark" && stage !== "private" && (
+        <button
+          type="button"
+          className={btn({ variant: "ghost" })}
+          onClick={() => onSubmit(withdrawAfterDark(rt, playerId))}
+        >
+          Für den Rest von AFTER DARK nur zuschauen
+        </button>
+      )}
+    </>
   );
 
   if (gid === "after-dark" && stage === "private")

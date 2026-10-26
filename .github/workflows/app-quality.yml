@@ -4,8 +4,12 @@ on:
   pull_request:
     paths:
       - "src/**"
+      - "server/**"
+      - "nitro.config.ts"
+      - "vite.config.ts"
       - "packages/gang-core/**"
       - "scripts/vendor-cores.mjs"
+      - "scripts/check-deployment.mjs"
       - "package.json"
       - "package-lock.json"
       - "tsconfig*.json"
@@ -14,8 +18,12 @@ on:
     branches: [main]
     paths:
       - "src/**"
+      - "server/**"
+      - "nitro.config.ts"
+      - "vite.config.ts"
       - "packages/gang-core/**"
       - "scripts/vendor-cores.mjs"
+      - "scripts/check-deployment.mjs"
       - "package.json"
       - "package-lock.json"
       - "tsconfig*.json"
@@ -43,4 +51,21 @@ jobs:
       - name: TypeScript
         run: npx tsc --noEmit
       - name: Build
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: ci-public-placeholder
         run: npm run build
+      - name: Verify the built Cloudflare worker
+        env:
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          npm run preview -- --port 4182 > /tmp/nocturne-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:4182/api/public/health > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          node scripts/check-deployment.mjs http://127.0.0.1:4182 || { cat /tmp/nocturne-preview.log; exit 1; }

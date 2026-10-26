@@ -25,6 +25,8 @@ import { cn } from "@/lib/utils";
 import { MotifArt, hueVars } from "./MotifArt";
 import { QrCode } from "./QrCode";
 import { ConnDot } from "./GangRoom";
+import { CouchTVStage } from "./CouchTV";
+import { readCouchScreen } from "@/lib/gang/couch-screen";
 import { MajorityResult } from "./GangPlayer";
 
 const STAGE: Record<string, string> = {
@@ -161,6 +163,8 @@ function Screen({
         </h1>
       </Stage>
     );
+  const couchView = readCouchScreen(snap?.publicState);
+  if (couchView) return <CouchTVStage view={couchView} />;
   if (!snap || !pub)
     return (
       <Stage>

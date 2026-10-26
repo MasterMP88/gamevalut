@@ -28,7 +28,7 @@ try {
   );
   await writeFile(
     files[1],
-    `import React from 'react';import {createRoot} from 'react-dom/client';import {CouchPlayer} from './components/gang/CouchPlayer';import type {GangGameId} from './lib/gang/core/playbooks';import './styles.css';const p=new URLSearchParams(location.search);createRoot(document.getElementById('root')!).render(<CouchPlayer gameId={(p.get('game')||'the-majority') as GangGameId} count={Number(p.get('n')||6)} display={p.get('display')==='phone'?'phone':'couch'} rounds={2} onExit={()=>{document.body.dataset['exited']='true'}}/>);`,
+    `import React from 'react';import {createRoot} from 'react-dom/client';import {CouchPlayer,GangSharedNight} from './components/gang/CouchPlayer';import {readCouchCheckpoint} from './lib/gang/couch-resume';import {GangBigScreen} from './components/gang/GangBigScreen';import {defaultRoomClient} from './lib/gang/room-client';import type {GangGameId} from './lib/gang/core/playbooks';import './styles.css';const p=new URLSearchParams(location.search);createRoot(document.getElementById('root')!).render(p.has('screen')?<GangBigScreen client={defaultRoomClient()} code='ABC123' pollMs={200}/>:p.has('recovery')||p.has('controller')?<GangSharedNight queue={p.has('controller')?['the-majority','the-line']:['panic-button','the-line']} players={Array.from({length:6},(_,i)=>({id:'p'+i,name:'Person '+(i+1)}))} checkpoint={readCouchCheckpoint()??undefined} onExit={()=>{document.body.dataset['exited']='true'}}/>:<CouchPlayer gameId={(p.get('game')||'the-majority') as GangGameId} count={Number(p.get('n')||6)} display={p.get('display')==='phone'?'phone':'couch'} rounds={2} onExit={()=>{document.body.dataset['exited']='true'}}/>);`,
   );
   await writeFile(
     files[2],
@@ -355,24 +355,239 @@ try {
       });
       await page.close();
     }
+  const recoveryChecks = [];
+  for (const width of [390, 1440, 1920]) {
+    const page = await browser.newPage({
+      viewport: { width, height: 900 },
+      reducedMotion: "reduce",
+    });
+    page.on("pageerror", (e) => errors.push(`recovery/${width}: ${e.message}`));
+    await page.goto("http://127.0.0.1:4176/couch-qa.html?recovery=1");
+    await page.getByRole("button", { name: "Los geht’s", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Runde starten", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Gültig · weiter", exact: true })
+      .click();
+    const before = await page.evaluate(() =>
+      JSON.parse(sessionStorage.getItem("nocturne.couch.resume")),
+    );
+    await page.reload();
+    await page.getByText("Kurz durchatmen.", { exact: true }).waitFor();
+    const after = await page.evaluate(() =>
+      JSON.parse(sessionStorage.getItem("nocturne.couch.resume")),
+    );
+    assert.equal(after.state.paused, true);
+    assert.deepEqual(after.state.deck, before.state.deck);
+    assert.equal(
+      await page
+        .getByTestId("couch-player")
+        .evaluate((el) => el.scrollWidth > el.clientWidth + 1),
+      false,
+      `recovery/${width} overflow`,
+    );
+    assert.deepEqual(after.state.turnResults, before.state.turnResults);
+    assert.deepEqual(after.state.scores, before.state.scores);
+    await page.screenshot({
+      path: path.join(out, `recovery-${width}.png`),
+      fullPage: true,
+    });
+    await page
+      .getByRole("button", { name: "Weiter geht’s", exact: true })
+      .click();
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Gültig · weiter", exact: true })
+        .isEnabled(),
+      true,
+    );
+    recoveryChecks.push({
+      width,
+      status: "pass",
+      paused: true,
+      deckPreserved: true,
+      scoresPreserved: true,
+    });
+    await page.close();
+  }
+  // Two real browser pages, isolated RPC transport. SQL fixture separately
+  // verifies the deployed permissions; this checks the controller → TV UI.
+  const context = await browser.newContext();
+  let room = {
+    roomId: "r1",
+    code: "ABC123",
+    phase: "lobby",
+    entryMode: "catalog",
+    gameId: null,
+    roundKey: null,
+    stage: null,
+    publicState: {},
+    version: 1,
+    maxPlayers: 2,
+    players: [],
+  };
+  const hostToken = "a".repeat(48),
+    tvToken = "b".repeat(48);
+  const snap = (token) => ({
+    ...room,
+    serverNow: new Date().toISOString(),
+    playerId: token === hostToken ? "host" : "tv",
+    isFacilitator: token === hostToken,
+  });
+  const published = [];
+  await context.route("http://127.0.0.1:9/rest/v1/rpc/**", async (route) => {
+    if (route.request().method() === "OPTIONS")
+      return route.fulfill({
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "*",
+        },
+      });
+    const fn = route.request().url().split("/").at(-1),
+      args = route.request().postDataJSON();
+    let data,
+      status = 200;
+    if (fn === "gang_create_room")
+      data = { playerToken: hostToken, snapshot: snap(hostToken) };
+    else if (fn === "gang_join_display") {
+      room.version++;
+      data = { playerToken: tvToken, snapshot: snap(tvToken) };
+    } else if (fn === "gang_room_snapshot") data = snap(args.p_player_token);
+    else if (fn === "gang_poll")
+      data = { snapshot: snap(args.p_player_token), progress: null };
+    else if (fn === "gang_set_room_state") {
+      if (
+        args.p_player_token !== hostToken ||
+        args.p_expected_version !== room.version
+      ) {
+        status = 400;
+        data = { message: "version_conflict", code: "P0001" };
+      } else {
+        room = {
+          ...room,
+          version: room.version + 1,
+          phase: args.p_phase,
+          gameId: args.p_game_id,
+          roundKey: args.p_round_key,
+          stage: args.p_stage,
+          publicState: args.p_public_state,
+        };
+        published.push(room.publicState);
+        data = snap(hostToken);
+      }
+    } else if (fn === "gang_leave_room") data = snap(args.p_player_token);
+    else throw new Error(`Unexpected TV RPC: ${fn}`);
+    await route.fulfill({
+      status,
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify(data),
+    });
+  });
+  const controller = await context.newPage(),
+    tv = await context.newPage();
+  controller.on("pageerror", (e) => errors.push(`controller: ${e.message}`));
+  tv.on("pageerror", (e) => errors.push(`tv: ${e.message}`));
+  await controller.setViewportSize({ width: 390, height: 844 });
+  await tv.setViewportSize({ width: 1920, height: 1080 });
+  await controller.goto(
+    "http://127.0.0.1:4176/couch-qa.html?controller=1",
+  );
+  await controller
+    .getByRole("button", { name: "Handy steuert · TV verbinden" })
+    .click();
+  await controller
+    .getByRole("button", { name: "TV · ABC123", exact: true })
+    .waitFor();
+  await tv.goto("http://127.0.0.1:4176/couch-qa.html?screen=ABC123");
+  await tv.getByTestId("couch-tv").waitFor();
+  await controller
+    .getByRole("button", { name: "Los geht’s", exact: true })
+    .click();
+  await controller
+    .getByRole("button", { name: "Runde starten", exact: true })
+    .click();
+  await tv
+    .getByRole("heading", { name: /Kurz durchatmen/ })
+    .waitFor({ state: "hidden" });
+  for (let i = 0; i < 40 && room.publicState.phase !== "play"; i++)
+    await new Promise((r) => setTimeout(r, 100));
+  assert.equal(room.publicState.phase, "play");
+  await tv
+    .getByRole("heading", { name: room.publicState.heading, exact: true })
+    .waitFor();
+  assert.equal(await tv.getByRole("button").count(), 0);
+  assert.ok(
+    published.every((p) => !p.deck && !p.history && !p.token && !p.answer),
+  );
+  await controller.getByRole("button", { name: "Pause", exact: true }).click();
+  await tv
+    .getByRole("heading", { name: "Kurz durchatmen.", exact: true })
+    .waitFor();
+  await tv.screenshot({
+    path: path.join(out, "couch-tv-1920.png"),
+    fullPage: true,
+  });
+  await controller.screenshot({
+    path: path.join(out, "couch-controller-390.png"),
+    fullPage: true,
+  });
+  assert.equal(
+    await controller.evaluate(
+      () => document.documentElement.scrollWidth > innerWidth + 1,
+    ),
+    false,
+  );
+  const priorController = room.publicState.controller;
+  await controller.reload();
+  await controller.getByRole("button", { name: "TV · ABC123", exact: true }).waitFor();
+  for (let i = 0; i < 50 && room.publicState.controller === priorController; i++) await new Promise(r => setTimeout(r, 100));
+  assert.notEqual(room.publicState.controller, priorController);
+  assert.equal(room.publicState.paused, true);
+  await controller.getByRole("button", { name: "TV · ABC123", exact: true }).click();
+  await controller
+    .getByRole("button", { name: "TV trennen", exact: true })
+    .click();
+  await tv
+    .getByRole("heading", { name: "Danke, Raum.", exact: true })
+    .waitFor();
+  const tvChecks = {
+    status: "pass",
+    twoPages: true,
+    controllerReload: true,
+    readOnly: true,
+    pause: true,
+    disconnect: true,
+    transport:
+      "isolated RPC fixture; deployed permission SQL tested separately",
+  };
+  await context.close();
   assert.deepEqual(errors, []);
   await writeFile(
     path.join(out, "report.json"),
-    JSON.stringify({ checks: report, errors }, null, 2),
+    JSON.stringify(
+      { checks: report, recoveryChecks, tvChecks, errors },
+      null,
+      2,
+    ),
   );
   console.log(
     JSON.stringify({
       sessions: report.length,
       rounds: report.length * 3,
+      reloads: recoveryChecks.length,
+      tv: tvChecks,
       errors,
     }),
   );
 } finally {
-  await browser?.close();
-  server?.kill();
   await Promise.all(
     files.map((f, i) =>
       originals[i] ? writeFile(f, originals[i]) : unlink(f).catch(() => {}),
     ),
   );
+  server?.kill();
+  await browser?.close();
 }
