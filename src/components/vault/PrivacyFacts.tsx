@@ -17,6 +17,11 @@ export function PrivacyFacts() {
         entfernt. Nach Neuladen startet ein laufender Timer pausiert.
         Musikdateien und Abspieladressen werden nicht gespeichert; für lokale
         Tracks wählt ihr denselben Ordner erneut.
+        Beim optionalen TV-Bildschirm werden nur die aktuelle öffentliche
+        Aufgabe, Teamnamen, Punkte und Timer über einen Raum übertragen.
+        Fragenstapel, verdeckte Tipps, Musikdateien und Dateinamen bleiben auf
+        dem Steuerhandy. Für diesen Raum gilt dieselbe Zwölf-Stunden-Frist wie
+        für andere Mehrgeräte-Räume.
       </li>
       <li>
         <strong className="text-foreground">Mit Account:</strong> Wir sichern

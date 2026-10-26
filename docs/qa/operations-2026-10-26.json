@@ -240,5 +240,14 @@
       "scoresPreserved": true
     }
   ],
+  "tvChecks": {
+    "status": "pass",
+    "twoPages": true,
+    "controllerReload": true,
+    "readOnly": true,
+    "pause": true,
+    "disconnect": true,
+    "transport": "isolated RPC fixture; deployed permission SQL tested separately"
+  },
   "errors": []
 }

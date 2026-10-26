@@ -4,6 +4,7 @@ const PRIVATE_KEYS = [
   "nocturne.couple.player",
   "nocturne.gang.display",
   "nocturne.couch.resume",
+  "nocturne.couch.controller",
 ];
 
 /** Clear capabilities on account changes, including changes discovered after a reload.

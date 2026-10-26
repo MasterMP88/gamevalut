@@ -3,6 +3,8 @@ import {
   clearCouchCheckpoint,
   type CouchCheckpoint,
 } from "@/lib/gang/couch-resume";
+import { CouchTVControls } from "./CouchTV";
+import { disconnectCouchTV } from "@/lib/gang/couch-tv-client";
 import {
   localAudioDeck,
   localAudioId,
@@ -76,6 +78,7 @@ export function GangSharedNight({
   const [index, setIndex] = useState(checkpoint?.index ?? 0);
   const exit = () => {
     clearCouchCheckpoint();
+    void disconnectCouchTV();
     onExit();
   };
   const id = queue[index];
@@ -531,6 +534,7 @@ export function CouchPlayer({
         aria-hidden
       />
       <div className="relative mx-auto flex min-h-svh w-full max-w-7xl flex-col gap-5 p-4 pb-8 sm:p-8 lg:p-12">
+        {display === "couch" && <CouchTVControls state={state} />}
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-4">
           <div>
             <p className="text-xs font-mono tracking-[.2em] text-[var(--couch-accent)]">

@@ -48,7 +48,7 @@ export interface CollectedAction {
   at?: string;
 }
 
-export type SessionRole = "player" | "display" | "couple";
+export type SessionRole = "player" | "display" | "couple" | "couch";
 export interface StoredSession {
   code: string;
   token: string;
@@ -72,6 +72,7 @@ const KEY: Record<SessionRole, string> = {
   player: "nocturne.gang.player",
   couple: "nocturne.couple.player",
   display: "nocturne.gang.display",
+  couch: "nocturne.couch.controller",
 };
 
 /** Session-scoped token store. Display and player sessions are kept apart so a TV tab never acts as a seat. */
