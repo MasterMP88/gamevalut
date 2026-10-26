@@ -37,3 +37,6 @@ Danach alle acht vorhandenen SQL-Fixtures gemeinsam gegen das aktive Schema erne
 - Siehe `docs/commerce-operations.md` und `docs/release-and-playtest-2026.md` für die konkreten Anschluss- und Abnahmeschritte.
 
 Lokaler Abschlussstand: **331 App-Tests**, **163 GANG-Core-Tests**, TypeScript und Produktionsbuild bestanden. Fokussiertes ESLint: 0 Fehler; bestehender Fast-Refresh-Hinweis am Auth-Hook. Keine echte Kundenbelastung, kein neuer Stripe-Endpoint und keine Lovable-Credits.
+
+
+Die Produktionsvorschau verwendet jetzt `nitro preview` und eine fest versionierte Wrangler-CLI, passend zum erzeugten Cloudflare-Worker. Der vorherige Vite-Preview-Befehl suchte eine nicht erzeugte `dist/server/server.js`. Die lokale Sandbox verweigert `uv_interface_addresses`; die Worker-Abnahme läuft deshalb zusätzlich im bestehenden App-CI-Workflow auf dem GitHub-Runner, ausschließlich mit Dummy-Public-Konfiguration und ohne Stripe-Schlüssel.
