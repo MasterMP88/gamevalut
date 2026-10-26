@@ -6,7 +6,8 @@ import {
   reducer,
   nightSignature,
 } from "../game/engine";
-import { GAMES_BY_ID } from "../game/games";\nimport { sameSong } from "../music/provider";
+import { GAMES_BY_ID } from "../game/games";
+import { sameSong } from "../music/provider";
 import type { Action } from "../game/engine";
 import type {
   ConsentSettings,
