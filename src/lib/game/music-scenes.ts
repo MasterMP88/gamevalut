@@ -103,14 +103,14 @@ export const MUSIC_SCENES: Scene[] = [
   // ——— ONE SONG · together, intentionally not hidden
   consensus("funny", 1, "Ein Raum. Ein Track.", "Ihr bekommt genau einen Song für diesen Raum. Einigt euch."),
   consensus("deep", 2, "Gemeinsamer Nenner", "Heute wollt ihr beide wirklich denselben Track hören. Welcher ist es?"),
-  consensus("cheeky", 2, "Keine Ausrede", "Ein Track, bei dem keiner von euch so tun darf, als wäre er zu cool dafür."),
+  consensus("cheeky", 2, "Keine Ausrede", "Keiner von euch darf so tun, als wäre er zu cool dafür. Welcher Track?"),
   consensus("deep", 3, "Bleiben", "Nur ein Song darf euch noch fünf Minuten länger hier halten. Welcher?"),
 
   // ——— SIGNATURE: AUX SWAP · choose for the other person
   ...signatureDeck("aux-swap", "solo", [
     ["AUX SWAP · Main Character", "Wähle die Einlaufmusik für {you}. Nicht nett sein – treffend.", "cheeky", 1],
     ["AUX SWAP · Montag", "Montagmorgen mit {you}: welcher Song rettet die Lage erstaunlich gut?", "funny", 1],
-    ["AUX SWAP · Geheime Stärke", "Ein Track für eine Seite von {you}, die andere zu selten sehen.", "deep", 2],
+    ["AUX SWAP · Geheime Stärke", "Die Seite von {you}, die andere zu selten sehen, braucht einen Soundtrack.", "deep", 2],
     ["AUX SWAP · Karaoke", "Du meldest {you} ungefragt zum Karaoke an. Welcher Song?", "funny", 1],
     ["AUX SWAP · Urlaub", "Der erste Track in {you}s perfektem Urlaub. Du entscheidest.", "funny", 2],
     ["AUX SWAP · Glow-up", "Soundtrack für {you}s völlig übertriebenen Slow-Motion-Auftritt.", "cheeky", 2],
@@ -123,14 +123,14 @@ export const MUSIC_SCENES: Scene[] = [
   // ——— SIGNATURE: RED FLAG · blind duel + judgement
   ...signatureDeck("red-flag", "duet", [
     ["RED FLAG · Sofortiges Urteil", "Sofortiges Urteil: Bei welchem Song würdest du kurz skeptisch werden? Beide blind.", "cheeky", 1],
-    ["RED FLAG · Auto-DJ", "Ein Track, der beim ersten Date im Auto riskant wäre. Beide wählen.", "funny", 1],
+    ["RED FLAG · Auto-DJ", "Beim ersten Date im Auto wäre dieser Track riskant. Beide wählen blind.", "funny", 1],
     ["RED FLAG · Hochzeits-DJ", "Hochzeit, falscher Moment: Welcher Track wäre unverzeihlich – und trotzdem lustig?", "funny", 2],
-    ["RED FLAG · Zu ernst", "Ein Track, den Menschen viel zu ernst nehmen. Beide blind.", "cheeky", 2],
+    ["RED FLAG · Zu ernst", "Manche Menschen nehmen diesen Track viel zu ernst. Beide blind wählen.", "cheeky", 2],
     ["RED FLAG · Ex-Alarm", "Sehr spezifische Geschichte im Raum: Welcher Track löst diesen Verdacht aus?", "cheeky", 3],
     ["RED FLAG · Gym Crime", "Der Track, bei dem du im Gym innerlich sofort urteilst.", "funny", 1],
     ["RED FLAG · Party vorbei", "Eine gute Party kippt in zehn Sekunden. Welcher Track war schuld?", "funny", 2],
     ["RED FLAG · Guilty Defense", "Gegen jede Kritik verteidigst du diesen Track. Leider. Welchen?", "cheeky", 2],
-    ["RED FLAG · Zu viel Gefühl", "Ein Track, der emotional gefährlicher ist, als er klingt.", "deep", 3],
+    ["RED FLAG · Zu viel Gefühl", "Emotional gefährlicher, als er klingt: Welcher Track trifft das?", "deep", 3],
     ["RED FLAG · Kein Kommentar", "Dein Musikgeschmack steht vor Gericht. Welcher Track ist Beweisstück A?", "funny", 3],
   ]),
 
